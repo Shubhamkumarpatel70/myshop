@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../utils/api';
+import api, { BASE_URL } from '../utils/api';
 import { motion } from 'framer-motion';
 import { 
     Plus, Search, Filter, MoreVertical, 
@@ -317,7 +317,7 @@ const Inventory = () => {
                                                 <div className="w-12 h-12 rounded-xl bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center text-primary-600 overflow-hidden border border-secondary-200 dark:border-secondary-700">
                                                     {product.productImage ? (
                                                         <img 
-                                                            src={product.productImage.startsWith('http') ? product.productImage : `http://localhost:5000${product.productImage}`} 
+                                                            src={product.productImage.startsWith('http') ? product.productImage : `${BASE_URL}${product.productImage}`} 
                                                             alt={product.productName}
                                                             className="w-full h-full object-cover"
                                                         />
@@ -416,7 +416,7 @@ const Inventory = () => {
                             <div className="w-32 h-32 rounded-[2rem] bg-white dark:bg-secondary-800 flex items-center justify-center text-secondary-400 overflow-hidden border-2 border-white shadow-xl">
                                 {formData.productImage ? (
                                     <img 
-                                        src={formData.productImage.startsWith('http') ? formData.productImage : `http://localhost:5000${formData.productImage}`} 
+                                        src={formData.productImage.startsWith('http') ? formData.productImage : `${BASE_URL}${formData.productImage}`} 
                                         alt="Preview" 
                                         className="w-full h-full object-cover" 
                                     />

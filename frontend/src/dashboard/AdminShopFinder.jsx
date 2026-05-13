@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../utils/api';
+import api, { BASE_URL } from '../utils/api';
 import { 
     Search, Store, User, Phone, 
     MapPin, Mail, Calendar, ExternalLink,
@@ -164,7 +164,7 @@ const AdminShopFinder = () => {
                                     </div>
                                     <div className="w-full h-48 bg-slate-50 dark:bg-slate-800 rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-800">
                                         <img 
-                                            src={shop.aadharImage.startsWith('http') ? shop.aadharImage : `http://localhost:5000${shop.aadharImage}`} 
+                                            src={shop.aadharImage.startsWith('http') ? shop.aadharImage : `${BASE_URL}${shop.aadharImage}`} 
                                             alt="KYC Document" 
                                             className="w-full h-full object-cover" 
                                         />
@@ -180,7 +180,7 @@ const AdminShopFinder = () => {
                                     </div>
                                     <div className="w-full rounded-3xl overflow-hidden border border-amber-100 bg-amber-50/30">
                                         <img 
-                                            src={shop.paymentScreenshot.startsWith('http') ? shop.paymentScreenshot : `http://localhost:5000${shop.paymentScreenshot}`} 
+                                            src={shop.paymentScreenshot.startsWith('http') ? shop.paymentScreenshot : `${BASE_URL}${shop.paymentScreenshot}`} 
                                             alt="Payment Proof" 
                                             className="w-full h-auto max-h-[300px] object-contain" 
                                         />

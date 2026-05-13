@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../utils/api';
+import api, { BASE_URL } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Check, X, User, Phone, MapPin, 
@@ -173,7 +173,7 @@ const AdminApprovals = () => {
                                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Identity Document</p>
                                 <div className="w-full aspect-video rounded-[2rem] overflow-hidden border-2 border-slate-100 bg-slate-50">
                                     <img 
-                                        src={selectedShop.aadharImage.startsWith('http') ? selectedShop.aadharImage : `http://localhost:5000${selectedShop.aadharImage}`} 
+                                        src={selectedShop.aadharImage.startsWith('http') ? selectedShop.aadharImage : `${BASE_URL}${selectedShop.aadharImage}`} 
                                         alt="Aadhar" 
                                         className="w-full h-full object-cover" 
                                     />
@@ -186,7 +186,7 @@ const AdminApprovals = () => {
                                 <p className="text-[10px] font-black uppercase text-amber-500 tracking-widest">Payment Proof (Screenshot)</p>
                                 <div className="w-full rounded-[2rem] overflow-hidden border-2 border-amber-100 bg-amber-50/30">
                                     <img 
-                                        src={selectedShop.paymentScreenshot.startsWith('http') ? selectedShop.paymentScreenshot : `http://localhost:5000${selectedShop.paymentScreenshot}`} 
+                                        src={selectedShop.paymentScreenshot.startsWith('http') ? selectedShop.paymentScreenshot : `${BASE_URL}${selectedShop.paymentScreenshot}`} 
                                         alt="Payment Screenshot" 
                                         className="w-full h-auto max-h-[400px] object-contain" 
                                     />
