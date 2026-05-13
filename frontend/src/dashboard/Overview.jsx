@@ -15,6 +15,7 @@ const Overview = () => {
     const [stats, setStats] = useState(null);
     const [salesData, setSalesData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [period, setPeriod] = useState('30D');
     const { user } = useAuth();
 
     useEffect(() => {
@@ -33,7 +34,7 @@ const Overview = () => {
                     });
                 } else {
                     const statsRes = await api.get('/reports/dashboard');
-                    const analyticsRes = await api.get('/reports/sales');
+                    const analyticsRes = await api.get(`/reports/sales?period=${period.replace('D', '')}`);
                     setStats(statsRes.data.data);
                     setSalesData(analyticsRes.data.data.dailySales || []);
                 }
@@ -44,7 +45,7 @@ const Overview = () => {
             }
         };
         fetchDashboardData();
-    }, [user]);
+    }, [user, period]);
 
     if (loading) return (
         <div className="space-y-8 animate-pulse p-4">
@@ -61,7 +62,7 @@ const Overview = () => {
 
     const getHealthScore = () => {
         if (!stats) return 0;
-        let score = 85; // Base score
+        let score = 100; // Base score set to 100% per user request
         if (stats.lowStockProducts > 0) score -= 10;
         if (stats.expiredProducts > 0) score -= 15;
         if (stats.totalRevenue > 10000) score += 5;
@@ -73,23 +74,23 @@ const Overview = () => {
     const mainCards = [
         { 
             title: 'Gross Revenue', 
-            value: `₹${stats?.totalRevenue?.toLocaleString()}`, 
+            value: `₹${stats?.totalRevenue?.toLocaleString() || 0}`, 
             icon: <DollarSign size={24} />, 
             color: 'bg-indigo-600', 
-            trend: '+12.5%', 
+            trend: `${stats?.growthRate || 0}%`, 
             description: 'Total sales generated'
         },
         { 
             title: user?.role === 'Admin' ? 'Active Network' : 'Net Profit', 
-            value: user?.role === 'Admin' ? `${stats?.totalOwners} Shops` : `₹${stats?.totalProfit?.toLocaleString()}`, 
+            value: user?.role === 'Admin' ? `${stats?.totalOwners || 0} Shops` : `₹${stats?.totalProfit?.toLocaleString() || 0}`, 
             icon: user?.role === 'Admin' ? <Globe size={24} /> : <TrendingUp size={24} />, 
             color: 'bg-emerald-500', 
-            trend: '+8.2%', 
+            trend: `${stats?.growthRate || 0}%`, 
             description: user?.role === 'Admin' ? 'Partners on platform' : 'Profit after COGS'
         },
         { 
             title: 'Active Inventory', 
-            value: stats?.totalProducts?.toLocaleString(), 
+            value: stats?.totalProducts?.toLocaleString() || 0, 
             icon: <Package size={24} />, 
             color: 'bg-amber-500', 
             trend: 'Stable', 
@@ -97,10 +98,10 @@ const Overview = () => {
         },
         { 
             title: 'Transactions', 
-            value: stats?.totalSalesCount?.toLocaleString(), 
+            value: stats?.totalSalesCount?.toLocaleString() || 0, 
             icon: <Zap size={24} />, 
             color: 'bg-rose-500', 
-            trend: '+14%', 
+            trend: `${stats?.growthRate || 0}%`, 
             description: 'Orders processed'
         },
     ];
@@ -210,7 +211,11 @@ const Overview = () => {
                         </div>
                         <div className="flex p-1 bg-slate-50 dark:bg-slate-900 rounded-xl">
                             {['7D', '30D', '90D'].map(t => (
-                                <button key={t} className={`px-4 py-1.5 text-[10px] font-black rounded-lg transition-all ${t === '30D' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600' : 'text-slate-400'}`}>
+                                <button 
+                                    key={t} 
+                                    onClick={() => setPeriod(t)}
+                                    className={`px-4 py-1.5 text-[10px] font-black rounded-lg transition-all ${t === period ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600' : 'text-slate-400'}`}
+                                >
                                     {t}
                                 </button>
                             ))}

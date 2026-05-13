@@ -64,8 +64,9 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getSalesAnalytics = async (req, res) => {
     try {
-        const { date, month } = req.query;
+        const { date, month, period } = req.query;
         let queryFilter = req.isAdmin ? {} : { user: req.shopOwnerId };
+        let limit = 30;
         
         if (date) {
             const start = new Date(date);
@@ -79,6 +80,12 @@ exports.getSalesAnalytics = async (req, res) => {
             const start = new Date(year, monthNum - 1, 1);
             const end = new Date(year, monthNum, 0, 23, 59, 59, 999);
             queryFilter.createdAt = { $gte: start, $lte: end };
+        } else if (period) {
+            const days = parseInt(period) || 30;
+            const start = new Date();
+            start.setDate(start.getDate() - days);
+            queryFilter.createdAt = { $gte: start };
+            limit = days;
         }
 
         const filter = queryFilter;
@@ -94,7 +101,7 @@ exports.getSalesAnalytics = async (req, res) => {
                 }
             },
             { $sort: { _id: 1 } },
-            { $limit: 30 }
+            { $limit: limit }
         ]);
 
         // Detailed Stats
