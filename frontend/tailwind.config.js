@@ -53,6 +53,11 @@ export default {
         outfit: ['Outfit', 'sans-serif'],
         jakarta: ['Plus Jakarta Sans', 'sans-serif'],
       },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+        'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+        'neon': '0 0 8px rgba(79, 70, 229, 0.5)',
+      },
     },
   },
   plugins: [],
