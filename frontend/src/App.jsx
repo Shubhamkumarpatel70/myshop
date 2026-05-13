@@ -31,6 +31,8 @@ import AdminShopFinder from './dashboard/AdminShopFinder';
 import AdminOrderFinder from './dashboard/AdminOrderFinder';
 import Shifts from './dashboard/Shifts';
 import Customers from './dashboard/Customers';
+import Pricing from './dashboard/Pricing';
+import AdminSubscriptions from './dashboard/AdminSubscriptions';
 import SplashScreen from './components/SplashScreen';
 
 const ProtectedRoute = ({ children }) => {
@@ -86,6 +88,8 @@ const AppContent = () => {
                     <Route path="account" element={<Account />} />
                     <Route path="shifts" element={<Shifts />} />
                     <Route path="customers" element={<Customers />} />
+                    <Route path="pricing" element={<Pricing />} />
+                    <Route path="admin/subscriptions" element={<AdminSubscriptions />} />
                 </Route>
             </Routes>
             <Toaster position="top-right" />

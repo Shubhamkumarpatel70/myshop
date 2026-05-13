@@ -74,6 +74,7 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/shifts', require('./routes/shiftRoutes'));
 app.use('/api/customers', require('./routes/customerRoutes'));
+app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

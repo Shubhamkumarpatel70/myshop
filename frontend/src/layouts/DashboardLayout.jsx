@@ -137,6 +137,8 @@ const DashboardLayout = () => {
         { name: 'System Settings', icon: <Settings size={20} />, path: '/dashboard/admin/settings', roles: ['super_admin'] },
         { name: 'Business Insights', icon: <BarChart3 size={20} />, path: '/dashboard/reports', roles: ['super_admin', 'shop_owner', 'manager'] },
         { name: 'Customers', icon: <Users size={20} />, path: '/dashboard/customers', roles: ['shop_owner', 'manager'] },
+        { name: 'Plan & Pricing', icon: <Zap size={20} />, path: '/dashboard/pricing', roles: ['shop_owner'] },
+        { name: 'Subscription Audit', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/subscriptions', roles: ['super_admin'], priority: true },
         { name: 'Account', icon: <User size={20} />, path: '/dashboard/account', roles: ['shop_owner', 'manager', 'cashier'] },
         { name: 'Payments', icon: <CreditCard size={20} />, path: '/dashboard/payment-settings', roles: ['shop_owner'] },
     ];
