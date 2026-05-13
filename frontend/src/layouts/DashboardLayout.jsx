@@ -257,6 +257,8 @@ const DashboardLayout = () => {
                             </motion.span>
                         )}
                     </button>
+                </div>
+
                 <div className="p-4 border-t border-slate-100 dark:border-slate-800/50">
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -513,6 +515,7 @@ const DashboardLayout = () => {
                     </div>
                 )}
             </AnimatePresence>
+            </div>
         </div>
     );
 };
