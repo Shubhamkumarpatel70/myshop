@@ -41,7 +41,7 @@ const seedAdmin = async () => {
                 description: 'Built for growing stores and pharmacies.',
                 maxProducts: 1000,
                 maxStaff: 10,
-                features: ['Max 1,000 Products', '10 Staff Accounts', 'PDF Reports', 'CRM Registry'],
+                features: ['Max 1,000 Products', '10 Staff Accounts', 'Sales Analytics', 'Customer Registry'],
                 isRecommended: true,
                 isActive: true
             },
@@ -51,7 +51,7 @@ const seedAdmin = async () => {
                 description: 'Complete Retail OS for high-volume business.',
                 maxProducts: 0, // 0 = Unlimited
                 maxStaff: 0,
-                features: ['Unlimited Products', 'Unlimited Staff', 'Custom Analytics', 'Multi-shop'],
+                features: ['Unlimited Products', 'Unlimited Staff', 'VIP Management', 'Advanced Analytics'],
                 isActive: true
             }
         ];
