@@ -25,8 +25,10 @@ const authLimiter = rateLimit({
 });
 
 // Connect to Database
-connectDB().then(() => {
+connectDB().then(async () => {
     const { checkExpiringProducts } = require('./utils/expiryCheck');
+    const seedAdmin = require('./utils/seeder');
+    await seedAdmin();
     checkExpiringProducts();
 });
 
