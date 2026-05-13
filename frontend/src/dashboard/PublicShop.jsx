@@ -90,9 +90,10 @@ const PublicShop = () => {
                                 <div className="h-64 overflow-hidden relative">
                                     {product.productImage ? (
                                         <img 
-                                            src={product.productImage.startsWith('http') ? product.productImage : `http://localhost:5000${product.productImage}`} 
+                                            src={product.productImage.startsWith('http') ? product.productImage : product.productImage} 
                                             alt={product.productName}
                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=No+Image'; }}
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-secondary-50 dark:bg-secondary-800 flex items-center justify-center text-secondary-200">
