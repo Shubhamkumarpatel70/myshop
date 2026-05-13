@@ -95,12 +95,14 @@ exports.verifySubscription = async (req, res) => {
         if (status === 'Approved') {
             const requestedPlan = user.pendingSubscription.plan;
             user.subscriptionPlan = requestedPlan;
+            const now = new Date();
             const expiry = new Date();
             expiry.setMonth(expiry.getMonth() + months);
             user.planExpiresAt = expiry;
+            user.planActivatedAt = now;
             user.subscriptionHistory.push({
                 plan: requestedPlan,
-                startDate: new Date(),
+                startDate: now,
                 endDate: expiry,
                 paymentRef: 'Manual Admin Approval'
             });
@@ -111,6 +113,87 @@ exports.verifySubscription = async (req, res) => {
 
         await user.save();
         res.json({ success: true, message: `Subscription ${status} successfully.` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Request Cancellation
+exports.requestCancellation = async (req, res) => {
+    try {
+        const { reason } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (user.subscriptionPlan === 'Free') {
+            return res.status(400).json({ success: false, message: 'You are on the Free plan.' });
+        }
+
+        user.cancellationRequest = {
+            status: 'Pending',
+            reason,
+            requestedAt: new Date()
+        };
+
+        await user.save();
+        res.json({ success: true, message: 'Cancellation request submitted.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Admin: Process Cancellation
+exports.processCancellation = async (req, res) => {
+    try {
+        const { userId, status, rejectReason } = req.body;
+        const user = await User.findById(userId);
+
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.cancellationRequest.status = status;
+        user.cancellationRequest.processedAt = new Date();
+
+        if (status === 'Approved') {
+            // Plan stays until refund is finished or terminated? 
+            // User requested: "if approve then dynamic show your refund initiated within 5-7 days"
+            // "and in admin dashboard show refund button when click then show a popup model with utr number"
+            user.cancellationRequest.rejectReason = '';
+        } else {
+            user.cancellationRequest.rejectReason = rejectReason;
+        }
+
+        await user.save();
+        res.json({ success: true, message: `Cancellation ${status} successfully.` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Admin: Update Refund UTR
+exports.updateRefundUtr = async (req, res) => {
+    try {
+        const { userId, utr } = req.body;
+        const user = await User.findById(userId);
+
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.cancellationRequest.refundUtr = utr;
+        // Upon refund, maybe terminate the plan?
+        user.subscriptionPlan = 'Free';
+        user.planExpiresAt = null;
+
+        await user.save();
+        res.json({ success: true, message: 'Refund UTR updated and plan terminated.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Admin: Get All Subscriptions
+exports.getSubscriptions = async (req, res) => {
+    try {
+        const users = await User.find({ role: 'shop_owner' })
+            .select('shopName ownerName subscriptionPlan planExpiresAt planActivatedAt cancellationRequest isSuspended');
+        res.json({ success: true, data: users });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

@@ -47,6 +47,15 @@ const userSchema = new mongoose.Schema({
         default: 'Free'
     },
     planExpiresAt: { type: Date },
+    planActivatedAt: { type: Date },
+    cancellationRequest: {
+        status: { type: String, enum: ['None', 'Pending', 'Approved', 'Rejected'], default: 'None' },
+        reason: { type: String },
+        requestedAt: { type: Date },
+        processedAt: { type: Date },
+        rejectReason: { type: String },
+        refundUtr: { type: String }
+    },
     pendingSubscription: {
         plan: { type: String, enum: ['Professional', 'Enterprise'] },
         screenshot: { type: String },
