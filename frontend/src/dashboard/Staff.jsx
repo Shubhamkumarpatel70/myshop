@@ -18,7 +18,8 @@ const Staff = () => {
         email: '',
         phone: '',
         password: '',
-        aadharNumber: ''
+        aadharNumber: '',
+        role: 'cashier'
     });
 
     const [selectedStaffStats, setSelectedStaffStats] = useState(null);
@@ -55,7 +56,7 @@ const Staff = () => {
             await api.post('/users/staff', formData);
             toast.success("Staff added successfully");
             setIsModalOpen(false);
-            setFormData({ ownerName: '', email: '', phone: '', password: '', aadharNumber: '' });
+            setFormData({ ownerName: '', email: '', phone: '', password: '', aadharNumber: '', role: 'cashier' });
             fetchStaff();
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to add staff");
@@ -215,6 +216,18 @@ const Staff = () => {
                                 onChange={(e) => setFormData({...formData, aadharNumber: e.target.value})}
                             />
                         </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold uppercase mb-1">System Role</label>
+                        <select 
+                            required 
+                            className="input-field appearance-none cursor-pointer"
+                            value={formData.role}
+                            onChange={(e) => setFormData({...formData, role: e.target.value})}
+                        >
+                            <option value="cashier">Cashier (Billing Only)</option>
+                            <option value="manager">Manager (Inventory + Billing)</option>
+                        </select>
                     </div>
                     <div className="pt-4">
                         <button type="submit" className="btn btn-primary w-full py-4 text-lg font-bold">
