@@ -515,7 +515,6 @@ const DashboardLayout = () => {
                     </div>
                 )}
             </AnimatePresence>
-            </div>
         </div>
     );
 };
