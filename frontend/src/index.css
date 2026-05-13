@@ -60,7 +60,7 @@
   }
 
   .card {
-    @apply p-8 rounded-[2rem] bg-white dark:bg-slate-900/50 shadow-[0_20px_50px_rgba(0, 0, 0, 0.02)] border border-slate-100 dark:border-slate-800 hover:shadow-[0_20px_50px_rgba(0, 0, 0, 0.05)] transition-all duration-500;
+    @apply p-8 rounded-[2rem] bg-white dark:bg-slate-900/50 shadow-soft border border-slate-100 dark:border-slate-800 hover:shadow-soft-hover transition-all duration-500;
   }
 
   .nav-item {

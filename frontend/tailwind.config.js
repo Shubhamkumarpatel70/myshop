@@ -57,6 +57,8 @@ export default {
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
         'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
         'neon': '0 0 8px rgba(79, 70, 229, 0.5)',
+        'soft': '0 20px 50px rgba(0, 0, 0, 0.02)',
+        'soft-hover': '0 20px 50px rgba(0, 0, 0, 0.05)',
       },
     },
   },
