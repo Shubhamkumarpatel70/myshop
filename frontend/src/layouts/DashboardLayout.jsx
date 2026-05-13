@@ -17,6 +17,7 @@ import RegistrationPayment from '../components/RegistrationPayment';
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const [darkMode, setDarkMode] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [onboardingData, setOnboardingData] = useState({
@@ -183,8 +184,8 @@ const DashboardLayout = () => {
                 className="hidden lg:flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 transition-all duration-500 z-30"
             >
                 <div className="p-6 mb-2">
-                    <div className="flex items-center gap-4 px-2">
-                        <img src="/favicon.png" alt="StockSaathi" className="w-12 h-12 object-contain rounded-xl shadow-lg" />
+                    <div className="flex items-center justify-center gap-4 px-2">
+                        <img src="/favicon.png" alt="StockSaathi" className="w-12 h-12 object-contain rounded-xl shadow-lg shrink-0" />
                         {isSidebarOpen && (
                             <motion.div 
                                 initial={{ opacity: 0, x: -10 }}
@@ -256,17 +257,18 @@ const DashboardLayout = () => {
                             </motion.span>
                         )}
                     </button>
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800/50">
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="flex items-center justify-center w-full py-3 bg-slate-50 dark:bg-slate-800/50 text-slate-400 hover:text-indigo-600 rounded-2xl transition-all"
+                        className="flex items-center justify-center w-full py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all group"
                     >
-                        {isSidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+                        {isSidebarOpen ? <ChevronLeft size={24} /> : <ChevronRight size={24} />}
                     </button>
                 </div>
             </motion.aside>
 
             {/* Main Workspace */}
-            <div className="flex-1 flex flex-col min-w-0 relative">
+            <div className="flex-1 flex flex-col min-w-0 relative h-screen overflow-hidden">
                 {/* Modern Header */}
                 <header className="h-20 bg-white/50 dark:bg-slate-950/50 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 flex items-center justify-between px-6 lg:px-10 z-20">
                     <div className="flex items-center gap-6">
@@ -280,7 +282,9 @@ const DashboardLayout = () => {
                             <Search size={18} className="text-slate-400" />
                             <input 
                                 type="text" 
-                                placeholder="Search everything..." 
+                                placeholder="Search inventory, sales, staff..." 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className="bg-transparent border-none focus:ring-0 text-sm w-full font-medium"
                             />
                         </div>
@@ -356,7 +360,7 @@ const DashboardLayout = () => {
                                 </div>
                             </div>
                         ) : (
-                            <Outlet />
+                            <Outlet context={{ searchQuery }} />
                         )}
                     </div>
                 </main>

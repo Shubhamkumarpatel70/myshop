@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -16,6 +16,7 @@ import { posStore } from '../utils/posStore';
 import Skeleton from '../components/Skeleton';
 
 const Sales = () => {
+    const { searchQuery } = useOutletContext() || { searchQuery: '' };
     const navigate = useNavigate();
     const [sales, setSales] = useState([]);
     const [products, setProducts] = useState([]);
@@ -23,6 +24,12 @@ const Sales = () => {
     const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
     const [posStep, setPosStep] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        if (searchQuery !== undefined) {
+            setSearchTerm(searchQuery);
+        }
+    }, [searchQuery]);
     const [paymentConfig, setPaymentConfig] = useState(null);
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     const [utrNumber, setUtrNumber] = useState('');

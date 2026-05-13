@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import api, { BASE_URL } from '../utils/api';
 import { motion } from 'framer-motion';
 import { 
@@ -12,10 +13,17 @@ import Modal from '../components/Modal';
 import BarcodeScanner from '../components/BarcodeScanner';
 
 const Inventory = () => {
+    const { searchQuery } = useOutletContext() || { searchQuery: '' };
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        if (searchQuery !== undefined) {
+            setSearchTerm(searchQuery);
+        }
+    }, [searchQuery]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);

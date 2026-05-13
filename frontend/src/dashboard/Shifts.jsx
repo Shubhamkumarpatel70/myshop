@@ -170,17 +170,17 @@ const Shifts = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-800/50">
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Date & Staff</th>
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Duration</th>
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 text-right">Cash Reconcile</th>
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 text-right">Total Sales</th>
-                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 text-center">Status</th>
+                                <th className="px-10 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Date & Staff</th>
+                                <th className="px-10 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Duration</th>
+                                <th className="px-10 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 text-right">Cash Reconcile</th>
+                                <th className="px-10 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 text-right">Total Sales</th>
+                                <th className="px-10 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 text-center">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                             {shifts.length > 0 ? shifts.map((shift) => (
                                 <tr key={shift._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
-                                    <td className="px-8 py-6">
+                                    <td className="px-10 py-8">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-500 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                                                 <User size={18} />
@@ -193,10 +193,10 @@ const Shifts = () => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-sm font-bold text-slate-600 dark:text-slate-400">
+                                    <td className="px-10 py-8 text-sm font-bold text-slate-600 dark:text-slate-400">
                                         {new Date(shift.startTime).toLocaleTimeString()} - {shift.endTime ? new Date(shift.endTime).toLocaleTimeString() : 'Active'}
                                     </td>
-                                    <td className="px-8 py-6 text-right">
+                                    <td className="px-10 py-8 text-right">
                                         <div className="flex flex-col items-end">
                                             <span className="font-black text-sm">₹{shift.closingCash?.toLocaleString() || '---'}</span>
                                             <span className={`text-[10px] font-black uppercase tracking-widest mt-1 ${
@@ -206,10 +206,10 @@ const Shifts = () => {
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-right font-black text-indigo-600 dark:text-indigo-400">
+                                    <td className="px-10 py-8 text-right font-black text-indigo-600 dark:text-indigo-400">
                                         ₹{shift.totalSales?.toLocaleString() || '---'}
                                     </td>
-                                    <td className="px-8 py-6">
+                                    <td className="px-10 py-8">
                                         <div className="flex justify-center">
                                             <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                                                 shift.status === 'Open' 
