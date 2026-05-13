@@ -1,0 +1,243 @@
+const Sale = require('../models/Sale');
+const Product = require('../models/Product');
+const Category = require('../models/Category');
+const User = require('../models/User');
+
+exports.getDashboardStats = async (req, res) => {
+    try {
+        const filter = req.isAdmin ? {} : { user: req.shopOwnerId };
+        
+        const totalProducts = await Product.countDocuments(filter);
+        const totalCategories = await Category.countDocuments(filter);
+        const lowStockProducts = await Product.countDocuments({ 
+            ...filter,
+            $expr: { $lte: ["$quantity", "$lowStockThreshold"] } 
+        });
+        
+        const sales = await Sale.find(filter);
+        const totalRevenue = sales.reduce((acc, curr) => acc + curr.totalAmount, 0);
+        
+        let totalCost = 0;
+        sales.forEach(sale => {
+            sale.items.forEach(item => {
+                if (!item.isReturned) {
+                    totalCost += (item.purchasePrice || 0) * item.quantity;
+                }
+            });
+        });
+        const totalProfit = totalRevenue - totalCost;
+        const totalSalesCount = sales.length;
+
+        // Expired and Expiring
+        const now = new Date();
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+        const expiredProducts = await Product.countDocuments({
+            ...filter,
+            expiryDate: { $lt: now }
+        });
+
+        const expiringProducts = await Product.countDocuments({
+            ...filter,
+            expiryDate: { $lte: thirtyDaysFromNow, $gte: now }
+        });
+
+        res.json({
+            success: true,
+            data: {
+                totalProducts,
+                totalCategories,
+                lowStockProducts,
+                expiringProducts,
+                expiredProducts,
+                totalRevenue,
+                totalProfit,
+                totalSalesCount,
+                recentTransactions: sales.slice(-5).reverse()
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.getSalesAnalytics = async (req, res) => {
+    try {
+        const { date, month } = req.query;
+        let queryFilter = req.isAdmin ? {} : { user: req.shopOwnerId };
+        
+        if (date) {
+            const start = new Date(date);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(date);
+            end.setHours(23, 59, 59, 999);
+            queryFilter.createdAt = { $gte: start, $lte: end };
+        } else if (month) {
+            // format: YYYY-MM
+            const [year, monthNum] = month.split('-');
+            const start = new Date(year, monthNum - 1, 1);
+            const end = new Date(year, monthNum, 0, 23, 59, 59, 999);
+            queryFilter.createdAt = { $gte: start, $lte: end };
+        }
+
+        const filter = queryFilter;
+        
+        // Daily Sales
+        const dailySales = await Sale.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    total: { $sum: "$totalAmount" },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } },
+            { $limit: 30 }
+        ]);
+
+        // Detailed Stats
+        const sales = await Sale.find(filter);
+        const totalRevenue = sales.reduce((acc, curr) => acc + curr.totalAmount, 0);
+        
+        let totalCost = 0;
+        sales.forEach(sale => {
+            sale.items.forEach(item => {
+                if (!item.isReturned) {
+                    totalCost += (item.purchasePrice || 0) * item.quantity;
+                }
+            });
+        });
+        const totalProfit = totalRevenue - totalCost;
+        const totalSalesCount = sales.length;
+        const avgTicketSize = totalSalesCount > 0 ? Math.round(totalRevenue / totalSalesCount) : 0;
+        const netMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : '0.0';
+
+        // Peak Sales Time & Busiest Day
+        const hourCounts = {};
+        const dayCounts = {};
+        const paymentCounts = {};
+
+        sales.forEach(sale => {
+            const date = new Date(sale.createdAt);
+            const hour = date.getHours();
+            const day = date.toLocaleDateString('en-US', { weekday: 'long' });
+            const method = sale.paymentMethod;
+
+            hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+            dayCounts[day] = (dayCounts[day] || 0) + 1;
+            paymentCounts[method] = (paymentCounts[method] || 0) + 1;
+        });
+
+        const peakHour = Object.keys(hourCounts).reduce((a, b) => hourCounts[a] > hourCounts[b] ? a : b, '17');
+        const busiestDay = Object.keys(dayCounts).reduce((a, b) => dayCounts[a] > dayCounts[b] ? a : b, 'Saturday');
+        const topPayment = Object.keys(paymentCounts).reduce((a, b) => paymentCounts[a] > paymentCounts[b] ? a : b, 'Cash');
+
+        // Growth Rate (Simplified: compare last 7 days vs previous 7 days)
+        const now = new Date();
+        const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const prev7Days = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+        const currentRevenue = sales.filter(s => s.createdAt >= last7Days).reduce((a, b) => a + b.totalAmount, 0);
+        const previousRevenue = sales.filter(s => s.createdAt >= prev7Days && s.createdAt < last7Days).reduce((a, b) => a + b.totalAmount, 0);
+        const growthRate = previousRevenue > 0 ? (((currentRevenue - previousRevenue) / previousRevenue) * 100).toFixed(1) : '0.0';
+
+        // Low Stock Risk
+        const lowStockCount = await Product.countDocuments({ 
+            ...filter,
+            $expr: { $lte: ["$quantity", "$lowStockThreshold"] } 
+        });
+
+        res.json({ 
+            success: true, 
+            data: {
+                dailySales,
+                stats: {
+                    totalRevenue,
+                    totalProfit,
+                    netMargin,
+                    totalSalesCount,
+                    avgTicketSize,
+                    growthRate,
+                    returningCustomerRate: 15 // Mocked for now
+                },
+                insights: {
+                    peakTime: `${peakHour}:00 - ${parseInt(peakHour)+3}:00`,
+                    busiestDay,
+                    topPayment,
+                    lowStockRisk: lowStockCount > 0 ? `Risk of stockout for ${lowStockCount} items` : 'Stock levels healthy'
+                }
+            } 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.getAdminStats = async (req, res) => {
+    try {
+        const totalOwners = await User.countDocuments({ role: 'shop_owner' });
+        const totalStaff = await User.countDocuments({ role: { $in: ['manager', 'cashier'] } });
+        const totalProducts = await Product.countDocuments();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const todaySales = await Sale.countDocuments({ createdAt: { $gte: today } });
+        const todayProducts = await Product.countDocuments({ createdAt: { $gte: today } });
+        
+        const lowStockProducts = await Product.find({ 
+            $expr: { $lte: ["$quantity", "$lowStockThreshold"] } 
+        }).distinct('user');
+        
+        const lowStockShops = lowStockProducts.length;
+
+        const sales = await Sale.find();
+        const totalRevenue = sales.reduce((acc, curr) => acc + curr.totalAmount, 0);
+        
+        const shops = await User.find({ role: 'shop_owner' });
+        
+        // Ensure all shop owners have a shopId
+        for (let shop of shops) {
+            if (!shop.shopId) {
+                await shop.save(); // This triggers the pre-save hook to generate shopId
+            }
+        }
+
+        res.json({
+            success: true,
+            data: {
+                totalOwners,
+                totalStaff,
+                totalProducts,
+                totalRevenue,
+                todaySales,
+                todayProducts,
+                lowStockShops,
+                shops // These will now have shopId
+            }
+        });
+    } catch (error) {
+        console.error("ADMIN STATS ERROR:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.getGlobalActivity = async (req, res) => {
+    try {
+        const InventoryLog = require('../models/InventoryLog');
+        
+        const logs = await InventoryLog.find()
+            .populate('product', 'productName')
+            .populate('user', 'ownerName shopName')
+            .sort({ createdAt: -1 })
+            .limit(50);
+            
+        res.json({
+            success: true,
+            data: logs
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
