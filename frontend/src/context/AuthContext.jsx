@@ -9,27 +9,43 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            let parsedUser = JSON.parse(storedUser);
-            
-            // Normalize legacy roles to new RBAC roles
-            const roleMap = {
-                'Admin': 'super_admin',
-                'Shop Owner': 'shop_owner',
-                'Staff': 'cashier'
-            };
-            
-            if (roleMap[parsedUser.role]) {
-                parsedUser.role = roleMap[parsedUser.role];
-                localStorage.setItem('user', JSON.stringify(parsedUser));
-            }
+        const loadUser = async () => {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    let parsedUser = JSON.parse(storedUser);
+                    
+                    // Set token for the initial request
+                    if (parsedUser.token) {
+                        api.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
+                    }
 
-            setUser(parsedUser);
-            axios.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
-            api.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
-        }
-        setLoading(false);
+                    // Fetch latest profile to sync state
+                    const res = await api.get('/auth/profile');
+                    if (res.data.success) {
+                        let userData = { ...parsedUser, ...res.data.data };
+                        
+                        // Normalize legacy roles
+                        const roleMap = { 'Admin': 'super_admin', 'Shop Owner': 'shop_owner', 'Staff': 'cashier' };
+                        if (roleMap[userData.role]) userData.role = roleMap[userData.role];
+
+                        localStorage.setItem('user', JSON.stringify(userData));
+                        setUser(userData);
+                    } else {
+                        // If profile fetch fails but user exists, just use stored
+                        setUser(parsedUser);
+                    }
+                } catch (error) {
+                    console.error("User sync failed:", error);
+                    // If 401, clear user
+                    if (error.response?.status === 401) {
+                        logout();
+                    }
+                }
+            }
+            setLoading(false);
+        };
+        loadUser();
     }, []);
 
     const login = async (email, password) => {
