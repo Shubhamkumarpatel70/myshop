@@ -64,8 +64,20 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getSalesAnalytics = async (req, res) => {
     try {
-        const { date, month, period } = req.query;
+        const { date, month, period, paymentMethod, shopCategory } = req.query;
         let queryFilter = req.isAdmin ? {} : { user: req.shopOwnerId };
+        
+        // Admin Filters: Category
+        if (req.isAdmin && shopCategory) {
+            const shopsInCategory = await User.find({ businessType: shopCategory }).select('_id');
+            const shopIds = shopsInCategory.map(s => s._id);
+            queryFilter.user = { $in: shopIds };
+        }
+
+        // Common Filter: Payment Method
+        if (paymentMethod) {
+            queryFilter.paymentMethod = paymentMethod;
+        }
         let limit = 30;
         
         if (date) {
@@ -208,12 +220,14 @@ exports.getAdminStats = async (req, res) => {
         
         const shops = await User.find({ role: 'shop_owner' });
         
-        // Ensure all shop owners have a shopId
-        for (let shop of shops) {
+        // Ensure all shop owners have a shopId and add product counts
+        const shopsWithStats = await Promise.all(shops.map(async (shop) => {
             if (!shop.shopId) {
                 await shop.save(); // This triggers the pre-save hook to generate shopId
             }
-        }
+            const productCount = await Product.countDocuments({ user: shop._id });
+            return { ...shop._doc, productCount };
+        }));
 
         res.json({
             success: true,
@@ -225,7 +239,7 @@ exports.getAdminStats = async (req, res) => {
                 todaySales,
                 todayProducts,
                 lowStockShops,
-                shops // These will now have shopId
+                shops: shopsWithStats
             }
         });
     } catch (error) {

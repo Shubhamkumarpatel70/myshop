@@ -77,7 +77,7 @@ const AdminInventory = () => {
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             <div className="p-3 bg-secondary-50 dark:bg-secondary-800/50 rounded-xl">
                                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Stock Items</p>
-                                <p className="text-xl font-black">---</p>
+                                <p className="text-xl font-black">{shop.productCount || 0}</p>
                             </div>
                             <div className="p-3 bg-secondary-50 dark:bg-secondary-800/50 rounded-xl">
                                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Status</p>

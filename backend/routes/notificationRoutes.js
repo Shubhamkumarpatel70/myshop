@@ -9,6 +9,6 @@ router.get('/', getNotifications);
 router.put('/mark-read', markAsRead);
 router.put('/:id/read', markSingleAsRead);
 router.delete('/:id', deleteNotification);
-router.post('/broadcast', authorize('Admin'), createBroadcast);
+router.post('/broadcast', authorize('super_admin'), createBroadcast);
 
 module.exports = router;

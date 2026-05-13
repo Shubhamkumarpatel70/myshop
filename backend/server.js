@@ -10,6 +10,15 @@ const path = require('path');
 
 // Initialize App
 const app = express();
+const fs = require('fs');
+
+// Ensure upload directories exist
+const uploadDirs = ['uploads', 'uploads/products', 'uploads/profile', 'uploads/kyc'];
+uploadDirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+});
 
 // Rate Limiting
 const limiter = rateLimit({

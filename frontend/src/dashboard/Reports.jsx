@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     BarChart3, PieChart as PieChartIcon, 
@@ -20,10 +21,13 @@ const Reports = () => {
     const [loading, setLoading] = useState(true);
     const [dateFilter, setDateFilter] = useState('');
     const [monthFilter, setMonthFilter] = useState('');
+    const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
+    const { user } = useAuth(); // Assuming useAuth is available for role check
 
     useEffect(() => {
         fetchData();
-    }, [dateFilter, monthFilter]);
+    }, [dateFilter, monthFilter, paymentMethodFilter, categoryFilter]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -32,6 +36,8 @@ const Reports = () => {
             const params = new URLSearchParams();
             if (dateFilter) params.append('date', dateFilter);
             if (monthFilter) params.append('month', monthFilter);
+            if (paymentMethodFilter) params.append('paymentMethod', paymentMethodFilter);
+            if (categoryFilter) params.append('shopCategory', categoryFilter);
             
             const res = await api.get(`${url}?${params.toString()}`);
             setAnalytics(res.data.data);
@@ -45,6 +51,8 @@ const Reports = () => {
     const clearFilters = () => {
         setDateFilter('');
         setMonthFilter('');
+        setPaymentMethodFilter('');
+        setCategoryFilter('');
     };
 
     const handleExportPDF = () => {
@@ -187,12 +195,41 @@ const Reports = () => {
                             value={monthFilter}
                             onChange={(e) => { setMonthFilter(e.target.value); setDateFilter(''); }}
                         />
-                        {(dateFilter || monthFilter) && (
+                        {(dateFilter || monthFilter || paymentMethodFilter || categoryFilter) && (
                             <button onClick={clearFilters} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all">
                                 <X size={16} />
                             </button>
                         )}
                     </div>
+
+                    {/* Admin Only Advanced Filters */}
+                    {user?.role === 'super_admin' && (
+                        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800">
+                            <select 
+                                className="bg-transparent border-none text-[10px] font-black uppercase focus:ring-0 cursor-pointer"
+                                value={paymentMethodFilter}
+                                onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                            >
+                                <option value="">All Payments</option>
+                                <option value="Cash">Cash</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Card">Card</option>
+                                <option value="Scan & Pay">Scan & Pay</option>
+                            </select>
+                            <div className="w-px h-6 bg-slate-200"></div>
+                            <select 
+                                className="bg-transparent border-none text-[10px] font-black uppercase focus:ring-0 cursor-pointer"
+                                value={categoryFilter}
+                                onChange={(e) => setCategoryFilter(e.target.value)}
+                            >
+                                <option value="">All Categories</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Restaurant">Restaurant</option>
+                                <option value="Pharmacy">Pharmacy</option>
+                                <option value="Grocery">Grocery</option>
+                            </select>
+                        </div>
+                    )}
                     <button 
                         onClick={handleExportPDF}
                         className="flex-1 xl:flex-none h-14 px-8 rounded-2xl bg-indigo-600 text-white text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3"
