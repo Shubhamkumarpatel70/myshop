@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Check, Zap, Shield, Crown, 
     ArrowRight, Upload, Info, AlertCircle,
-    Package, Users, Clock, LogIn
+    Package, Users, Clock, LogIn, Calendar
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
