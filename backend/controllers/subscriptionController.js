@@ -192,7 +192,7 @@ exports.updateRefundUtr = async (req, res) => {
 exports.getSubscriptions = async (req, res) => {
     try {
         const users = await User.find({ role: 'shop_owner' })
-            .select('shopName ownerName subscriptionPlan planExpiresAt planActivatedAt cancellationRequest isSuspended');
+            .select('shopName ownerName phone email subscriptionPlan planExpiresAt planActivatedAt cancellationRequest isSuspended pendingSubscription');
         res.json({ success: true, data: users });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

@@ -342,10 +342,12 @@ const Pricing = () => {
                                     onClick={() => { setSelectedPlan(plan); setIsUpgradeModalOpen(true); }} 
                                     className={`w-full h-16 rounded-2xl font-black uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-3 ${user?.subscriptionPlan === plan.name ? (isNearExpiry() ? 'bg-indigo-600 text-white shadow-xl' : 'bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-default') : 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 disabled:opacity-30'}`}
                                 >
-                                    {user?.subscriptionPlan === plan.name 
-                                        ? (isNearExpiry() ? <><RefreshCw size={18} /> Continue Plan</> : 'Active Plan') 
-                                        : plan.name === 'Free' ? 'Starter Plan' 
-                                        : <><Zap size={18} /> {isNearExpiry() ? 'Renew & Upgrade' : `Upgrade to ${plan.name}`}</>
+                                    {user?.pendingSubscription?.status === 'Pending' && user?.pendingSubscription?.plan === plan.name
+                                        ? <><Clock size={18} /> Verification Pending</>
+                                        : user?.subscriptionPlan === plan.name 
+                                            ? (isNearExpiry() ? <><RefreshCw size={18} /> Continue Plan</> : 'Active Plan') 
+                                            : plan.name === 'Free' ? 'Starter Plan' 
+                                            : <><Zap size={18} /> {isNearExpiry() ? 'Renew & Upgrade' : `Upgrade to ${plan.name}`}</>
                                     }
                                 </button>
                                 {isNearExpiry() && user?.subscriptionPlan === plan.name && (
