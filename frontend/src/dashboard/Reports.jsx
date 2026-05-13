@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { posStore } from '../utils/posStore';
 
 const Reports = () => {
     const [analytics, setAnalytics] = useState(null);
@@ -40,9 +41,16 @@ const Reports = () => {
             if (categoryFilter) params.append('shopCategory', categoryFilter);
             
             const res = await api.get(`${url}?${params.toString()}`);
-            setAnalytics(res.data.data);
+            const reportData = res.data.data;
+            setAnalytics(reportData);
+            // Cache for offline
+            await posStore.cacheReport(reportData);
         } catch (error) {
-            console.error("Failed to fetch reports");
+            console.error("Failed to fetch reports, loading from cache...");
+            const cachedReport = await posStore.getCachedReport();
+            if (cachedReport) {
+                setAnalytics(cachedReport);
+            }
         } finally {
             setLoading(false);
         }

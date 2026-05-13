@@ -6,7 +6,7 @@ import {
     BarChart3, Settings, Menu, X, Bell, 
     Search, LogOut, ChevronLeft, ChevronRight,
     Sun, Moon, MapPin, Store, ArrowRight,
-    Users, Activity, Megaphone, CreditCard, Globe, User, ShieldCheck, ShoppingBag, Clock
+    Users, Activity, Megaphone, CreditCard, Globe, User, ShieldCheck, ShoppingBag, Clock, Download, Smartphone, Monitor
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -23,6 +23,9 @@ const DashboardLayout = () => {
         businessType: 'General Store',
         address: ''
     });
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [showInstallBtn, setShowInstallBtn] = useState(false);
+    const [showSplash, setShowSplash] = useState(true);
 
     const { user, logout, updateUser } = useAuth();
     const location = useLocation();
@@ -33,6 +36,33 @@ const DashboardLayout = () => {
             setShowOnboarding(true);
         }
     }, [user]);
+
+    useEffect(() => {
+        const handler = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setShowInstallBtn(true);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+
+        // Hide splash after 2.5 seconds
+        const timer = setTimeout(() => setShowSplash(false), 2500);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handler);
+            clearTimeout(timer);
+        };
+    }, []);
+
+    const handleInstall = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            setShowInstallBtn(false);
+        }
+        setDeferredPrompt(null);
+    };
 
     // Polling for approval/payment status update
     useEffect(() => {
@@ -68,7 +98,7 @@ const DashboardLayout = () => {
             if (res.data.success) {
                 updateUser(res.data.data);
                 setShowOnboarding(false);
-                toast.success("Shop profile completed! Welcome to MY SHOP.");
+                toast.success("Shop profile completed! Welcome to StockSaathi.");
             }
         } catch (error) {
             toast.error("Failed to update profile");
@@ -80,7 +110,7 @@ const DashboardLayout = () => {
         { name: 'POS Billing', icon: <ShoppingCart size={20} />, path: '/dashboard/sales', roles: ['shop_owner', 'manager', 'cashier'], priority: true },
         { name: 'Shift', icon: <Clock size={20} />, path: '/dashboard/shifts', roles: ['shop_owner', 'manager', 'cashier'] },
         { name: 'Inventory', icon: <Package size={20} />, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'] },
-        { name: 'My Shop', icon: <Globe size={20} />, path: '/dashboard/my-shop', roles: ['shop_owner', 'manager'], priority: true },
+        { name: 'StockSaathi', icon: <Globe size={20} />, path: '/dashboard/my-shop', roles: ['shop_owner', 'manager'], priority: true },
         { name: 'Categories', icon: <Layers size={20} />, path: '/dashboard/categories', roles: ['shop_owner', 'manager'] },
         { name: 'Staff Management', icon: <Users size={20} />, path: '/dashboard/staff', roles: ['shop_owner'] },
         { name: 'Shop Directory', icon: <Store size={20} />, path: '/dashboard/shops', roles: ['super_admin'] },
@@ -112,6 +142,40 @@ const DashboardLayout = () => {
 
     return (
         <div className="flex h-screen bg-slate-50 dark:bg-[#020617] overflow-hidden font-jakarta">
+            <AnimatePresence>
+                {showSplash && (
+                    <motion.div 
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 flex flex-col items-center justify-center"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
+                            className="flex flex-col items-center"
+                        >
+                            <div className="relative">
+                                <motion.div 
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                                    className="absolute -inset-4 border border-dashed border-indigo-500/30 rounded-full"
+                                />
+                                <img src="/favicon.png" alt="StockSaathi" className="w-32 h-32 md:w-48 md:h-48 object-contain rounded-3xl" />
+                            </div>
+                            <div className="mt-12 text-center">
+                                <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">StockSaathi</h1>
+                                <p className="text-xs font-black text-indigo-500 uppercase tracking-[0.4em] mt-2">Smart Inventory Ecosystem</p>
+                                <div className="mt-8 flex gap-2 justify-center">
+                                    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {/* Desktop Glass Sidebar */}
             <motion.aside
                 initial={false}
@@ -120,9 +184,7 @@ const DashboardLayout = () => {
             >
                 <div className="p-6 mb-2">
                     <div className="flex items-center gap-4 px-2">
-                        <div className="w-12 h-12 bg-indigo-600 rounded-[1.2rem] flex items-center justify-center text-white shadow-2xl shadow-indigo-500/40 shrink-0">
-                            <Store size={24} />
-                        </div>
+                        <img src="/logo.png" alt="StockSaathi" className="w-12 h-12 object-contain rounded-xl shadow-lg" />
                         {isSidebarOpen && (
                             <motion.div 
                                 initial={{ opacity: 0, x: -10 }}
@@ -130,7 +192,7 @@ const DashboardLayout = () => {
                                 className="min-w-0"
                             >
                                 <h2 className="text-[15px] font-black tracking-tight leading-tight uppercase truncate text-slate-900 dark:text-white">
-                                    {user?.shopName || 'MY SHOP'}
+                                    {user?.shopName || 'StockSaathi'}
                                 </h2>
                                 <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-0.5">
                                     {user?.role}
@@ -169,7 +231,16 @@ const DashboardLayout = () => {
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-slate-100 dark:border-slate-800/50 space-y-2">
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800/50 space-y-3">
+                    {showInstallBtn && (
+                        <button 
+                            onClick={handleInstall}
+                            className="flex items-center gap-4 px-5 py-4 w-full bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all"
+                        >
+                            <Download size={18} className="shrink-0" />
+                            {isSidebarOpen && <span>Install App</span>}
+                        </button>
+                    )}
                     <button
                         onClick={handleLogout}
                         className="flex items-center gap-4 px-5 py-4 w-full rounded-2xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all group"
@@ -341,7 +412,7 @@ const DashboardLayout = () => {
                                     <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
                                         <Store size={20} />
                                     </div>
-                                    <span className="text-xl font-black uppercase tracking-tighter">MY SHOP</span>
+                                    <span className="text-xl font-black uppercase tracking-tighter">StockSaathi</span>
                                 </div>
                                 <button 
                                     onClick={() => setIsMobileMenuOpen(false)}
@@ -432,7 +503,7 @@ const DashboardLayout = () => {
                                         </div>
                                     </div>
                                     <button type="submit" className="btn btn-primary w-full py-5 text-lg font-black uppercase tracking-[0.2em] rounded-[1.5rem]">
-                                        Open My Shop <ArrowRight className="ml-2" size={20} />
+                                        Open StockSaathi <ArrowRight className="ml-2" size={20} />
                                     </button>
                                 </form>
                             </div>

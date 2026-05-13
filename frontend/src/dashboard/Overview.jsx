@@ -142,22 +142,21 @@ const Overview = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="p-1 bg-gradient-to-r from-rose-500 via-amber-500 to-indigo-500 rounded-[2rem] shadow-2xl shadow-rose-500/10"
                 >
-                    <div className="bg-white dark:bg-slate-950 rounded-[1.9rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="flex items-center gap-5">
-                            <div className="w-16 h-16 bg-rose-50 dark:bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-500 animate-pulse">
-                                <AlertTriangle size={32} />
+                    <div className="bg-white dark:bg-slate-950 rounded-[1.9rem] p-5 lg:p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex flex-col sm:flex-row items-center gap-4 lg:gap-5 text-center sm:text-left">
+                            <div className="w-12 h-12 lg:w-16 lg:h-16 bg-rose-50 dark:bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-500 animate-pulse shrink-0">
+                                <AlertTriangle size={24} lg:size={32} />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black uppercase tracking-tight">Immediate Action Required</h3>
-                                <p className="text-slate-500 text-sm font-medium">
+                                <h3 className="text-lg lg:text-xl font-black uppercase tracking-tight">Immediate Action Required</h3>
+                                <p className="text-slate-500 text-xs lg:text-sm font-medium">
                                     We detected <span className="text-rose-500 font-black">{stats.expiredProducts || 0} expired items</span> and 
                                     <span className="text-amber-500 font-black"> {stats.lowStockProducts || 0} low stock risks</span>. 
-                                    This could impact your profitability by 15% if not resolved.
                                 </p>
                             </div>
                         </div>
-                        <Link to="/dashboard/inventory" className="btn btn-primary h-14 px-10 whitespace-nowrap">
-                            Resolve Risks Now
+                        <Link to="/dashboard/inventory" className="btn btn-primary h-12 lg:h-14 px-8 lg:px-10 whitespace-nowrap w-full md:w-auto">
+                            Resolve Risks
                         </Link>
                     </div>
                 </motion.div>
