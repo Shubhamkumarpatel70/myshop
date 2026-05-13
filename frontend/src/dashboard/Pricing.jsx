@@ -96,17 +96,42 @@ const Pricing = () => {
 
     return (
         <div className="space-y-12 pb-20">
-            <div className="text-center space-y-4">
-                <div className="flex items-center justify-center gap-2 text-indigo-600 font-black uppercase text-[10px] tracking-[0.3em]">
-                    <Package size={14} /> Pricing & Growth
-                </div>
-                <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
-                    The Smart <span className="text-indigo-600">Investment</span>
-                </h1>
-                <p className="text-slate-500 font-medium max-w-2xl mx-auto text-lg leading-relaxed">
-                    Scale StockSaathi as your business grows. Unlock unlimited potential for your shop node.
-                </p>
-            </div>
+            {user && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-7xl mx-auto bg-white dark:bg-slate-900 rounded-[3rem] p-10 border border-slate-100 dark:border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden"
+                >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 rounded-full translate-x-1/3 -translate-y-1/3 blur-3xl"></div>
+                    
+                    <div className="flex items-center gap-6 relative z-10">
+                        <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-500/10 rounded-[2rem] flex items-center justify-center text-indigo-600 shadow-inner">
+                            {getIcon(user.subscriptionPlan)}
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.3em] mb-1">Your Active Subscription</p>
+                            <h2 className="text-4xl font-black tracking-tighter uppercase">{user.subscriptionPlan} Plan</h2>
+                            <div className="flex items-center gap-4 mt-2">
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+                                    <Clock size={14} className="text-indigo-500" /> 
+                                    Expires: {user.planExpiresAt ? new Date(user.planExpiresAt).toLocaleDateString() : 'Never'}
+                                </div>
+                                {user.isTrialUsed && (
+                                    <div className="px-3 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-600 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                        Trial Used
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center md:items-end gap-2 relative z-10">
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Billing Cycle</p>
+                        <p className="text-xl font-black">Annual License</p>
+                        <p className="text-[10px] text-slate-400 font-bold">Renewal managed by Admin</p>
+                    </div>
+                </motion.div>
+            )}
 
             {user && !user.isTrialUsed && user.subscriptionPlan === 'Free' && (
                 <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="max-w-4xl mx-auto p-8 bg-indigo-600 rounded-[2.5rem] shadow-2xl shadow-indigo-500/20 text-white flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
@@ -127,7 +152,47 @@ const Pricing = () => {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                {loading ? [1, 2, 3].map(i => <div key={i} className="h-[600px] bg-white dark:bg-slate-900 rounded-[3rem] animate-pulse"></div>) : plans.map((plan) => (
+                {loading ? [1, 2, 3].map(i => <div key={i} className="h-[600px] bg-white dark:bg-slate-900 rounded-[3rem] animate-pulse"></div>) : (
+                    <>
+                        {user && !user.isTrialUsed && user.subscriptionPlan === 'Free' && (
+                            <motion.div 
+                                initial={{ scale: 0.95, opacity: 0 }} 
+                                animate={{ scale: 1, opacity: 1 }} 
+                                className="relative p-10 rounded-[3rem] border-4 border-indigo-600 bg-indigo-50 dark:bg-indigo-500/5 flex flex-col group shadow-2xl shadow-indigo-500/10"
+                            >
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-5 py-1.5 bg-indigo-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">Risk-Free</div>
+                                <div className="mb-8">
+                                    <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 shadow-xl text-indigo-600">
+                                        <Zap size={24} className="animate-pulse" />
+                                    </div>
+                                    <h3 className="text-2xl font-black tracking-tight uppercase">Professional <span className="text-indigo-600">Trial</span></h3>
+                                    <div className="flex items-baseline gap-2 mt-4">
+                                        <span className="text-4xl font-black tracking-tighter">₹0</span>
+                                        <span className="text-slate-400 font-bold text-sm tracking-tight">/7 Days</span>
+                                    </div>
+                                    <p className="text-slate-500 text-sm mt-4 font-medium leading-relaxed italic">Experience the full power of StockSaathi for 7 days without any cost.</p>
+                                </div>
+                                <div className="flex-1 space-y-4 mb-10">
+                                    <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                                        <Package size={16} className="text-indigo-600" /> All Professional Features
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                                        <Users size={16} className="text-indigo-600" /> Unlimited Possibilities
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm font-bold text-emerald-600">
+                                        <Check size={16} /> No Credit Card Required
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleActivateTrial} 
+                                    disabled={submitting} 
+                                    className="w-full h-16 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all"
+                                >
+                                    {submitting ? 'Activating...' : 'Activate 7-Day Access'}
+                                </button>
+                            </motion.div>
+                        )}
+                        {plans.map((plan) => (
                     <div key={plan.name} className={`relative p-10 rounded-[3rem] border transition-all duration-500 flex flex-col ${user?.subscriptionPlan === plan.name ? 'border-indigo-500 bg-white dark:bg-slate-900 shadow-2xl shadow-indigo-500/10' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-indigo-200'}`}>
                         {plan.isRecommended && <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-5 py-1.5 bg-indigo-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/30">Most Popular</div>}
                         <div className="mb-8">
@@ -161,7 +226,9 @@ const Pricing = () => {
                             </button>
                         )}
                     </div>
-                ))}
+                        ))}
+                    </>
+                )}
             </div>
 
             <Modal isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} title={`Upgrade to ${selectedPlan?.name}`} className="max-w-2xl">

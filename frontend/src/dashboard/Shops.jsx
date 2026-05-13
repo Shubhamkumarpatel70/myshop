@@ -100,78 +100,84 @@ const Shops = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
-                    [1, 2, 3].map(i => <div key={i} className="h-64 bg-white dark:bg-secondary-900 rounded-[2.5rem] animate-pulse"></div>)
+                    [1, 2, 3].map(i => <div key={i} className="h-[450px] bg-white dark:bg-secondary-900 rounded-[3rem] animate-pulse"></div>)
                 ) : filteredShops.map((shop) => (
                     <motion.div 
                         key={shop._id}
                         whileHover={{ y: -5 }}
-                        className={`bg-white dark:bg-secondary-900 p-8 rounded-[2.5rem] shadow-xl border relative overflow-hidden transition-all ${
-                            shop.isSuspended ? 'border-red-200 dark:border-red-900/30 opacity-75 grayscale-[0.5]' : 'border-secondary-100 dark:border-secondary-800'
+                        className={`bg-white dark:bg-slate-900 p-8 rounded-[3rem] shadow-2xl border transition-all relative flex flex-col ${
+                            shop.isSuspended ? 'border-rose-200 dark:border-rose-900/30 grayscale-[0.5]' : 'border-slate-100 dark:border-slate-800'
                         }`}
                     >
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0 ${
-                                shop.isSuspended ? 'bg-red-500 shadow-red-500/30' : 'bg-primary-600 shadow-primary-500/30'
+                        {/* Card Header: Badges & ID */}
+                        <div className="flex justify-between items-start mb-6">
+                            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-white shadow-xl shrink-0 ${
+                                shop.isSuspended ? 'bg-rose-500 shadow-rose-500/20' : 'bg-indigo-600 shadow-indigo-500/20'
                             }`}>
-                                <Store size={32} />
+                                <Store size={36} />
                             </div>
-                            <div className="min-w-0">
-                                <h3 className="font-bold text-xl leading-tight truncate">{shop.shopName}</h3>
-                                <p className="text-xs text-primary-600 font-black uppercase tracking-widest mt-1">{shop.businessType}</p>
+                            <div className="flex flex-col items-end gap-1.5">
+                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">ID: {shop.shopId || shop._id.slice(-8).toUpperCase()}</span>
+                                <div className="flex flex-wrap justify-end gap-1.5">
+                                    <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-lg tracking-widest ${
+                                        shop.approvalStatus === 'Approved' ? 'bg-emerald-100 text-emerald-600' :
+                                        shop.approvalStatus === 'Rejected' ? 'bg-rose-100 text-rose-600' :
+                                        'bg-amber-100 text-amber-600'
+                                    }`}>
+                                        {shop.approvalStatus}
+                                    </span>
+                                    {shop.isPaymentDone && (
+                                        <span className="px-2.5 py-1 bg-indigo-100 text-indigo-600 text-[9px] font-black uppercase rounded-lg tracking-widest">Paid</span>
+                                    )}
+                                    <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-lg tracking-widest ${
+                                        shop.subscriptionPlan === 'Enterprise' ? 'bg-amber-100 text-amber-600' :
+                                        shop.subscriptionPlan === 'Professional' ? 'bg-indigo-100 text-indigo-600' :
+                                        'bg-slate-100 text-slate-500'
+                                    }`}>
+                                        {shop.subscriptionPlan || 'Free'}
+                                    </span>
+                                </div>
                             </div>
+                        </div>
+
+                        {/* Shop Info */}
+                        <div className="mb-8">
+                            <h3 className="font-black text-2xl leading-tight uppercase tracking-tighter text-slate-900 dark:text-white mb-1">{shop.shopName}</h3>
+                            <p className="text-xs text-indigo-600 font-black uppercase tracking-[0.2em]">{shop.businessType}</p>
                         </div>
                         
-                        <div className="space-y-4 mb-8">
-                            <div className="flex items-center gap-3 text-sm text-secondary-500">
-                                <User size={18} className="text-secondary-400" /> 
-                                <span className="font-medium text-secondary-900 dark:text-white truncate">{shop.ownerName}</span>
+                        {/* Contact Details */}
+                        <div className="space-y-4 mb-10 flex-1">
+                            <div className="flex items-center gap-4 text-sm">
+                                <User size={18} className="text-slate-400 shrink-0" /> 
+                                <span className="font-bold text-slate-700 dark:text-slate-300 truncate">{shop.ownerName}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-secondary-500">
-                                <Mail size={18} className="text-secondary-400" /> <span className="truncate">{shop.email}</span>
+                            <div className="flex items-center gap-4 text-sm">
+                                <Mail size={18} className="text-slate-400 shrink-0" /> 
+                                <span className="font-medium text-slate-500 truncate">{shop.email}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-secondary-500">
-                                <Phone size={18} className="text-secondary-400" /> {shop.phone}
+                            <div className="flex items-center gap-4 text-sm">
+                                <Phone size={18} className="text-slate-400 shrink-0" /> 
+                                <span className="font-medium text-slate-500">{shop.phone}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-secondary-500">
-                                <MapPin size={18} className="text-secondary-400" /> 
-                                <span className="line-clamp-1">{shop.address}</span>
+                            <div className="flex items-center gap-4 text-sm">
+                                <MapPin size={18} className="text-slate-400 shrink-0" /> 
+                                <span className="font-medium text-slate-500 line-clamp-1">{shop.address}</span>
                             </div>
                         </div>
  
-                        <div className="flex gap-3 mt-auto">
+                        {/* Action Area */}
+                        <div className="pt-6 border-t border-slate-100 dark:border-slate-800/50">
                             <button 
                                 onClick={() => handleSuspend(shop)}
-                                className={`w-full py-4 rounded-xl transition-all shadow-lg shadow-current/10 font-bold flex items-center justify-center gap-2 ${
+                                className={`w-full py-4 rounded-2xl transition-all font-black uppercase text-[11px] tracking-[0.1em] flex items-center justify-center gap-2 ${
                                     shop.isSuspended 
                                         ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' 
-                                        : 'bg-red-50 text-red-600 hover:bg-red-100'
+                                        : 'bg-rose-50 text-rose-600 hover:bg-rose-100'
                                 }`}
                             >
-                                <Shield size={20} /> {shop.isSuspended ? 'Reactivate Shop' : 'Suspend Account'}
+                                <Shield size={18} /> {shop.isSuspended ? 'Reactivate Shop' : 'Suspend Account'}
                             </button>
-                        </div>
- 
-                        <div className="absolute top-0 right-0 p-6 flex flex-col items-end gap-2">
-                            <span className="text-[10px] font-black uppercase text-secondary-400 tracking-tighter">ID: {shop.shopId || shop._id.slice(-6)}</span>
-                            {shop.isSuspended && (
-                                <span className="px-2 py-1 bg-red-100 text-red-600 text-[8px] font-black uppercase rounded-lg tracking-widest">Suspended</span>
-                            )}
-                            <div className="flex flex-col items-end gap-1 mt-1">
-                                <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded-lg tracking-widest ${
-                                    shop.approvalStatus === 'Approved' ? 'bg-emerald-100 text-emerald-600' :
-                                    shop.approvalStatus === 'Rejected' ? 'bg-rose-100 text-rose-600' :
-                                    'bg-amber-100 text-amber-600'
-                                }`}>
-                                    {shop.approvalStatus}
-                                </span>
-                                {shop.approvalStatus === 'Approved' && (
-                                    <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded-lg tracking-widest ${
-                                        shop.isPaymentDone ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'
-                                    }`}>
-                                        {shop.isPaymentDone ? 'Paid' : 'Unpaid'}
-                                    </span>
-                                )}
-                            </div>
                         </div>
                     </motion.div>
                 ))}
