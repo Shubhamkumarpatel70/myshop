@@ -6,7 +6,7 @@ import {
     BarChart3, Settings, Menu, X, Bell, 
     Search, LogOut, ChevronLeft, ChevronRight,
     Sun, Moon, MapPin, Store, ArrowRight,
-    Users, Activity, Megaphone, CreditCard, Globe, User, ShieldCheck, ShoppingBag, Clock, Download, Smartphone, Monitor
+    Users, Activity, Megaphone, CreditCard, Globe, User, ShieldCheck, ShoppingBag, Clock, Download, Smartphone, Monitor, Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
