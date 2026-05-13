@@ -83,22 +83,22 @@ const Shifts = () => {
     return (
         <div className="space-y-8 animate-fade-in">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Shift Management</h1>
+                    <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-slate-900 dark:text-white leading-tight">Shift Management</h1>
                     <p className="text-slate-500 font-medium mt-1">Manage daily cash reconciliation and staff sessions.</p>
                 </div>
                 {!currentShift ? (
                     <button 
                         onClick={() => setShowOpenModal(true)}
-                        className="btn btn-primary px-8 py-4 rounded-2xl font-black uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-indigo-500/20"
+                        className="btn btn-primary w-full lg:w-auto px-8 py-4 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/20"
                     >
                         <Plus size={20} /> Open New Shift
                     </button>
                 ) : (
                     <button 
                         onClick={() => setShowCloseModal(true)}
-                        className="bg-rose-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-rose-500/20 hover:bg-rose-700 transition-all"
+                        className="bg-rose-600 text-white w-full lg:w-auto px-8 py-4 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-rose-500/20 hover:bg-rose-700 transition-all"
                     >
                         <LogOut size={20} /> End Current Shift
                     </button>

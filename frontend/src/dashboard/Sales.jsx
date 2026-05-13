@@ -253,27 +253,27 @@ const Sales = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black tracking-tight">Sales & Billing</h1>
-                    <p className="text-secondary-500">Record new sales and manage transaction history.</p>
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div className="w-full">
+                    <h1 className="text-3xl md:text-4xl font-black tracking-tight uppercase leading-tight">Sales & Billing</h1>
+                    <p className="text-secondary-500 font-medium mt-1">Record new sales and manage transaction history.</p>
                 </div>
-                <div className="flex gap-2 w-full md:w-auto">
-                    <form onSubmit={handleTransactionSearch} className="flex-1 md:w-64 relative">
+                <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                    <form onSubmit={handleTransactionSearch} className="flex-1 sm:w-64 relative">
                         <input 
                             type="text" 
                             placeholder="Transaction ID..." 
-                            className="input-field pr-10 text-sm h-11"
+                            className="input-field pr-10 text-sm h-14 rounded-xl"
                             value={transactionSearch}
                             onChange={(e) => setTransactionSearch(e.target.value)}
                         />
-                        <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-secondary-100 rounded-lg">
-                            <Search size={16} className={searching ? 'animate-spin' : ''} />
+                        <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-secondary-100 rounded-lg">
+                            <Search size={18} className={searching ? 'animate-spin' : ''} />
                         </button>
                     </form>
                     <button 
                         onClick={() => setIsSaleModalOpen(true)}
-                        className="btn btn-primary h-11 whitespace-nowrap"
+                        className="btn btn-primary h-14 px-8 rounded-xl whitespace-nowrap justify-center"
                     >
                         <Plus size={20} /> New Sale
                     </button>
@@ -623,7 +623,7 @@ const Sales = () => {
                                         onClick={() => setPosStep(3)} 
                                         className="flex-1 h-14 md:h-20 rounded-[1rem] md:rounded-[1.5rem] bg-primary-600 text-white font-black uppercase text-[10px] md:text-xs tracking-[0.3em] shadow-2xl shadow-primary-600/30 hover:bg-primary-500 hover:-translate-y-1 active:translate-y-0 transition-all disabled:opacity-30 flex items-center justify-center gap-4 group"
                                     >
-                                        Proceed to Payment <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                        Next Step <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                                     </button>
                                 </div>
                             </div>

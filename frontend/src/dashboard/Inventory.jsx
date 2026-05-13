@@ -223,44 +223,44 @@ const Inventory = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                    <h1 className="text-4xl font-black tracking-tight uppercase">Master Inventory</h1>
-                    <p className="text-secondary-500 font-medium">Surveillance and management of global stock assets.</p>
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div className="w-full">
+                    <h1 className="text-3xl md:text-4xl font-black tracking-tight uppercase leading-tight">Master Inventory</h1>
+                    <p className="text-secondary-500 font-medium mt-1">Surveillance and management of global stock assets.</p>
                 </div>
-                <div className="flex gap-3 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                     <button 
                         onClick={handleExport}
-                        className="btn bg-white dark:bg-secondary-900 text-secondary-700 dark:text-secondary-300 border border-secondary-200 dark:border-secondary-800 h-14 px-6 rounded-2xl flex-1 md:flex-none"
+                        className="btn bg-white dark:bg-secondary-900 text-secondary-700 dark:text-secondary-300 border border-secondary-200 dark:border-secondary-800 h-14 px-6 rounded-2xl flex-1 justify-center md:justify-start"
                     >
-                        <Download size={20} /> Export CSV
+                        <Download size={20} /> <span className="sm:hidden">Export CSV</span> <span className="hidden sm:inline">Export CSV</span>
                     </button>
                     <button 
                         onClick={() => handleOpenModal()}
-                        className="btn btn-primary h-14 px-8 rounded-2xl shadow-xl shadow-primary-500/20 flex-1 md:flex-none"
+                        className="btn btn-primary h-14 px-8 rounded-2xl shadow-xl shadow-primary-500/20 flex-1 justify-center md:justify-start"
                     >
-                        <Plus size={20} /> Add Product
+                        <Plus size={20} /> <span className="sm:hidden">Add Product</span> <span className="hidden sm:inline">Add Product</span>
                     </button>
                 </div>
             </div>
 
             {/* Filters & Search */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-white dark:bg-secondary-900 p-4 rounded-[2rem] border border-secondary-100 dark:border-secondary-800 shadow-sm">
-                <div className="relative md:col-span-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-center bg-white dark:bg-secondary-900 p-4 rounded-[2rem] border border-secondary-100 dark:border-secondary-800 shadow-sm">
+                <div className="relative lg:col-span-6">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400" size={20} />
                     <input 
                         type="text" 
-                        placeholder="Search assets by name, category or barcode..." 
-                        className="input-field pl-12 h-14 rounded-xl bg-secondary-50 border-none"
+                        placeholder="Search assets..." 
+                        className="input-field pl-12 h-14 rounded-xl bg-secondary-50 border-none text-sm md:text-base"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="md:col-span-3">
+                <div className="lg:col-span-3">
                     <div className="relative">
                         <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400" size={18} />
                         <select 
-                            className="input-field pl-12 h-14 rounded-xl bg-secondary-50 border-none appearance-none"
+                            className="input-field pl-12 h-14 rounded-xl bg-secondary-50 border-none appearance-none text-sm md:text-base w-full"
                             value={stockFilter}
                             onChange={(e) => setStockFilter(e.target.value)}
                         >
@@ -270,11 +270,11 @@ const Inventory = () => {
                         </select>
                     </div>
                 </div>
-                <div className="md:col-span-3">
+                <div className="lg:col-span-3">
                     <div className="relative">
                         <ArrowUpDown className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400" size={18} />
                         <select 
-                            className="input-field pl-12 h-14 rounded-xl bg-secondary-50 border-none appearance-none"
+                            className="input-field pl-12 h-14 rounded-xl bg-secondary-50 border-none appearance-none text-sm md:text-base w-full"
                             onChange={(e) => handleSort(e.target.value)}
                         >
                             <option value="">Sort Assets By</option>
