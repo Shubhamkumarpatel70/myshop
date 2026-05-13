@@ -154,6 +154,27 @@ const AdminShopFinder = () => {
                                         </p>
                                     </div>
                                 </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Active Plan</p>
+                                    <div className="flex items-center gap-2">
+                                        <CreditCard size={18} className="text-indigo-600" />
+                                        <p className="text-lg font-black uppercase tracking-tighter">{shop.subscriptionPlan || 'Free'}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Expiry Date</p>
+                                    <div className="flex items-center gap-2">
+                                        <Calendar size={18} className="text-indigo-600" />
+                                        <p className="text-lg font-black">{formatDate(shop.planExpiresAt)}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Purchase Date</p>
+                                    <div className="flex items-center gap-2">
+                                        <Clock size={18} className="text-indigo-600" />
+                                        <p className="text-lg font-black">{formatDate(shop.planActivatedAt || shop.createdAt)}</p>
+                                    </div>
+                                </div>
                             </div>
 
                             {shop.aadharImage && (

@@ -111,9 +111,13 @@ const Pricing = () => {
                         <div>
                             <p className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.3em] mb-1">Your Active Subscription</p>
                             <h2 className="text-4xl font-black tracking-tighter uppercase">{user.subscriptionPlan} Plan</h2>
-                            <div className="flex items-center gap-4 mt-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-2">
                                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
-                                    <Clock size={14} className="text-indigo-500" /> 
+                                    <Calendar size={14} className="text-indigo-500" /> 
+                                    Activated: {user.planActivatedAt ? new Date(user.planActivatedAt).toLocaleDateString() : new Date(user.createdAt).toLocaleDateString()}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+                                    <Clock size={14} className="text-rose-500" /> 
                                     Expires: {user.planExpiresAt ? new Date(user.planExpiresAt).toLocaleDateString() : 'Never'}
                                 </div>
                                 {user.isTrialUsed && (
