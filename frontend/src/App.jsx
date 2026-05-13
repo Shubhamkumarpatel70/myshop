@@ -30,6 +30,7 @@ import Account from './dashboard/Account';
 import AdminShopFinder from './dashboard/AdminShopFinder';
 import AdminOrderFinder from './dashboard/AdminOrderFinder';
 import Shifts from './dashboard/Shifts';
+import Customers from './dashboard/Customers';
 import SplashScreen from './components/SplashScreen';
 
 const ProtectedRoute = ({ children }) => {
@@ -84,6 +85,7 @@ const AppContent = () => {
                     <Route path="payment-settings" element={<PaymentSettings />} />
                     <Route path="account" element={<Account />} />
                     <Route path="shifts" element={<Shifts />} />
+                    <Route path="customers" element={<Customers />} />
                 </Route>
             </Routes>
             <Toaster position="top-right" />

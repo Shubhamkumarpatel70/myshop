@@ -28,9 +28,9 @@ const limiter = rateLimit({
 });
 
 const authLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000,
+    windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5,
-    message: 'Too many login attempts, please try again in a minute'
+    message: 'Too many login attempts, please try again after 15 minutes'
 });
 
 // Connect to Database
@@ -73,6 +73,7 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/shifts', require('./routes/shiftRoutes'));
+app.use('/api/customers', require('./routes/customerRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
