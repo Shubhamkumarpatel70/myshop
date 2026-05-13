@@ -65,11 +65,9 @@ const Register = () => {
     return (
         <div className="min-h-screen bg-secondary-50 dark:bg-secondary-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-                <Link to="/" className="inline-flex items-center gap-2 mb-6">
-                    <div className="bg-primary-600 p-2 rounded-xl">
-                        <ShoppingBag className="w-8 h-8 text-white" />
-                    </div>
-                    <span className="text-3xl font-black tracking-tight dark:text-white">MY <span className="text-primary-600">SHOP</span></span>
+                <Link to="/" className="inline-flex items-center gap-3 mb-6">
+                    <img src="/favicon.png" alt="StockSaathi" className="w-10 h-10 object-contain" />
+                    <span className="text-3xl font-black tracking-tight dark:text-white">Stock<span className="text-primary-600">Saathi</span></span>
                 </Link>
                 <h2 className="text-3xl font-extrabold text-secondary-900 dark:text-white">
                     Create Your Account

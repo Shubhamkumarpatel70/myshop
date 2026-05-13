@@ -37,11 +37,9 @@ const Login = () => {
                 className="w-full max-w-md"
             >
                 <div className="text-center mb-10">
-                    <Link to="/" className="inline-flex items-center gap-2 mb-6">
-                        <div className="bg-primary-600 p-2 rounded-xl">
-                            <ShoppingBag className="w-8 h-8 text-white" />
-                        </div>
-                        <span className="text-3xl font-bold tracking-tight">MY <span className="text-primary-600">SHOP</span></span>
+                    <Link to="/" className="inline-flex items-center gap-3 mb-6">
+                        <img src="/favicon.png" alt="StockSaathi" className="w-10 h-10 object-contain" />
+                        <span className="text-3xl font-bold tracking-tight">Stock<span className="text-primary-600">Saathi</span></span>
                     </Link>
                     <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">Welcome Back</h1>
                     <p className="text-secondary-500 dark:text-secondary-400 mt-2">Enter your credentials to access your shop.</p>
