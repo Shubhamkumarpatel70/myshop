@@ -61,6 +61,6 @@ const checkPermission = (action) => {
     };
 };
 
-const admin = authorize('super_admin');
+const adminOnly = authorize('super_admin');
 
-module.exports = { protect, authorize, admin, checkPermission };
+module.exports = { protect, authorize, admin: adminOnly, adminOnly, checkPermission };
