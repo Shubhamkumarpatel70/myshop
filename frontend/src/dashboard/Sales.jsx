@@ -1038,7 +1038,7 @@ const Sales = () => {
                                     {viewingSale.user?.shopName?.charAt(0) || 'M'}
                                 </div>
                                 <div>
-                                    <h1 className="text-5xl font-black tracking-tighter uppercase mb-2 leading-none">{viewingSale.user?.shopName || 'MY SHOP'}</h1>
+                                    <h1 className="text-5xl font-black tracking-tighter uppercase mb-2 leading-none">{viewingSale.user?.shopName || 'StockSaathi'}</h1>
                                     <div className="flex items-center gap-3">
                                         <p className="text-sm font-black uppercase tracking-[0.2em] text-secondary-500">Retail Partner</p>
                                         <div className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">

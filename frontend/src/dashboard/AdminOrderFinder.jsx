@@ -45,7 +45,7 @@ const AdminOrderFinder = () => {
             <div className="flex justify-between items-end">
                 <div>
                     <h1 className="text-3xl font-black uppercase tracking-tight">Global Order Finder</h1>
-                    <p className="text-slate-500 font-medium">Track any transaction across the entire MY SHOP network.</p>
+                    <p className="text-slate-500 font-medium">Track any transaction across the entire StockSaathi network.</p>
                 </div>
                 <div className="hidden md:block">
                     <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/20">

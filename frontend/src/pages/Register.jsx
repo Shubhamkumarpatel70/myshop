@@ -75,7 +75,7 @@ const Register = () => {
                     Create Your Account
                 </h2>
                 <p className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
-                    Join 500+ businesses scaling with MY SHOP.
+                    Join 500+ businesses scaling with StockSaathi.
                 </p>
             </div>
 
@@ -209,7 +209,7 @@ const Register = () => {
                                             disabled={loading}
                                             className="btn btn-primary flex-1 py-4 text-lg font-bold disabled:opacity-50"
                                         >
-                                            {loading ? <Loader2 className="animate-spin" /> : 'Create My Shop'}
+                                            {loading ? <Loader2 className="animate-spin" /> : 'Create StockSaathi Account'}
                                         </button>
                                     </div>
                                 </motion.div>

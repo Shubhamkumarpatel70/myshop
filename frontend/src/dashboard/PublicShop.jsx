@@ -127,7 +127,7 @@ const PublicShop = () => {
             </main>
 
             <footer className="max-w-7xl mx-auto px-6 py-20 border-t border-secondary-100 dark:border-secondary-800 text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.5em] text-secondary-300">Powered by MY SHOP Platform</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.5em] text-secondary-300">Powered by StockSaathi Platform</p>
                 <p className="text-secondary-400 mt-4 font-bold text-sm">© {new Date().getFullYear()} {shopData.shopName}. All Rights Reserved.</p>
             </footer>
         </div>

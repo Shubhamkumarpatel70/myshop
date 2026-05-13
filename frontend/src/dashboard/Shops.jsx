@@ -77,7 +77,7 @@ const Shops = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight uppercase">Merchant Directory</h1>
-                    <p className="text-secondary-500 font-medium">Authorized business partners within the MY SHOP ecosystem.</p>
+                    <p className="text-secondary-500 font-medium">Authorized business partners within the StockSaathi ecosystem.</p>
                 </div>
                 <button 
                     onClick={handleExportShops}

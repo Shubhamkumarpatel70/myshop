@@ -13,10 +13,10 @@ const Footer = () => {
                             <div className="bg-primary-600 p-1.5 rounded-lg">
                                 <ShoppingBag className="w-6 h-6 text-white" />
                             </div>
-                            <span className="text-xl font-bold tracking-tight">MY <span className="text-primary-600">SHOP</span></span>
+                            <span className="text-xl font-bold tracking-tight">Stock<span className="text-primary-600">Saathi</span></span>
                         </Link>
                         <p className="text-secondary-500 dark:text-secondary-400 leading-relaxed">
-                            Smart inventory management for small businesses. Simplify your workflow, track stock efficiently, and grow your business with MY SHOP.
+                            Smart inventory management for small businesses. Simplify your workflow, track stock efficiently, and grow your business with StockSaathi.
                         </p>
                         <div className="flex gap-4">
                             <a href="#" className="p-2 bg-secondary-100 dark:bg-secondary-900 rounded-lg hover:bg-primary-600 hover:text-white transition-all"><MessageCircle className="w-5 h-5" /></a>
@@ -72,7 +72,7 @@ const Footer = () => {
 
                 <div className="border-t border-secondary-100 dark:border-secondary-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-secondary-400 text-sm">
-                        &copy; {new Date().getFullYear()} MY SHOP. All rights reserved.
+                        &copy; {new Date().getFullYear()} StockSaathi. All rights reserved.
                     </p>
                     <p className="text-secondary-400 text-sm flex items-center gap-1">
                         Made with <span className="text-red-500">&hearts;</span> for small businesses.

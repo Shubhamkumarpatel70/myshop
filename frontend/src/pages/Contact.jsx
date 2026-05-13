@@ -16,7 +16,7 @@ const Contact = () => {
                 <div className="text-center mb-20">
                     <h1 className="text-4xl md:text-6xl font-extrabold mb-6">Get in Touch</h1>
                     <p className="text-xl text-secondary-500 max-w-2xl mx-auto">
-                        Have questions about MY SHOP? Our team is here to help you scale your business.
+                        Have questions about StockSaathi? Our team is here to help you scale your business.
                     </p>
                 </div>
 

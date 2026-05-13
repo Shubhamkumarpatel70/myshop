@@ -8,7 +8,7 @@ const seedAdmin = async () => {
         if (!adminExists) {
             console.log('--- Seeding Default Super Admin ---');
             await User.create({
-                shopName: 'MY SHOP HQ',
+                shopName: 'StockSaathi HQ',
                 ownerName: 'System Admin',
                 email: adminEmail,
                 phone: '0000000000',

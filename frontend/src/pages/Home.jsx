@@ -73,7 +73,7 @@ const Home = () => {
                             transition={{ delay: 0.2 }}
                             className="max-w-2xl mx-auto text-xl text-secondary-500 dark:text-secondary-400 mb-10"
                         >
-                            Streamline your operations, reduce waste, and increase profits with MY SHOP's intelligent inventory management system.
+                            Streamline your operations, reduce waste, and increase profits with StockSaathi's intelligent inventory management system.
                         </motion.p>
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}

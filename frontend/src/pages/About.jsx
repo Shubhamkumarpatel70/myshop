@@ -21,7 +21,7 @@ const About = () => {
                         transition={{ delay: 0.1 }}
                         className="text-xl text-secondary-500 max-w-3xl mx-auto"
                     >
-                        MY SHOP was born out of a simple mission: to give small shop owners the same powerful tools that big retail chains use, without the complexity or high costs.
+                        StockSaathi was born out of a simple mission: to give small shop owners the same powerful tools that big retail chains use, without the complexity or high costs.
                     </motion.p>
                 </div>
 

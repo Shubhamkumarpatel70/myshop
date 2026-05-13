@@ -31,7 +31,7 @@ const MyShop = () => {
     };
 
     const shopLink = `${window.location.origin}/shop/${user?.shopSlug || user?._id}`;
-    const shareMessage = `Hey! Check out my shop "${user?.shopName}" on MY SHOP platform. View all our products here: ${shopLink}`;
+    const shareMessage = `Hey! Check out my shop "${user?.shopName}" on StockSaathi platform. View all our products here: ${shopLink}`;
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(shopLink);
