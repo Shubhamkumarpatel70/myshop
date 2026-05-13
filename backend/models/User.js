@@ -39,6 +39,7 @@ const userSchema = new mongoose.Schema({
     paymentScreenshot: { type: String },
     shopId: { type: String, unique: true, sparse: true },
     shopSlug: { type: String, unique: true },
+    mPin: { type: String, select: false },
     refreshToken: { type: String, select: false }
 }, { timestamps: true });
 
@@ -90,14 +91,28 @@ userSchema.pre('save', async function() {
         }
     }
 
-    if (!this.isModified('password')) return;
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    // Hash password if modified
+    if (this.isModified('password')) {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+    }
+
+    // Hash mPin if modified
+    if (this.isModified('mPin')) {
+        const salt = await bcrypt.genSalt(10);
+        this.mPin = await bcrypt.hash(this.mPin, salt);
+    }
 });
 
 // Compare password
 userSchema.methods.comparePassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Compare mPin
+userSchema.methods.compareMPin = async function(enteredMPin) {
+    if (!this.mPin) return false;
+    return await bcrypt.compare(enteredMPin, this.mPin);
 };
 
 module.exports = mongoose.model('User', userSchema);

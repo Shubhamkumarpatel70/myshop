@@ -19,6 +19,7 @@ const Register = () => {
         phone: '',
         password: '',
         confirmPassword: '',
+        mPin: '',
         // These will be collected during onboarding in dashboard
         businessType: 'General Store',
         address: 'Incomplete' 
@@ -186,7 +187,7 @@ const Register = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-secondary-500 uppercase mb-1">Confirm</label>
+                                            <label className="block text-[10px] font-bold text-secondary-500 uppercase mb-1">Confirm Password</label>
                                             <div className="relative">
                                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
                                                 <input
@@ -196,6 +197,27 @@ const Register = () => {
                                                 />
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-secondary-500 uppercase mb-1">Set 4-Digit mPin</label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
+                                            <input
+                                                type="text" 
+                                                required 
+                                                maxLength="4"
+                                                pattern="\d{4}"
+                                                className="input-field pl-10 py-3 text-sm tracking-[1em] font-black"
+                                                placeholder="0000"
+                                                value={formData.mPin}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, '').substring(0, 4);
+                                                    setFormData({...formData, mPin: val});
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="text-[9px] text-secondary-400 mt-1 italic">Use this 4-digit PIN for quick login on mobile.</p>
                                     </div>
 
                                     <div className="pt-4 flex gap-4">

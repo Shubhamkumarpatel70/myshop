@@ -48,9 +48,10 @@ export const AuthProvider = ({ children }) => {
         loadUser();
     }, []);
 
-    const login = async (email, password) => {
+    const login = async (email, password, mPin) => {
         try {
-            const res = await api.post('/auth/login', { email, password });
+            const payload = mPin ? { email, mPin } : { email, password };
+            const res = await api.post('/auth/login', payload);
             if (res.data.success) {
                 const userData = res.data;
                 localStorage.setItem('user', JSON.stringify(userData));

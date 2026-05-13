@@ -57,7 +57,7 @@ exports.register = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ success: false, errors: errors.array() });
         }
-        const { shopName, ownerName, email, phone, password, businessType, address } = req.body;
+        const { shopName, ownerName, email, phone, password, mPin, businessType, address } = req.body;
 
         const userExists = await User.findOne({ email });
         if (userExists) {
@@ -70,6 +70,7 @@ exports.register = async (req, res) => {
             email,
             phone,
             password,
+            mPin,
             businessType,
             address
         });
@@ -92,10 +93,21 @@ exports.login = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ success: false, errors: errors.array() });
         }
-        const { email, password } = req.body;
+        const { email, password, mPin } = req.body;
+        const user = await User.findOne({ email }).select('+refreshToken +mPin +password');
 
-        const user = await User.findOne({ email }).select('+refreshToken');
-        if (user && (await user.comparePassword(password))) {
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Invalid email' });
+        }
+
+        let isMatch = false;
+        if (mPin) {
+            isMatch = await user.compareMPin(mPin);
+        } else if (password) {
+            isMatch = await user.comparePassword(password);
+        }
+
+        if (isMatch) {
             if (user.isSuspended) {
                 return res.status(403).json({ success: false, message: 'Account is suspended' });
             }
