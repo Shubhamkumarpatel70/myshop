@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import api from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -26,18 +27,19 @@ export const AuthProvider = ({ children }) => {
 
             setUser(parsedUser);
             axios.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
+            api.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
         }
         setLoading(false);
     }, []);
 
     const login = async (email, password) => {
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+            const res = await api.post('/auth/login', { email, password });
             if (res.data.success) {
                 const userData = res.data;
                 localStorage.setItem('user', JSON.stringify(userData));
                 setUser(userData);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
+                api.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
                 return { success: true };
             }
             return { success: false, message: res.data.message };
@@ -48,12 +50,12 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (formData) => {
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/register', formData);
+            const res = await api.post('/auth/register', formData);
             if (res.data.success) {
                 const userData = res.data;
                 localStorage.setItem('user', JSON.stringify(userData));
                 setUser(userData);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
+                api.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
                 return { success: true };
             }
             return { success: false, message: res.data.message };
