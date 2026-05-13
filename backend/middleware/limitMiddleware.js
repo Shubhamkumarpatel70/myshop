@@ -33,7 +33,7 @@ exports.checkProductLimit = async (req, res, next) => {
         const limits = await getPlanLimits(planName);
         const limit = limits.maxProducts;
 
-        if (limit === Infinity) return next();
+        if (limit === 0 || limit === Infinity) return next();
 
         const productCount = await Product.countDocuments({ user: req.shopOwnerId });
         
@@ -61,7 +61,7 @@ exports.checkStaffLimit = async (req, res, next) => {
         const limits = await getPlanLimits(planName);
         const limit = limits.maxStaff;
 
-        if (limit === Infinity) return next();
+        if (limit === 0 || limit === Infinity) return next();
 
         const staffCount = await User.countDocuments({ createdBy: req.shopOwnerId, role: { $in: ['manager', 'cashier'] } });
         
