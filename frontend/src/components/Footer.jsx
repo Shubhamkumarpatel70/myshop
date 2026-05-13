@@ -9,10 +9,8 @@ const Footer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
                     {/* Brand Section */}
                     <div className="space-y-6">
-                        <Link to="/" className="flex items-center gap-2">
-                            <div className="bg-primary-600 p-1.5 rounded-lg">
-                                <ShoppingBag className="w-6 h-6 text-white" />
-                            </div>
+                        <Link to="/" className="flex items-center gap-3">
+                            <img src="/favicon.png" alt="StockSaathi" className="w-9 h-9 object-contain" />
                             <span className="text-xl font-bold tracking-tight">Stock<span className="text-primary-600">Saathi</span></span>
                         </Link>
                         <p className="text-secondary-500 dark:text-secondary-400 leading-relaxed">
@@ -64,7 +62,7 @@ const Footer = () => {
                             </li>
                             <li className="flex items-center gap-3 text-secondary-500">
                                 <Mail className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                                <span>support@myshop.com</span>
+                                <span>support@stocksaathi.com</span>
                             </li>
                         </ul>
                     </div>

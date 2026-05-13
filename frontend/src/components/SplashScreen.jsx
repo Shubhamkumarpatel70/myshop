@@ -11,8 +11,8 @@ const SplashScreen = () => {
                 transition={{ duration: 0.5, ease: "easeOut" }}
                 className="flex flex-col items-center"
             >
-                <div className="bg-white p-4 rounded-3xl shadow-2xl mb-6">
-                    <ShoppingBag className="w-16 h-16 text-primary-600" />
+                <div className="bg-white p-2 rounded-3xl shadow-2xl mb-6">
+                    <img src="/favicon.png" alt="StockSaathi" className="w-24 h-24 object-contain" />
                 </div>
                 <motion.h1 
                     initial={{ y: 20, opacity: 0 }}
@@ -20,7 +20,7 @@ const SplashScreen = () => {
                     transition={{ delay: 0.2 }}
                     className="text-4xl font-extrabold text-white tracking-tight"
                 >
-                    MY <span className="text-primary-200">SHOP</span>
+                    StockSaathi
                 </motion.h1>
                 <motion.div 
                     initial={{ width: 0 }}

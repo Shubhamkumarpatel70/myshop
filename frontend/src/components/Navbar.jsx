@@ -26,11 +26,9 @@ const Navbar = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
                     {/* Logo */}
-                    <Link to="/" className="flex items-center gap-2">
-                        <div className="bg-primary-600 p-1.5 rounded-lg">
-                            <ShoppingBag className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-xl font-bold tracking-tight">MY <span className="text-primary-600">SHOP</span></span>
+                    <Link to="/" className="flex items-center gap-3">
+                        <img src="/favicon.png" alt="StockSaathi" className="w-9 h-9 object-contain" />
+                        <span className="text-xl font-bold tracking-tight">Stock<span className="text-primary-600">Saathi</span></span>
                     </Link>
 
                     {/* Desktop Menu */}
