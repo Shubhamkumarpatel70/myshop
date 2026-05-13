@@ -39,11 +39,19 @@ const DashboardLayout = () => {
     }, [user]);
 
     useEffect(() => {
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            setShowInstallBtn(false);
+            return;
+        }
+
         const handler = (e) => {
+            console.log('beforeinstallprompt fired');
             e.preventDefault();
             setDeferredPrompt(e);
             setShowInstallBtn(true);
         };
+
         window.addEventListener('beforeinstallprompt', handler);
 
         // Hide splash after 2.5 seconds
@@ -56,11 +64,15 @@ const DashboardLayout = () => {
     }, []);
 
     const handleInstall = async () => {
-        if (!deferredPrompt) return;
+        if (!deferredPrompt) {
+            toast.info("To install, use your browser's menu (e.g., 'Add to Home Screen')");
+            return;
+        }
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {
             setShowInstallBtn(false);
+            toast.success("StockSaathi installed successfully!");
         }
         setDeferredPrompt(null);
     };
@@ -233,13 +245,17 @@ const DashboardLayout = () => {
                 </nav>
 
                 <div className="p-4 border-t border-slate-100 dark:border-slate-800/50 space-y-3">
-                    {showInstallBtn && (
+                    {!window.matchMedia('(display-mode: standalone)').matches && (
                         <button 
                             onClick={handleInstall}
-                            className="flex items-center gap-4 px-5 py-4 w-full bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all"
+                            className={`flex items-center gap-4 px-5 py-4 w-full rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${
+                                showInstallBtn 
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:scale-105' 
+                                : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border border-slate-100 dark:border-slate-800'
+                            }`}
                         >
                             <Download size={18} className="shrink-0" />
-                            {isSidebarOpen && <span>Install App</span>}
+                            {isSidebarOpen && <span>{showInstallBtn ? 'Install App' : 'App Guide'}</span>}
                         </button>
                     )}
                     <button
