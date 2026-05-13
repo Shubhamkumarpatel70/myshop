@@ -27,7 +27,10 @@ exports.updateProfile = async (req, res) => {
                 businessType: updatedUser.businessType,
                 address: updatedUser.address,
                 shopSlug: updatedUser.shopSlug,
-                role: updatedUser.role
+                role: updatedUser.role,
+                approvalStatus: updatedUser.approvalStatus,
+                isPaymentDone: updatedUser.isPaymentDone,
+                shopId: updatedUser.shopId
             }
         });
     } catch (error) {

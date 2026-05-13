@@ -29,7 +29,7 @@ const DashboardLayout = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (user && user.address === 'Incomplete') {
+        if (user && user.role !== 'super_admin' && user.address === 'Incomplete') {
             setShowOnboarding(true);
         }
     }, [user]);
