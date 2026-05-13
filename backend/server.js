@@ -48,11 +48,6 @@ app.use('/api', limiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// Test Route
-app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to MY SHOP API' });
-});
-
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
