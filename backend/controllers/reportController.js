@@ -132,6 +132,9 @@ exports.getSalesAnalytics = async (req, res) => {
 
         const peakHour = Object.keys(hourCounts).reduce((a, b) => hourCounts[a] > hourCounts[b] ? a : b, '17');
         const busiestDay = Object.keys(dayCounts).reduce((a, b) => dayCounts[a] > dayCounts[b] ? a : b, 'Saturday');
+        const slowestDay = Object.keys(dayCounts).length > 0 
+            ? Object.keys(dayCounts).reduce((a, b) => dayCounts[a] < dayCounts[b] ? a : b) 
+            : 'Monday';
         const topPayment = Object.keys(paymentCounts).reduce((a, b) => paymentCounts[a] > paymentCounts[b] ? a : b, 'Cash');
 
         // Growth Rate (Simplified: compare last 7 days vs previous 7 days)
@@ -165,6 +168,7 @@ exports.getSalesAnalytics = async (req, res) => {
                 insights: {
                     peakTime: `${peakHour}:00 - ${parseInt(peakHour)+3}:00`,
                     busiestDay,
+                    slowestDay,
                     topPayment,
                     lowStockRisk: lowStockCount > 0 ? `Risk of stockout for ${lowStockCount} items` : 'Stock levels healthy'
                 }

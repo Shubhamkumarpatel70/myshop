@@ -229,6 +229,63 @@ const Reports = () => {
                 ))}
             </div>
 
+            {/* Strategic Insights Audit */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-slate-950 rounded-[3rem] p-10 text-white relative overflow-hidden"
+            >
+                <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center">
+                            <ShieldCheck size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black uppercase tracking-tight">Strategic Audit Insights</h2>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Automated Intelligence Report</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                        <div className="space-y-4">
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Peak Performance</p>
+                            <div className="space-y-1">
+                                <h4 className="text-2xl font-black text-emerald-400">High: {insights?.busiestDay || 'Calculating...'}</h4>
+                                <p className="text-xs font-medium text-slate-400">This day consistently generates maximum footfall and transaction volume.</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Growth Opportunity</p>
+                            <div className="space-y-1">
+                                <h4 className="text-2xl font-black text-rose-400">Low: {insights?.slowestDay || 'Calculating...'}</h4>
+                                <p className="text-xs font-medium text-slate-400">Target this day with special discounts or loyalty rewards to boost engagement.</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Traffic Window</p>
+                            <div className="space-y-1">
+                                <h4 className="text-2xl font-black text-indigo-400">{insights?.peakTime || '24h Cycle'}</h4>
+                                <p className="text-xs font-medium text-slate-400">Ensure maximum staff availability during this critical hour window.</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Top Channel</p>
+                            <div className="space-y-1">
+                                <h4 className="text-2xl font-black text-amber-400">{insights?.topPayment || 'Mixed'}</h4>
+                                <p className="text-xs font-medium text-slate-400">Preferred customer payment method for settlements and checkout speed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-600/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
+            </motion.div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Profit vs Revenue Area Chart */}
                 <motion.div 
