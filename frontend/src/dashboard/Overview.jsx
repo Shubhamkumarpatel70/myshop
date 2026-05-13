@@ -159,7 +159,7 @@ const Overview = () => {
                     <div className="bg-white dark:bg-slate-950 rounded-[1.9rem] p-5 lg:p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex flex-col sm:flex-row items-center gap-4 lg:gap-5 text-center sm:text-left">
                             <div className="w-12 h-12 lg:w-16 lg:h-16 bg-rose-50 dark:bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-500 animate-pulse shrink-0">
-                                <AlertTriangle size={24} lg:size={32} />
+                                <AlertTriangle size={24} />
                             </div>
                             <div>
                                 <h3 className="text-lg lg:text-xl font-black uppercase tracking-tight">Immediate Action Required</h3>
@@ -173,6 +173,29 @@ const Overview = () => {
                             Resolve Risks
                         </Link>
                     </div>
+                </motion.div>
+            )}
+
+            {/* Trial Promotion Banner */}
+            {user?.role === 'shop_owner' && user?.subscriptionPlan === 'Free' && !user?.isTrialUsed && (
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="p-8 bg-indigo-600 rounded-[3rem] text-white flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group shadow-2xl shadow-indigo-500/20"
+                >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full translate-x-1/2 -translate-y-1/2 blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
+                    <div className="relative z-10 flex items-center gap-6">
+                        <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-[2rem] flex items-center justify-center border border-white/20 shadow-inner">
+                            <Zap size={40} className="animate-pulse" />
+                        </div>
+                        <div>
+                            <h3 className="text-3xl font-black tracking-tight uppercase">Unlock Professional Potential</h3>
+                            <p className="text-indigo-100 font-medium mt-1 text-lg">You have a <span className="font-black text-white underline decoration-amber-400">7-Day Free Trial</span> waiting. Experience StockSaathi without limits.</p>
+                        </div>
+                    </div>
+                    <Link to="/dashboard/pricing" className="relative z-10 h-16 px-10 bg-white text-indigo-600 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                        Claim Trial Now <ArrowUpRight size={20} />
+                    </Link>
                 </motion.div>
             )}
 
