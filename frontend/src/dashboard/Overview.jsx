@@ -33,9 +33,17 @@ const Overview = () => {
                         recentTransactions: res.data.data.shops
                     });
                 } else {
-                    const statsRes = await api.get('/reports/dashboard');
-                    const analyticsRes = await api.get(`/reports/sales?period=${period.replace('D', '')}`);
-                    setStats(statsRes.data.data);
+                    const [statsRes, analyticsRes] = await Promise.all([
+                        api.get('/reports/dashboard'),
+                        api.get(`/reports/sales?period=${period.replace('D', '')}`)
+                    ]);
+                    
+                    // Merge basic dashboard stats with detailed sales analytics
+                    setStats({
+                        ...statsRes.data.data,
+                        ...analyticsRes.data.data.stats,
+                        insights: analyticsRes.data.data.insights
+                    });
                     setSalesData(analyticsRes.data.data.dailySales || []);
                 }
             } catch (error) {
@@ -71,13 +79,19 @@ const Overview = () => {
 
     const healthColor = getHealthScore() > 80 ? '#10b981' : getHealthScore() > 50 ? '#f59e0b' : '#ef4444';
 
+    const formatTrend = (val) => {
+        if (!val || val === '0.0') return '0%';
+        if (val === 'New') return 'New';
+        return `${val > 0 ? '+' : ''}${val}%`;
+    };
+
     const mainCards = [
         { 
             title: 'Gross Revenue', 
             value: `₹${stats?.totalRevenue?.toLocaleString() || 0}`, 
             icon: <DollarSign size={24} />, 
             color: 'bg-indigo-600', 
-            trend: `${stats?.growthRate || 0}%`, 
+            trend: formatTrend(stats?.revenueGrowth), 
             description: 'Total sales generated'
         },
         { 
@@ -85,7 +99,7 @@ const Overview = () => {
             value: user?.role === 'Admin' ? `${stats?.totalOwners || 0} Shops` : `₹${stats?.totalProfit?.toLocaleString() || 0}`, 
             icon: user?.role === 'Admin' ? <Globe size={24} /> : <TrendingUp size={24} />, 
             color: 'bg-emerald-500', 
-            trend: `${stats?.growthRate || 0}%`, 
+            trend: formatTrend(stats?.profitGrowth), 
             description: user?.role === 'Admin' ? 'Partners on platform' : 'Profit after COGS'
         },
         { 
@@ -101,7 +115,7 @@ const Overview = () => {
             value: stats?.totalSalesCount?.toLocaleString() || 0, 
             icon: <Zap size={24} />, 
             color: 'bg-rose-500', 
-            trend: `${stats?.growthRate || 0}%`, 
+            trend: formatTrend(stats?.transactionGrowth), 
             description: 'Orders processed'
         },
     ];

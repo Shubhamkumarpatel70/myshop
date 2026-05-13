@@ -149,7 +149,7 @@ const Reports = () => {
         { 
             label: 'Revenue', 
             value: `₹${stats.totalRevenue.toLocaleString()}`, 
-            sub: `${stats.growthRate}% Growth`,
+            sub: stats.revenueGrowth === 'New' ? 'New Performance' : `${stats.revenueGrowth}% Growth`,
             icon: <Zap size={20} />, 
             color: 'text-emerald-600', 
             bg: 'bg-emerald-50 dark:bg-emerald-500/10' 

@@ -156,14 +156,35 @@ exports.getSalesAnalytics = async (req, res) => {
             : 'Monday';
         const topPayment = Object.keys(paymentCounts).reduce((a, b) => paymentCounts[a] > paymentCounts[b] ? a : b, 'Cash');
 
-        // Growth Rate (Simplified: compare last 7 days vs previous 7 days)
+        // Dynamic Growth Rates (Last 7 Days vs Previous 7 Days)
         const now = new Date();
         const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const prev7Days = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-        const currentRevenue = sales.filter(s => s.createdAt >= last7Days).reduce((a, b) => a + b.totalAmount, 0);
-        const previousRevenue = sales.filter(s => s.createdAt >= prev7Days && s.createdAt < last7Days).reduce((a, b) => a + b.totalAmount, 0);
-        const growthRate = previousRevenue > 0 ? (((currentRevenue - previousRevenue) / previousRevenue) * 100).toFixed(1) : '0.0';
+        const currentSales = sales.filter(s => s.createdAt >= last7Days);
+        const previousSales = sales.filter(s => s.createdAt >= prev7Days && s.createdAt < last7Days);
+
+        const calcGrowth = (curr, prev) => {
+            if (prev === 0) return curr > 0 ? 'New' : '0.0';
+            return (((curr - prev) / prev) * 100).toFixed(1);
+        };
+
+        const revenueGrowth = calcGrowth(
+            currentSales.reduce((a, b) => a + b.totalAmount, 0),
+            previousSales.reduce((a, b) => a + b.totalAmount, 0)
+        );
+
+        const transactionGrowth = calcGrowth(currentSales.length, previousSales.length);
+        
+        const currentProfit = currentSales.reduce((acc, sale) => {
+            const cost = sale.items.reduce((c, i) => c + ((i.purchasePrice || 0) * i.quantity), 0);
+            return acc + (sale.totalAmount - cost);
+        }, 0);
+        const previousProfit = previousSales.reduce((acc, sale) => {
+            const cost = sale.items.reduce((c, i) => c + ((i.purchasePrice || 0) * i.quantity), 0);
+            return acc + (sale.totalAmount - cost);
+        }, 0);
+        const profitGrowth = calcGrowth(currentProfit, previousProfit);
 
         // Low Stock Risk
         const lowStockCount = await Product.countDocuments({ 
@@ -181,8 +202,10 @@ exports.getSalesAnalytics = async (req, res) => {
                     netMargin,
                     totalSalesCount,
                     avgTicketSize,
-                    growthRate,
-                    returningCustomerRate: 15 // Mocked for now
+                    revenueGrowth,
+                    transactionGrowth,
+                    profitGrowth,
+                    returningCustomerRate: 15 
                 },
                 insights: {
                     peakTime: `${peakHour}:00 - ${parseInt(peakHour)+3}:00`,
