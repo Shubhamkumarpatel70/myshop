@@ -56,18 +56,19 @@ userSchema.pre('save', async function() {
     // Generate Shop ID for Shop Owners
     if (this.role === 'shop_owner' && !this.shopId) {
         const namePart = (this.ownerName || 'XXX').substring(0, 3).toUpperCase().padEnd(3, 'X');
-        const phonePart = (this.phone || '00').slice(-2);
+        const randomPart = Math.floor(100 + Math.random() * 900); // Generate random 3-digit number
         const date = new Date();
         const datePart = `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getFullYear()).slice(-2)}`;
         
-        let baseId = `MS-${namePart}-${phonePart}-${datePart}`;
+        let baseId = `SS-${namePart}-${randomPart}-${datePart}`;
         let finalId = baseId;
         
         // Ensure uniqueness for Shop ID
         let idExists = await mongoose.models.User.findOne({ shopId: finalId });
         let counter = 1;
         while (idExists) {
-            finalId = `${baseId}-${counter}`;
+            const nextRandom = Math.floor(100 + Math.random() * 900);
+            finalId = `SS-${namePart}-${nextRandom}-${datePart}`;
             idExists = await mongoose.models.User.findOne({ shopId: finalId });
             counter++;
         }
