@@ -59,7 +59,8 @@ const userSchema = new mongoose.Schema({
         endDate: Date,
         amount: Number,
         paymentRef: String
-    }]
+    }],
+    isTrialUsed: { type: Boolean, default: false }
 }, { timestamps: true });
 
 // Helper to create slug

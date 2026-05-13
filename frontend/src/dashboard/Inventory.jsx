@@ -11,6 +11,7 @@ import {
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
 import BarcodeScanner from '../components/BarcodeScanner';
+import LimitModal from '../components/LimitModal';
 
 const Inventory = () => {
     const { searchQuery } = useOutletContext() || { searchQuery: '' };
@@ -26,6 +27,8 @@ const Inventory = () => {
     }, [searchQuery]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+    const [limitMetadata, setLimitMetadata] = useState({ type: 'product', isTrialUsed: false });
     const [editingProduct, setEditingProduct] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState({
@@ -157,7 +160,12 @@ const Inventory = () => {
             fetchData();
             setIsModalOpen(false);
         } catch (error) {
-            toast.error(error.response?.data?.message || "Operation failed");
+            if (error.response?.data?.errorCode === 'LIMIT_REACHED') {
+                setLimitMetadata({ type: 'product', isTrialUsed: error.response.data.isTrialUsed });
+                setIsLimitModalOpen(true);
+            } else {
+                toast.error(error.response?.data?.message || "Operation failed");
+            }
         }
     };
 
@@ -624,6 +632,12 @@ const Inventory = () => {
                     onScanError={(err) => console.error(err)}
                 />
             </Modal>
+            <LimitModal 
+                isOpen={isLimitModalOpen}
+                onClose={() => setIsLimitModalOpen(false)}
+                limitType={limitMetadata.type}
+                isTrialUsed={limitMetadata.isTrialUsed}
+            />
         </div>
     );
 };

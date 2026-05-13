@@ -1,21 +1,26 @@
 const Product = require('../models/Product');
 const User = require('../models/User');
+const Plan = require('../models/Plan');
 
-const PLAN_LIMITS = {
-    'Free': {
-        maxProducts: 20,
-        maxStaff: 0,
-        unlimitedCustomers: false
-    },
-    'Professional': {
-        maxProducts: 500,
-        maxStaff: 5,
-        unlimitedCustomers: true
-    },
-    'Enterprise': {
-        maxProducts: Infinity,
-        maxStaff: Infinity,
-        unlimitedCustomers: true
+// Fallback limits if DB is empty
+const DEFAULT_LIMITS = {
+    'Free': { maxProducts: 50, maxStaff: 2 },
+    'Professional': { maxProducts: 1000, maxStaff: 10 },
+    'Enterprise': { maxProducts: Infinity, maxStaff: Infinity }
+};
+
+const getPlanLimits = async (planName) => {
+    try {
+        const plan = await Plan.findOne({ name: planName, isActive: true });
+        if (plan) {
+            return {
+                maxProducts: plan.maxProducts,
+                maxStaff: plan.maxStaff
+            };
+        }
+        return DEFAULT_LIMITS[planName] || DEFAULT_LIMITS['Free'];
+    } catch (error) {
+        return DEFAULT_LIMITS['Free'];
     }
 };
 
@@ -24,8 +29,9 @@ exports.checkProductLimit = async (req, res, next) => {
         const user = await User.findById(req.shopOwnerId);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
         
-        const plan = user.subscriptionPlan || 'Free';
-        const limit = PLAN_LIMITS[plan].maxProducts;
+        const planName = user.subscriptionPlan || 'Free';
+        const limits = await getPlanLimits(planName);
+        const limit = limits.maxProducts;
 
         if (limit === Infinity) return next();
 
@@ -34,7 +40,10 @@ exports.checkProductLimit = async (req, res, next) => {
         if (productCount >= limit) {
             return res.status(403).json({
                 success: false,
-                message: `Upgrade Required: Your ${plan} plan limit of ${limit} products has been reached.`
+                errorCode: 'LIMIT_REACHED',
+                limitType: 'product',
+                isTrialUsed: user.isTrialUsed,
+                message: `Limit Reached: Your ${planName} plan limit of ${limit} products has been reached.`
             });
         }
         next();
@@ -48,26 +57,25 @@ exports.checkStaffLimit = async (req, res, next) => {
         const user = await User.findById(req.shopOwnerId);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        const plan = user.subscriptionPlan || 'Free';
-        const limit = PLAN_LIMITS[plan].maxStaff;
+        const planName = user.subscriptionPlan || 'Free';
+        const limits = await getPlanLimits(planName);
+        const limit = limits.maxStaff;
 
         if (limit === Infinity) return next();
 
-        // Count staff members created by this shop owner
         const staffCount = await User.countDocuments({ createdBy: req.shopOwnerId, role: { $in: ['manager', 'cashier'] } });
         
         if (staffCount >= limit) {
             return res.status(403).json({
                 success: false,
-                message: `Upgrade Required: Your ${plan} plan allows only ${limit} staff members. Upgrade to Professional or Enterprise!`
+                errorCode: 'LIMIT_REACHED',
+                limitType: 'staff',
+                isTrialUsed: user.isTrialUsed,
+                message: `Limit Reached: Your ${planName} plan allows only ${limit} staff members.`
             });
         }
         next();
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
-};
-
-exports.getPlanLimits = (plan) => {
-    return PLAN_LIMITS[plan] || PLAN_LIMITS['Free'];
 };

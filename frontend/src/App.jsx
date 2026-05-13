@@ -33,6 +33,7 @@ import Shifts from './dashboard/Shifts';
 import Customers from './dashboard/Customers';
 import Pricing from './dashboard/Pricing';
 import AdminSubscriptions from './dashboard/AdminSubscriptions';
+import AdminPricing from './dashboard/AdminPricing';
 import SplashScreen from './components/SplashScreen';
 
 const ProtectedRoute = ({ children }) => {
@@ -90,6 +91,7 @@ const AppContent = () => {
                     <Route path="customers" element={<Customers />} />
                     <Route path="pricing" element={<Pricing />} />
                     <Route path="admin/subscriptions" element={<AdminSubscriptions />} />
+                    <Route path="admin/pricing" element={<AdminPricing />} />
                 </Route>
             </Routes>
             <Toaster position="top-right" />

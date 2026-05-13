@@ -1,88 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Check, Zap, Shield, Crown, 
     ArrowRight, Upload, Info, AlertCircle,
-    Package, Users, BarChart3, Clock
+    Package, Users, Clock, LogIn
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
+import { useNavigate } from 'react-router-dom';
 
 const Pricing = () => {
     const { user, updateUser } = useAuth();
-    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+    const [plans, setPlans] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [screenshot, setScreenshot] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
-    const plans = [
-        {
-            name: 'Free',
-            price: '₹0',
-            duration: 'Forever',
-            description: 'Essential tools for small local vendors and kiosks.',
-            icon: <Zap className="text-amber-500" size={24} />,
-            features: [
-                'Max 20 Products',
-                '0 Staff Accounts',
-                'Basic Sales History',
-                'Offline POS Sync',
-                'Standard Receipt Printing'
-            ],
-            color: 'bg-slate-50 dark:bg-slate-900',
-            button: 'Current Plan',
-            disabled: true
-        },
-        {
-            name: 'Professional',
-            price: '₹1,999',
-            duration: 'per year',
-            description: 'Built for growing stores, pharmacies, and hardware shops.',
-            icon: <Shield className="text-indigo-600" size={24} />,
-            features: [
-                'Max 1,000 Products',
-                'Up to 5 Staff Accounts',
-                'Advanced PDF Reports',
-                'Customer CRM Registry',
-                'VIP Loyalty Tracking',
-                'Email Support'
-            ],
-            color: 'bg-indigo-50/50 dark:bg-indigo-500/5',
-            button: 'Upgrade to Pro',
-            recommended: true
-        },
-        {
-            name: 'Enterprise',
-            price: '₹4,999',
-            duration: 'per year',
-            description: 'The complete Retail OS for multi-branch and high-volume businesses.',
-            icon: <Crown className="text-amber-600" size={24} />,
-            features: [
-                'Unlimited Products',
-                'Unlimited Staff Accounts',
-                'Custom Business Analytics',
-                'Multiple Shop Switching',
-                '24/7 Dedicated Support',
-                'Premium Barcode Tools'
-            ],
-            color: 'bg-amber-50/50 dark:bg-amber-500/5',
-            button: 'Go Enterprise'
+    useEffect(() => {
+        fetchPlans();
+    }, []);
+
+    const fetchPlans = async () => {
+        try {
+            const res = await api.get('/subscriptions/plans');
+            setPlans(res.data.data);
+        } catch (error) {
+            toast.error("Failed to load plans");
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
+
+    const handleActivateTrial = async () => {
+        setSubmitting(true);
+        try {
+            const res = await api.post('/subscriptions/activate-trial');
+            if (res.data.success) {
+                toast.success(res.data.message);
+                updateUser(res.data.data);
+                navigate('/dashboard');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Trial activation failed");
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const handleScreenshotUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         setUploading(true);
         const formData = new FormData();
         formData.append('image', file);
-
         try {
-            const res = await api.post('/products/upload', formData); // Reuse product upload for now
+            const res = await api.post('/products/upload', formData);
             setScreenshot(res.data.url);
             toast.success("Payment proof uploaded!");
         } catch (error) {
@@ -94,178 +72,113 @@ const Pricing = () => {
 
     const handleSubmitRequest = async () => {
         if (!screenshot) return toast.error("Please upload payment screenshot");
-        
-        setLoading(true);
+        setSubmitting(true);
         try {
-            const res = await api.post('/subscriptions/request', {
-                plan: selectedPlan.name,
-                screenshot
-            });
+            const res = await api.post('/subscriptions/request', { plan: selectedPlan.name, screenshot });
             if (res.data.success) {
                 toast.success(res.data.message);
                 setIsUpgradeModalOpen(false);
-                // Refresh profile to show pending status
                 const profileRes = await api.get('/auth/profile');
                 updateUser(profileRes.data.data);
             }
         } catch (error) {
             toast.error(error.response?.data?.message || "Request failed");
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
+    };
+
+    const getIcon = (name) => {
+        if (name === 'Free') return <Zap className="text-amber-500" size={24} />;
+        if (name === 'Professional') return <Shield className="text-indigo-600" size={24} />;
+        return <Crown className="text-amber-600" size={24} />;
     };
 
     return (
         <div className="space-y-12 pb-20">
-            {/* Header */}
             <div className="text-center space-y-4">
                 <div className="flex items-center justify-center gap-2 text-indigo-600 font-black uppercase text-[10px] tracking-[0.3em]">
                     <Package size={14} /> Pricing & Growth
                 </div>
                 <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
-                    Choose Your <span className="text-indigo-600">Expansion</span>
+                    The Smart <span className="text-indigo-600">Investment</span>
                 </h1>
-                <p className="text-slate-500 font-medium max-w-2xl mx-auto text-lg">
-                    Scale StockSaathi as your business grows. No hidden fees, just simple tools to power your shop.
+                <p className="text-slate-500 font-medium max-w-2xl mx-auto text-lg leading-relaxed">
+                    Scale StockSaathi as your business grows. Unlock unlimited potential for your shop node.
                 </p>
             </div>
 
-            {user?.pendingSubscription?.status === 'Pending' && (
-                <motion.div 
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="max-w-4xl mx-auto p-6 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-[2rem] flex items-center gap-4"
-                >
-                    <div className="w-12 h-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center shrink-0">
-                        <Clock size={24} className="animate-pulse" />
+            {user && !user.isTrialUsed && user.subscriptionPlan === 'Free' && (
+                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="max-w-4xl mx-auto p-8 bg-indigo-600 rounded-[2.5rem] shadow-2xl shadow-indigo-500/20 text-white flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full translate-x-1/2 -translate-y-1/2 blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
+                    <div className="relative z-10 flex items-center gap-6">
+                        <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+                            <Zap size={32} className="animate-pulse" />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-black tracking-tight">Try Professional for FREE</h3>
+                            <p className="text-indigo-100 font-medium mt-1">Activate your one-time 7-day trial and unlock all limits.</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="font-black text-amber-800 dark:text-amber-500 uppercase text-xs tracking-widest">Upgrade Request Pending</p>
-                        <p className="text-sm text-amber-700 dark:text-amber-400/80 font-medium mt-1">
-                            You have requested the <span className="font-black uppercase">{user.pendingSubscription.plan}</span> plan. Our team is verifying your payment screenshot.
-                        </p>
-                    </div>
+                    <button onClick={handleActivateTrial} disabled={submitting} className="relative z-10 h-14 px-8 bg-white text-indigo-600 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
+                        {submitting ? 'Activating...' : 'Start Free Trial'}
+                    </button>
                 </motion.div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                {plans.map((plan) => (
-                    <div 
-                        key={plan.name}
-                        className={`relative p-10 rounded-[3rem] border transition-all duration-500 flex flex-col ${
-                            user?.subscriptionPlan === plan.name 
-                            ? 'border-indigo-500 bg-white dark:bg-slate-900 shadow-2xl shadow-indigo-500/10' 
-                            : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-indigo-200'
-                        }`}
-                    >
-                        {plan.recommended && (
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-5 py-1.5 bg-indigo-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/30">
-                                Most Popular
-                            </div>
-                        )}
-
+                {loading ? [1, 2, 3].map(i => <div key={i} className="h-[600px] bg-white dark:bg-slate-900 rounded-[3rem] animate-pulse"></div>) : plans.map((plan) => (
+                    <div key={plan.name} className={`relative p-10 rounded-[3rem] border transition-all duration-500 flex flex-col ${user?.subscriptionPlan === plan.name ? 'border-indigo-500 bg-white dark:bg-slate-900 shadow-2xl shadow-indigo-500/10' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-indigo-200'}`}>
+                        {plan.isRecommended && <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-5 py-1.5 bg-indigo-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/30">Most Popular</div>}
                         <div className="mb-8">
-                            <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                                {plan.icon}
-                            </div>
+                            <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-6 shadow-inner">{getIcon(plan.name)}</div>
                             <h3 className="text-2xl font-black tracking-tight">{plan.name}</h3>
                             <div className="flex items-baseline gap-2 mt-4">
-                                <span className="text-4xl font-black tracking-tighter">{plan.price}</span>
-                                <span className="text-slate-400 font-bold text-sm tracking-tight">{plan.duration}</span>
+                                <span className="text-4xl font-black tracking-tighter">₹{plan.price.toLocaleString()}</span>
+                                <span className="text-slate-400 font-bold text-sm tracking-tight">/{plan.duration}</span>
                             </div>
                             <p className="text-slate-500 text-sm mt-4 font-medium leading-relaxed">{plan.description}</p>
                         </div>
-
                         <div className="flex-1 space-y-4 mb-10">
-                            {plan.features.map((feature, idx) => (
+                            <div className="flex items-center gap-3 text-sm font-bold text-slate-600 dark:text-slate-400">
+                                <Package size={16} className="text-indigo-600" /> Max Products: {plan.maxProducts === 0 ? 'Unlimited' : plan.maxProducts}
+                            </div>
+                            <div className="flex items-center gap-3 text-sm font-bold text-slate-600 dark:text-slate-400">
+                                <Users size={16} className="text-indigo-600" /> Max Staff: {plan.maxStaff === 0 ? 'Unlimited' : plan.maxStaff}
+                            </div>
+                            {plan.features.map((f, idx) => (
                                 <div key={idx} className="flex items-center gap-3 text-sm font-bold text-slate-600 dark:text-slate-400">
-                                    <div className="w-5 h-5 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center shrink-0">
-                                        <Check size={12} className="text-indigo-600" />
-                                    </div>
-                                    {feature}
+                                    <Check size={16} className="text-emerald-500" /> {f}
                                 </div>
                             ))}
                         </div>
-
-                        <button 
-                            disabled={user?.subscriptionPlan === plan.name || plan.name === 'Free' || user?.pendingSubscription?.status === 'Pending'}
-                            onClick={() => {
-                                setSelectedPlan(plan);
-                                setIsUpgradeModalOpen(true);
-                            }}
-                            className={`w-full h-16 rounded-2xl font-black uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-3 ${
-                                user?.subscriptionPlan === plan.name 
-                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-default' 
-                                : 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed'
-                            }`}
-                        >
-                            {user?.subscriptionPlan === plan.name ? 'Active Plan' : plan.button}
-                            {user?.subscriptionPlan !== plan.name && plan.name !== 'Free' && <ArrowRight size={18} />}
-                        </button>
+                        {!user ? (
+                            <button onClick={() => navigate('/login')} className="w-full h-16 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3"><LogIn size={18} /> Login to Continue</button>
+                        ) : (
+                            <button disabled={user?.subscriptionPlan === plan.name || plan.name === 'Free' || user?.pendingSubscription?.status === 'Pending'} onClick={() => { setSelectedPlan(plan); setIsUpgradeModalOpen(true); }} className={`w-full h-16 rounded-2xl font-black uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-3 ${user?.subscriptionPlan === plan.name ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-default' : 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 disabled:opacity-30'}`}>
+                                {user?.subscriptionPlan === plan.name ? 'Active Plan' : plan.name === 'Free' ? 'Starter Plan' : `Upgrade to ${plan.name}`}
+                                {user?.subscriptionPlan !== plan.name && plan.name !== 'Free' && <ArrowRight size={18} />}
+                            </button>
+                        )}
                     </div>
                 ))}
             </div>
 
-            {/* Manual Payment Modal */}
-            <Modal
-                isOpen={isUpgradeModalOpen}
-                onClose={() => setIsUpgradeModalOpen(false)}
-                title={`Upgrade to ${selectedPlan?.name}`}
-                className="max-w-2xl"
-            >
+            <Modal isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} title={`Upgrade to ${selectedPlan?.name}`} className="max-w-2xl">
                 <div className="space-y-8 py-4">
                     <div className="p-6 bg-indigo-50 dark:bg-indigo-500/5 rounded-3xl border border-indigo-100 dark:border-indigo-500/20 space-y-4">
-                        <div className="flex items-center gap-3 text-indigo-600">
-                            <Info size={20} />
-                            <p className="font-black uppercase text-[10px] tracking-widest">Manual Payment Instructions</p>
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
-                            To upgrade to <span className="font-black text-indigo-600">{selectedPlan?.name}</span>, please pay <span className="font-black text-slate-900 dark:text-white">{selectedPlan?.price}</span> via UPI to the address below and upload a screenshot of the transaction.
-                        </p>
-                        
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">To upgrade, please pay <span className="font-black text-slate-900 dark:text-white">₹{selectedPlan?.price.toLocaleString()}</span> via UPI and upload a screenshot.</p>
                         <div className="flex flex-col items-center gap-4 py-6 bg-white dark:bg-slate-900 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
-                            <div className="w-48 h-48 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center">
-                                <p className="text-[10px] font-black uppercase text-slate-400">Admin UPI QR Code</p>
-                            </div>
-                            <p className="text-lg font-black tracking-tight select-all cursor-copy" onClick={() => {
-                                navigator.clipboard.writeText('stocksaathi@upi');
-                                toast.success("UPI ID copied!");
-                            }}>stocksaathi@upi</p>
+                            <p className="text-lg font-black tracking-tight select-all cursor-copy" onClick={() => { navigator.clipboard.writeText('stocksaathi@upi'); toast.success("UPI ID copied!"); }}>stocksaathi@upi</p>
                         </div>
                     </div>
-
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase text-secondary-400 ml-2 tracking-[0.2em]">Upload Payment Screenshot</label>
-                        <div className="relative h-48 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl flex flex-col items-center justify-center group hover:border-indigo-500/50 transition-all cursor-pointer overflow-hidden">
-                            {screenshot ? (
-                                <img src={screenshot} alt="Payment" className="w-full h-full object-cover" />
-                            ) : (
-                                <>
-                                    <Upload size={32} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
-                                    <p className="mt-2 text-xs font-black text-slate-400 uppercase tracking-widest">Select Screenshot</p>
-                                </>
-                            )}
-                            <input 
-                                type="file" 
-                                accept="image/*" 
-                                className="absolute inset-0 opacity-0 cursor-pointer" 
-                                onChange={handleScreenshotUpload}
-                                disabled={uploading}
-                            />
-                            {uploading && (
-                                <div className="absolute inset-0 bg-white/80 dark:bg-slate-950/80 flex items-center justify-center">
-                                    <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                                </div>
-                            )}
-                        </div>
+                    <div className="relative h-48 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl flex flex-col items-center justify-center overflow-hidden">
+                        {screenshot ? <img src={screenshot} alt="Payment" className="w-full h-full object-cover" /> : <><Upload size={32} className="text-slate-300" /><p className="mt-2 text-xs font-black text-slate-400 uppercase tracking-widest">Select Screenshot</p></>}
+                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleScreenshotUpload} disabled={uploading} />
+                        {uploading && <div className="absolute inset-0 bg-white/80 dark:bg-slate-950/80 flex items-center justify-center"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}
                     </div>
-
-                    <button 
-                        onClick={handleSubmitRequest}
-                        disabled={loading || !screenshot}
-                        className="w-full h-18 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-3 transition-all"
-                    >
-                        {loading ? 'Submitting Request...' : 'Submit Payment Proof'} <Check size={20} />
+                    <button onClick={handleSubmitRequest} disabled={submitting || !screenshot} className="w-full h-18 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-3">
+                        {submitting ? 'Submitting Request...' : 'Submit Payment Proof'} <Check size={20} />
                     </button>
                 </div>
             </Modal>

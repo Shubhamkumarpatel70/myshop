@@ -8,11 +8,14 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
+import LimitModal from '../components/LimitModal';
 
 const Staff = () => {
     const [staff, setStaff] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+    const [limitMetadata, setLimitMetadata] = useState({ type: 'staff', isTrialUsed: false });
     const [formData, setFormData] = useState({
         ownerName: '',
         email: '',
@@ -59,7 +62,12 @@ const Staff = () => {
             setFormData({ ownerName: '', email: '', phone: '', password: '', aadharNumber: '', role: 'cashier' });
             fetchStaff();
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to add staff");
+            if (error.response?.data?.errorCode === 'LIMIT_REACHED') {
+                setLimitMetadata({ type: 'staff', isTrialUsed: error.response.data.isTrialUsed });
+                setIsLimitModalOpen(true);
+            } else {
+                toast.error(error.response?.data?.message || "Failed to add staff");
+            }
         }
     };
 
@@ -236,6 +244,12 @@ const Staff = () => {
                     </div>
                 </form>
             </Modal>
+            <LimitModal 
+                isOpen={isLimitModalOpen}
+                onClose={() => setIsLimitModalOpen(false)}
+                limitType={limitMetadata.type}
+                isTrialUsed={limitMetadata.isTrialUsed}
+            />
         </div>
     );
 };
