@@ -21,7 +21,6 @@ import {
     Shield,
     HeartHandshake,
     MessageCircle,
-    MessageCircle,
     CheckCircle2,
     Tag,
     QrCode
