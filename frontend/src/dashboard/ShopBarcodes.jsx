@@ -71,6 +71,9 @@ const ShopBarcodes = () => {
     });
 
     const handlePrint = (barcode) => {
+        const barcodeElement = document.querySelector(`[data-barcode="${barcode.barcode}"]`);
+        const svgContent = barcodeElement ? barcodeElement.querySelector('svg')?.innerHTML : '';
+
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <html>
@@ -95,37 +98,42 @@ const ShopBarcodes = () => {
                 </head>
                 <body>
                     <div class="barcode-card">
-                        <div id="barcode-target"></div>
+                        <svg viewBox="0 0 95 50" class="barcode-svg">${svgContent}</svg>
                         <div class="barcode-num">${barcode.barcode}</div>
                         ${barcode.productName ? `<div class="product-name">${barcode.productName}</div>` : ''}
                         <div class="shop-tag">STOCKSAATHI RETAIL OS</div>
                     </div>
-                    <script>
-                        const svg = \`${document.querySelector(`[data-barcode="${barcode.barcode}"]`)?.innerHTML}\`;
-                        document.getElementById('barcode-target').innerHTML = '<svg viewBox="0 0 94 50" class="barcode-svg">' + svg + '</svg>';
-                        window.onload = () => { 
-                            setTimeout(() => {
-                                window.print(); 
-                                window.close();
-                            }, 500);
-                        };
-                    </script>
                 </body>
             </html>
         `);
         printWindow.document.close();
+
+        // CSP compliant print trigger
+        const triggerPrint = () => {
+            if (printWindow && !printWindow.closed) {
+                printWindow.print();
+                printWindow.close();
+            }
+        };
+
+        printWindow.onload = () => setTimeout(triggerPrint, 500);
+        setTimeout(triggerPrint, 1500);
     };
 
     const handlePrintAll = () => {
         const printWindow = window.open('', '_blank');
-        const labelsHtml = filteredBarcodes.filter(b => b.status === 'Linked').map(barcode => `
-            <div class="barcode-card">
-                <div class="barcode-svg-container" data-bc="${barcode.barcode}">${document.querySelector(`[data-barcode="${barcode.barcode}"]`)?.innerHTML || ''}</div>
-                <div class="barcode-num">${barcode.barcode}</div>
-                ${barcode.productName ? `<div class="product-name">${barcode.productName}</div>` : ''}
-                <div class="shop-tag">STOCKSAATHI RETAIL OS</div>
-            </div>
-        `).join('');
+        const labelsHtml = filteredBarcodes.filter(b => b.status === 'Linked').map(barcode => {
+            const barcodeElement = document.querySelector(`[data-barcode="${barcode.barcode}"]`);
+            const svgContent = barcodeElement ? barcodeElement.querySelector('svg')?.innerHTML : '';
+            return `
+                <div class="barcode-card">
+                    <svg viewBox="0 0 95 50" style="width: 100%; height: auto; max-height: 20mm;">${svgContent}</svg>
+                    <div class="barcode-num">${barcode.barcode}</div>
+                    ${barcode.productName ? `<div class="product-name">${barcode.productName}</div>` : ''}
+                    <div class="shop-tag">STOCKSAATHI RETAIL OS</div>
+                </div>
+            `;
+        }).join('');
 
         printWindow.document.write(`
             <html>
@@ -146,7 +154,6 @@ const ShopBarcodes = () => {
                             text-align: center;
                             page-break-inside: avoid;
                         }
-                        .barcode-svg-container svg { width: 100%; height: auto; max-height: 20mm; }
                         .barcode-num { margin-top: 2mm; font-size: 12pt; font-weight: 900; letter-spacing: 0.5mm; color: #000; }
                         .product-name { margin-top: 1mm; font-size: 8pt; font-weight: 700; color: #475569; text-transform: uppercase; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
                         .shop-tag { margin-top: 2mm; font-size: 6pt; font-weight: 900; color: #94a3b8; letter-spacing: 1pt; }
@@ -156,18 +163,21 @@ const ShopBarcodes = () => {
                     <div class="grid-container">
                         ${labelsHtml}
                     </div>
-                    <script>
-                        window.onload = () => { 
-                            setTimeout(() => {
-                                window.print(); 
-                                window.close();
-                            }, 500);
-                        };
-                    </script>
                 </body>
             </html>
         `);
         printWindow.document.close();
+
+        // CSP compliant print trigger
+        const triggerPrint = () => {
+            if (printWindow && !printWindow.closed) {
+                printWindow.print();
+                printWindow.close();
+            }
+        };
+
+        printWindow.onload = () => setTimeout(triggerPrint, 500);
+        setTimeout(triggerPrint, 1500);
     };
 
     return (

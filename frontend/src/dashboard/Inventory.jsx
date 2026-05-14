@@ -33,6 +33,8 @@ const Inventory = () => {
     const [limitMetadata, setLimitMetadata] = useState({ type: 'product', isTrialUsed: false });
     const [editingProduct, setEditingProduct] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [unlinkedBarcodes, setUnlinkedBarcodes] = useState([]);
+    const [showBarcodePicker, setShowBarcodePicker] = useState(false);
     const [formData, setFormData] = useState({
         productName: '',
         category: '',
@@ -88,12 +90,14 @@ const Inventory = () => {
 
     const fetchData = async () => {
         try {
-            const [prodRes, catRes] = await Promise.all([
+            const [prodRes, catRes, barcodeRes] = await Promise.all([
                 api.get('/products'),
-                api.get('/categories')
+                api.get('/categories'),
+                api.get('/barcodes/shop')
             ]);
             setProducts(prodRes.data.data);
             setCategories(catRes.data.data);
+            setUnlinkedBarcodes(barcodeRes.data.data.filter(b => b.status === 'Generated'));
         } catch (error) {
             toast.error("Network synchronization failed");
         } finally {
@@ -138,7 +142,15 @@ const Inventory = () => {
         toast.success("Uplink Successful: Barcode Synced");
     };
 
-    const handleOpenModal = (product = null) => {
+    const handleOpenModal = async (product = null) => {
+        // Refresh available barcodes
+        try {
+            const res = await api.get('/barcodes/shop');
+            setUnlinkedBarcodes(res.data.data.filter(b => b.status === 'Generated'));
+        } catch (error) {
+            console.error("Barcode sync failure");
+        }
+
         if (product) {
             setEditingProduct(product);
             setFormData({
@@ -283,14 +295,14 @@ const Inventory = () => {
                         </p>
                     </div>
                     <div className="flex w-full sm:w-auto gap-3">
-                        <button 
-                            onClick={handleExport} 
+                        <button
+                            onClick={handleExport}
                             className="h-14 px-6 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-black uppercase tracking-widest text-[10px] border border-slate-100 dark:border-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
                         >
                             <Download size={18} /> Export
                         </button>
-                        <button 
-                            onClick={() => handleOpenModal()} 
+                        <button
+                            onClick={() => handleOpenModal()}
                             className="flex-1 sm:flex-none h-14 px-8 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
                         >
                             <Plus size={20} /> Add Product
@@ -301,9 +313,9 @@ const Inventory = () => {
                 <div className="flex flex-col xl:flex-row gap-4">
                     <div className="relative flex-1 group">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
-                        <input 
-                            type="text" 
-                            placeholder="Search by name, category or barcode..." 
+                        <input
+                            type="text"
+                            placeholder="Search by name, category or barcode..."
                             className="w-full h-14 md:h-16 pl-16 pr-6 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none font-bold text-sm md:text-base outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -312,9 +324,9 @@ const Inventory = () => {
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="relative flex-1 sm:flex-none">
                             <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <select 
+                            <select
                                 className="h-14 md:h-16 w-full sm:w-52 appearance-none rounded-2xl bg-slate-50 dark:bg-slate-800 border-none pl-12 pr-10 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 outline-none cursor-pointer focus:ring-4 focus:ring-indigo-500/10 transition-all"
-                                value={stockFilter} 
+                                value={stockFilter}
                                 onChange={(e) => setStockFilter(e.target.value)}
                             >
                                 <option value="all">Status: All Stock</option>
@@ -324,7 +336,7 @@ const Inventory = () => {
                         </div>
                         <div className="relative flex-1 sm:flex-none">
                             <ArrowUpDown className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <select 
+                            <select
                                 className="h-14 md:h-16 w-full sm:w-52 appearance-none rounded-2xl bg-slate-50 dark:bg-slate-800 border-none pl-12 pr-10 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 outline-none cursor-pointer focus:ring-4 focus:ring-indigo-500/10 transition-all"
                                 onChange={(e) => handleSort(e.target.value)}
                             >
@@ -436,7 +448,7 @@ const Inventory = () => {
                                         </div>
                                         <span className="inline-block mt-1 text-[8px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-md">{product.category?.name || 'GENERIC'}</span>
                                     </div>
-                                    
+
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div>
@@ -451,7 +463,7 @@ const Inventory = () => {
                                                 </span>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex gap-1.5">
                                             <button onClick={() => handleOpenModal(product)} className="w-9 h-9 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-xl flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition-all"><Edit size={14} /></button>
                                             <button onClick={() => handleDelete(product._id)} className="w-9 h-9 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={14} /></button>
@@ -529,7 +541,7 @@ const Inventory = () => {
                             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Purchase Price</label>
                             <input type="number" required className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white" value={formData.purchasePrice} onChange={(e) => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) })} />
                         </div>
-                        <div>
+                        <div className="relative">
                             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Barcode</label>
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
@@ -545,10 +557,47 @@ const Inventory = () => {
                                     />
                                     <Tag className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                 </div>
+                                <button type="button" onClick={() => setShowBarcodePicker(!showBarcodePicker)} className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200" title="Pick Available">
+                                    <Layers size={16} />
+                                </button>
                                 <button type="button" onClick={() => setIsScannerOpen(true)} className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200" title="Scan Barcode">
                                     <Scan size={16} />
                                 </button>
                             </div>
+
+                            <AnimatePresence>
+                                {showBarcodePicker && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="absolute z-50 mt-2 w-full max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-800"
+                                    >
+                                        <div className="mb-2 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-slate-400">Available Identifiers</div>
+                                        {unlinkedBarcodes.length > 0 ? (
+                                            unlinkedBarcodes.map(bc => (
+                                                <button
+                                                    key={bc._id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData({ ...formData, barcode: bc.barcode });
+                                                        setShowBarcodePicker(false);
+                                                    }}
+                                                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-indigo-500/20"
+                                                >
+                                                    <span>{bc.barcode}</span>
+                                                    <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded uppercase">Unlinked</span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-3 py-4 text-center text-xs text-slate-500">
+                                                No unlinked barcodes. Generate more in the Barcode section.
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
                             {formData.barcode && formData.barcode.length === 13 && (
                                 <div className="mt-2 flex justify-center p-2 rounded-lg bg-white border border-slate-100 dark:bg-slate-950 dark:border-slate-800">
                                     <BarcodeImage value={formData.barcode} className="w-48 h-16" />

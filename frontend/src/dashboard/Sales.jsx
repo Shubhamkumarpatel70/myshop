@@ -201,7 +201,7 @@ const Sales = () => {
         const foundProduct = products.find(p => p.barcode === decodedText);
         if (foundProduct) {
             addToCart(foundProduct);
-            toast.success(`Uplink: ${foundProduct.productName} Added`);
+            toast.success(`Product Scanned: ${foundProduct.productName} Added`);
         } else {
             toast.error("Unknown product identified");
         }
@@ -217,7 +217,7 @@ const Sales = () => {
             setCart(cart.map(item => item.product === product._id ? { ...item, quantity: item.quantity + 1 } : item));
         } else {
             if (product.quantity <= 0) {
-                toast.error("Asset out of stock");
+                toast.error("Product out of stock");
                 return;
             }
             setCart([...cart, {
@@ -303,7 +303,7 @@ const Sales = () => {
     const handlePrintInvoice = (sale) => {
         const printWindow = window.open('', '_blank');
         const shopInfo = sale.user || {};
-        
+
         let subtotal = 0;
         let returnsTotal = 0;
 
@@ -447,18 +447,21 @@ const Sales = () => {
                             Thank you for your business!
                         </div>
                     </div>
-                    <script>
-                        window.onload = () => { 
-                            setTimeout(() => {
-                                window.print(); 
-                                window.close();
-                            }, 500);
-                        };
-                    </script>
                 </body>
             </html>
         `);
         printWindow.document.close();
+
+        // Trigger print after content is loaded
+        const triggerPrint = () => {
+            if (printWindow && !printWindow.closed) {
+                printWindow.print();
+                printWindow.close();
+            }
+        };
+
+        printWindow.onload = () => setTimeout(triggerPrint, 500);
+        setTimeout(triggerPrint, 1500);
     };
 
     const formatDate = (dateString) => {
@@ -523,8 +526,8 @@ const Sales = () => {
                         </p>
                     </div>
                     <div className="flex w-full sm:w-auto gap-3">
-                        <button 
-                            onClick={() => setIsSaleModalOpen(true)} 
+                        <button
+                            onClick={() => setIsSaleModalOpen(true)}
                             className="flex-1 sm:flex-none h-14 px-10 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
                         >
                             <Plus size={20} /> New Sale
