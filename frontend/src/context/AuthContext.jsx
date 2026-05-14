@@ -48,7 +48,27 @@ export const AuthProvider = ({ children }) => {
         loadUser();
     }, []);
 
+    const hashMPin = async (email, mPin) => {
+        const msgUint8 = new TextEncoder().encode(email + mPin);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    };
+
     const login = async (email, password, mPin) => {
+        // Offline Login Logic
+        if (!navigator.onLine && mPin) {
+            const cachedUser = JSON.parse(localStorage.getItem('user'));
+            if (cachedUser && cachedUser.email === email && cachedUser.offlineHash) {
+                const inputHash = await hashMPin(email, mPin);
+                if (inputHash === cachedUser.offlineHash) {
+                    setUser(cachedUser);
+                    return { success: true, offline: true };
+                }
+            }
+            return { success: false, message: "Offline login failed. Check mPin or connect to internet." };
+        }
+
         try {
             const payload = mPin ? { email, mPin } : { email, password };
             const res = await api.post('/auth/login', payload);
@@ -61,6 +81,18 @@ export const AuthProvider = ({ children }) => {
             }
             return { success: false, message: res.data.message };
         } catch (error) {
+            // Automatic fallback if request fails due to network
+            if (!error.response && mPin) {
+                const cachedUser = JSON.parse(localStorage.getItem('user'));
+                if (cachedUser && cachedUser.email === email && cachedUser.offlineHash) {
+                    const inputHash = await hashMPin(email, mPin);
+                    if (inputHash === cachedUser.offlineHash) {
+                        setUser(cachedUser);
+                        return { success: true, offline: true };
+                    }
+                }
+            }
+
             return { 
                 success: false, 
                 message: error.response?.data?.message || "Login failed",

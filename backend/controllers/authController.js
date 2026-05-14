@@ -12,12 +12,16 @@ const generateTokens = (id) => {
     return { accessToken, refreshToken };
 };
 
+const crypto = require('crypto');
+
 const sendTokenResponse = async (user, statusCode, res) => {
     const { accessToken, refreshToken } = generateTokens(user._id);
 
     // Save refresh token to database
     user.refreshToken = refreshToken;
     await user.save();
+
+    const offlineHash = user.mPin ? crypto.createHash('sha256').update(user.email + user.mPin).digest('hex') : null;
 
     const cookieOptions = {
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
@@ -42,7 +46,8 @@ const sendTokenResponse = async (user, statusCode, res) => {
             approvalStatus: user.approvalStatus,
             isPaymentDone: user.isPaymentDone,
             createdAt: user.createdAt,
-            token: accessToken
+            token: accessToken,
+            offlineHash // For offline mPin verification
         });
 };
 
