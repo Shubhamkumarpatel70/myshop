@@ -21,7 +21,10 @@ import {
     Shield,
     HeartHandshake,
     MessageCircle,
-    CheckCircle2
+    MessageCircle,
+    CheckCircle2,
+    Tag,
+    QrCode
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
@@ -111,13 +114,21 @@ const Pricing = () => {
 
         setSubmitting(true);
         try {
-            const res = await api.post('/subscriptions/request', {
-                plan: selectedPlan.name,
-                screenshot,
-            });
+            let res;
+            if (selectedPlan.isAddon) {
+                res = await api.post('/subscriptions/request-addon', {
+                    addon: selectedPlan.name,
+                    screenshot,
+                });
+            } else {
+                res = await api.post('/subscriptions/request', {
+                    plan: selectedPlan.name,
+                    screenshot,
+                });
+            }
 
             if (res.data.success) {
-                toast.success('Subscription request submitted');
+                toast.success(selectedPlan.isAddon ? 'Add-on request submitted' : 'Subscription request submitted');
                 setIsUpgradeModalOpen(false);
                 setScreenshot(null);
                 const profileRes = await api.get('/auth/profile');
@@ -352,6 +363,9 @@ const Pricing = () => {
                                       <p className="inline-flex items-center gap-2 text-slate-700 dark:text-slate-200">
                                           <Users size={15} className="text-indigo-600" /> Staff: {plan.maxStaff === 0 ? 'Unlimited' : plan.maxStaff}
                                       </p>
+                                      <p className="inline-flex items-center gap-2 text-slate-700 dark:text-slate-200">
+                                          <Tag size={15} className="text-indigo-600" /> Barcodes: {plan.maxBarcodes === 0 ? 'Unlimited' : plan.maxBarcodes}
+                                      </p>
                                   </div>
 
                                   <div className="mt-5 space-y-2 text-sm text-slate-600 dark:text-slate-300">
@@ -545,6 +559,67 @@ const Pricing = () => {
                         <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{item.desc}</p>
                     </div>
                 ))}
+            </div>
+
+            {/* Barcode Booster Section */}
+            <div className="mt-20 relative overflow-hidden rounded-[3rem] border border-indigo-200 bg-indigo-50/30 p-10 dark:border-indigo-500/20 dark:bg-indigo-500/5">
+                <div className="absolute top-0 right-0 p-10 opacity-10">
+                    <QrCode size={200} className="text-indigo-600" />
+                </div>
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest mb-6 shadow-lg shadow-indigo-500/20">
+                            <Tag size={12} /> Add-on Module
+                        </span>
+                        <h2 className="font-outfit text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-5xl">
+                            Barcode <span className="text-indigo-600">Booster</span>
+                        </h2>
+                        <p className="mt-4 text-lg text-slate-600 dark:text-slate-400 font-medium max-w-lg leading-relaxed">
+                            Need more identifiers without upgrading your entire plan? Get unlimited barcode generation for your shop with our standalone booster.
+                        </p>
+                        
+                        <div className="mt-8 flex items-center gap-4">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-4xl font-black text-slate-900 dark:text-white">₹499</span>
+                                <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">One-time payment</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-6">
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={14} /></div>
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Unlimited EAN-13 Barcode Generation</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={14} /></div>
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Permanent License Activation</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={14} /></div>
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Priority Global Registry Access</p>
+                            </div>
+                        </div>
+
+                        <button 
+                            disabled={user?.hasBarcodeAddon || user?.pendingSubscription?.plan === 'Barcode Booster'}
+                            onClick={() => {
+                                setSelectedPlan({ name: 'Barcode Booster', price: 499, isAddon: true });
+                                setIsUpgradeModalOpen(true);
+                            }}
+                            className={`w-full h-18 rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all flex items-center justify-center gap-4 shadow-2xl ${
+                                user?.hasBarcodeAddon 
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 cursor-default' 
+                                : user?.pendingSubscription?.plan === 'Barcode Booster'
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                                : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 shadow-indigo-500/20'
+                            }`}
+                        >
+                            {user?.hasBarcodeAddon ? <><ShieldCheck size={20} /> Already Activated</> : user?.pendingSubscription?.plan === 'Barcode Booster' ? <><Clock size={20} /> Request Pending</> : <><Zap size={20} /> Activate Booster</>}
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* FAQ Section */}

@@ -64,7 +64,7 @@ const AdminPricing = () => {
                     </p>
                 </div>
                 <button 
-                    onClick={() => setEditingPlan({ name: '', price: 0, maxProducts: 50, maxStaff: 2, features: defaultFeatures, isRecommended: false })}
+                    onClick={() => setEditingPlan({ name: '', price: 0, maxProducts: 50, maxStaff: 2, maxBarcodes: 30, features: defaultFeatures, isRecommended: false })}
                     className="btn btn-primary h-14 px-8 rounded-2xl"
                 >
                     <Plus size={20} /> Create Plan
@@ -95,6 +95,9 @@ const AdminPricing = () => {
                             <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400">
                                 <Users size={14} className="text-indigo-600" /> Max Staff: {plan.maxStaff === 0 ? 'Unlimited' : plan.maxStaff}
                             </div>
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400">
+                                <Tag size={14} className="text-indigo-600" /> Max Barcodes: {plan.maxBarcodes === 0 ? 'Unlimited' : plan.maxBarcodes}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -123,6 +126,10 @@ const AdminPricing = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Max Staff (0=Inf)</label>
                                     <input type="number" className="input-field h-14 rounded-2xl" value={editingPlan.maxStaff} onChange={e => setEditingPlan({...editingPlan, maxStaff: Number(e.target.value)})} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Max Barcodes (0=Inf)</label>
+                                    <input type="number" className="input-field h-14 rounded-2xl" value={editingPlan.maxBarcodes} onChange={e => setEditingPlan({...editingPlan, maxBarcodes: Number(e.target.value)})} />
                                 </div>
                             </div>
                             <div className="space-y-2">

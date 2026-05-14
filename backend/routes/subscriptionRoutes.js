@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { 
     requestUpgrade, 
+    requestAddon,
     getPendingRequests, 
     verifySubscription, 
     getPublicPlans, 
@@ -23,6 +24,7 @@ router.get('/plans', getPublicPlans);
 
 // Shop Owner
 router.post('/request', protect, requestUpgrade);
+router.post('/request-addon', protect, requestAddon);
 router.post('/activate-trial', protect, activateTrial);
 router.post('/cancel', protect, requestCancellation);
 

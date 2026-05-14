@@ -31,6 +31,23 @@ exports.generateBarcode = async (req, res) => {
 
         const shop = await User.findById(req.shopOwnerId);
         
+        // Plan Enforcement Logic
+        const planLimits = {
+            'Free': 30,
+            'Professional': 80,
+            'Enterprise': Infinity
+        };
+
+        const currentLimit = planLimits[shop.subscriptionPlan] || 30;
+        const hasAddon = shop.hasBarcodeAddon;
+
+        if (!hasAddon && shop.barcodeUsedCount >= currentLimit) {
+            return res.status(403).json({ 
+                success: false, 
+                message: `Subscription limit reached (${currentLimit}). Upgrade to Professional or Enterprise for more barcodes, or purchase the Barcode Add-on.` 
+            });
+        }
+
         const barcode = await Barcode.create({
             barcode: barcodeStr,
             user: req.shopOwnerId,
@@ -38,9 +55,18 @@ exports.generateBarcode = async (req, res) => {
             status: 'Generated'
         });
 
+        // Increment Usage
+        shop.barcodeUsedCount += 1;
+        await shop.save();
+
         res.status(201).json({ 
             success: true, 
-            barcode: barcodeStr 
+            barcode: barcodeStr,
+            usage: {
+                used: shop.barcodeUsedCount,
+                limit: currentLimit,
+                isUnlimited: hasAddon || currentLimit === Infinity
+            }
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

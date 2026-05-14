@@ -94,18 +94,24 @@ exports.verifySubscription = async (req, res) => {
 
         if (status === 'Approved') {
             const requestedPlan = user.pendingSubscription.plan;
-            user.subscriptionPlan = requestedPlan;
-            const now = new Date();
-            const expiry = new Date();
-            expiry.setMonth(expiry.getMonth() + months);
-            user.planExpiresAt = expiry;
-            user.planActivatedAt = now;
-            user.subscriptionHistory.push({
-                plan: requestedPlan,
-                startDate: now,
-                endDate: expiry,
-                paymentRef: 'Manual Admin Approval'
-            });
+            const isAddon = user.pendingSubscription.isAddon;
+
+            if (isAddon && requestedPlan === 'Barcode Booster') {
+                user.hasBarcodeAddon = true;
+            } else {
+                user.subscriptionPlan = requestedPlan;
+                const now = new Date();
+                const expiry = new Date();
+                expiry.setMonth(expiry.getMonth() + months);
+                user.planExpiresAt = expiry;
+                user.planActivatedAt = now;
+                user.subscriptionHistory.push({
+                    plan: requestedPlan,
+                    startDate: now,
+                    endDate: expiry,
+                    paymentRef: 'Manual Admin Approval'
+                });
+            }
             user.pendingSubscription.status = 'None';
         } else {
             user.pendingSubscription.status = 'Rejected';
@@ -281,6 +287,26 @@ exports.getRevenueStats = async (req, res) => {
                 totalShops: users.length
             }
         });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+// @desc    Request Add-on (e.g., Barcodes)
+exports.requestAddon = async (req, res) => {
+    try {
+        const { addon, screenshot } = req.body;
+        const user = await User.findById(req.user._id);
+        
+        user.pendingSubscription = {
+            plan: addon, // Using plan field to store addon name for simplicity
+            screenshot,
+            requestedAt: new Date(),
+            status: 'Pending',
+            isAddon: true // New field to distinguish
+        };
+
+        await user.save();
+        res.json({ success: true, message: `${addon} request submitted!` });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

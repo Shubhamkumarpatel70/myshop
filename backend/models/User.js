@@ -59,10 +59,11 @@ const userSchema = new mongoose.Schema({
         refundUtr: { type: String }
     },
     pendingSubscription: {
-        plan: { type: String, enum: ['Professional', 'Enterprise'] },
+        plan: { type: String },
         screenshot: { type: String },
         requestedAt: { type: Date },
-        status: { type: String, enum: ['None', 'Pending', 'Rejected'], default: 'None' }
+        status: { type: String, enum: ['None', 'Pending', 'Rejected'], default: 'None' },
+        isAddon: { type: Boolean, default: false }
     },
     subscriptionHistory: [{
         plan: String,
@@ -72,6 +73,8 @@ const userSchema = new mongoose.Schema({
         paymentRef: String
     }],
     isTrialUsed: { type: Boolean, default: false },
+    barcodeUsedCount: { type: Number, default: 0 },
+    hasBarcodeAddon: { type: Boolean, default: false },
     loginAttempts: { type: Number, default: 0 },
     lockoutUntil: { type: Date, default: null }
 }, { timestamps: true });

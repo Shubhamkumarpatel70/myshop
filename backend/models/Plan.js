@@ -7,6 +7,7 @@ const planSchema = new mongoose.Schema({
     description: { type: String },
     maxProducts: { type: Number, default: 50 },
     maxStaff: { type: Number, default: 2 },
+    maxBarcodes: { type: Number, default: 30 },
     features: [String],
     isRecommended: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true }
