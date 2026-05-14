@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { createSale, getSales, getSaleById, returnProduct } = require('../controllers/saleController');
+const { createSale, getSales, getSaleById, returnProduct, getPublicSale } = require('../controllers/saleController');
 const { protect } = require('../middleware/authMiddleware');
+
+router.get('/public/:id', getPublicSale);
 
 router.use(protect);
 

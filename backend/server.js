@@ -28,9 +28,9 @@ const limiter = rateLimit({
 });
 
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5,
-    message: 'Too many login attempts, please try again after 15 minutes'
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 3,
+    message: 'Too many login attempts, please try again after 5 minutes'
 });
 
 // Connect to Database
@@ -74,6 +74,8 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/shifts', require('./routes/shiftRoutes'));
 app.use('/api/customers', require('./routes/customerRoutes'));
+app.use('/api/suppliers', require('./routes/supplierRoutes'));
+app.use('/api/purchase-orders', require('./routes/purchaseOrderRoutes'));
 app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
 app.use('/api/queries', require('./routes/queryRoutes'));
 
@@ -89,7 +91,7 @@ app.use((err, req, res, next) => {
 // Serve Frontend in Production
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../frontend/dist')));
-    
+
     app.get(/.*/, (req, res) => {
         res.sendFile(path.resolve(__dirname, '../frontend', 'dist', 'index.html'));
     });

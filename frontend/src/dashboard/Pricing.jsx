@@ -17,6 +17,11 @@ import {
     Upload,
     Users,
     Zap,
+    Star,
+    Shield,
+    HeartHandshake,
+    MessageCircle,
+    CheckCircle2
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
@@ -198,7 +203,7 @@ const Pricing = () => {
     };
 
     return (
-        <div className="space-y-10 pb-16 font-jakarta">
+        <div className="space-y-10 pt-10 pb-16 font-jakarta">
             {!user && (
                 <div className="mx-auto max-w-3xl py-6 text-center">
                     <p className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-xs font-semibold text-indigo-700">
@@ -214,34 +219,53 @@ const Pricing = () => {
             )}
 
             {user && (
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-8">
-                    <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Current Plan</p>
-                            <h2 className="mt-2 font-outfit text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                                {user.subscriptionPlan}
-                                {user.subscriptionPlan !== 'Free' && (
-                                    <span className="ml-3 text-xs font-black uppercase bg-indigo-600 text-white px-3 py-1 rounded-full">
-                                        {user.isTrialUsed && user.planExpiresAt ? 'Paid' : 'Trial'}
+                <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900 md:p-10">
+                    {/* Decorative Blurs */}
+                    <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/5 blur-3xl"></div>
+                    <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-emerald-500/5 blur-3xl"></div>
+                    
+                    <div className="relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-start gap-6">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 md:h-20 md:w-20 shrink-0">
+                                {getIcon(user.subscriptionPlan)}
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">Current active plan</p>
+                                <h2 className="mt-1 font-outfit text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-5xl flex items-center gap-4">
+                                    {user.subscriptionPlan}
+                                    {user.subscriptionPlan !== 'Free' && (
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 ring-1 ring-white/20">
+                                            <CheckCircle2 size={10} />
+                                            {user.isTrialUsed && user.planExpiresAt ? 'Active Paid' : 'Active Trial'}
+                                        </span>
+                                    )}
+                                </h2>
+                                <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                                    <span className="flex items-center gap-2">
+                                        <Calendar size={14} className="text-indigo-500" />
+                                        Purchase: {formatDate(user.planActivatedAt || user.createdAt)}
                                     </span>
-                                )}
-                            </h2>
-                            <div className="mt-4 space-y-1 text-sm text-slate-600 dark:text-slate-300">
-                                <p className="inline-flex items-center gap-2"><Calendar size={14} /> Date of Purchase: {formatDate(user.planActivatedAt || user.createdAt)}</p>
-                                <p className="inline-flex items-center gap-2"><Clock size={14} /> Date of Expiry: {user.planExpiresAt ? formatDate(user.planExpiresAt) : 'Lifetime Access'}</p>
+                                    <span className="flex items-center gap-2">
+                                        <Clock size={14} className="text-emerald-500" />
+                                        Expiry: {user.planExpiresAt ? formatDate(user.planExpiresAt) : 'Lifetime Access'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex flex-col items-start gap-3 lg:items-end">
+                        
+                        <div className="flex shrink-0 flex-col gap-3 md:items-end">
                             {user.subscriptionPlan !== 'Free' && user.cancellationRequest?.status === 'None' && (
                                 <button
                                     onClick={() => setIsCancelModalOpen(true)}
-                                    className="inline-flex h-10 items-center justify-center rounded-lg border border-rose-300 px-4 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                                    className="inline-flex h-12 items-center justify-center rounded-xl border border-rose-200 bg-white px-6 text-xs font-black uppercase tracking-widest text-rose-600 shadow-sm transition-all hover:bg-rose-50 dark:border-rose-500/20 dark:bg-slate-800 dark:text-rose-400 dark:hover:bg-rose-500/10"
                                 >
                                     Request cancellation
                                 </button>
                             )}
                             {isNearExpiry() && (
-                                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">Your plan is close to expiry. Renew to avoid interruption.</p>
+                                <div className="flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                                    <AlertCircle size={14} /> Plan expires soon
+                                </div>
                             )}
                         </div>
                     </div>
@@ -303,7 +327,8 @@ const Pricing = () => {
                                   className={`relative flex flex-col rounded-3xl border p-6 shadow-sm transition-all sm:p-7 ${isCurrentPlan ? 'border-indigo-500 bg-indigo-50/40 dark:border-indigo-400 dark:bg-indigo-500/10' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'}`}
                               >
                                   {plan.isRecommended && (
-                                      <span className="absolute -top-3 left-6 rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">
+                                      <span className="absolute -top-4 left-6 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-500/30 ring-4 ring-white dark:ring-slate-900">
+                                          <Star size={12} fill="currentColor" />
                                           Recommended
                                       </span>
                                   )}
@@ -504,6 +529,45 @@ const Pricing = () => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Value Propositions / Trust Signals */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
+                {[
+                    { icon: Shield, title: "Enterprise Security", desc: "Your data is encrypted with 256-bit SSL and backed up daily." },
+                    { icon: HeartHandshake, title: "Priority Support", desc: "Professional & Enterprise users get 24/7 dedicated assistance." },
+                    { icon: Zap, title: "Zero Downtime", desc: "Our infrastructure ensures 99.9% uptime for your business operations." }
+                ].map((item, i) => (
+                    <div key={i} className="bg-slate-50 dark:bg-slate-900/50 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 text-center space-y-4">
+                        <div className="mx-auto w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
+                            <item.icon size={24} />
+                        </div>
+                        <h4 className="font-black uppercase tracking-tight text-slate-900 dark:text-white">{item.title}</h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{item.desc}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* FAQ Section */}
+            <section className="mt-32 max-w-4xl mx-auto space-y-12">
+                <div className="text-center space-y-4">
+                    <h2 className="text-4xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Frequently Asked Questions</h2>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">Everything you need to know about our plans and billing.</p>
+                </div>
+                
+                <div className="grid gap-4">
+                    {[
+                        { q: "How does the 7-day trial work?", a: "You get full access to all Professional features for 7 days. No credit card is required. At the end of the trial, you can choose a paid plan or continue with the Free plan." },
+                        { q: "Can I change plans later?", a: "Yes, you can upgrade or downgrade your plan at any time. If you upgrade, the price will be prorated based on your remaining current plan duration." },
+                        { q: "What happens to my data if I cancel?", a: "Your data remains safe. If you cancel a paid plan, your account will revert to the Free plan limits. You can still access your inventory and sales history." },
+                        { q: "Do you offer refunds?", a: "Yes, we offer a prorated refund if you cancel your subscription. The refund is initiated within 5-7 business days after admin approval." }
+                    ].map((faq, i) => (
+                        <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500 transition-colors">
+                            <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{faq.q}</h4>
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{faq.a}</p>
+                        </div>
+                    ))}
+                </div>
+            </section>
 
             <Modal isOpen={isCancelModalOpen} onClose={() => setIsCancelModalOpen(false)} title="Cancel Subscription" className="max-w-md">
                 <div className="space-y-4 py-2">

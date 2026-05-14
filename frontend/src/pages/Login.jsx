@@ -10,8 +10,65 @@ const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [mpin, setMpin] = useState(['', '', '', '']);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [failedAttempts, setFailedAttempts] = useState(0);
+    const [timeLeft, setTimeLeft] = React.useState(0);
     const { login } = useAuth();
     const navigate = useNavigate();
+
+    // Check for existing lockout on mount
+    React.useEffect(() => {
+        const lockoutUntil = localStorage.getItem('loginLockout');
+        if (lockoutUntil) {
+            const remaining = Math.ceil((parseInt(lockoutUntil) - Date.now()) / 1000);
+            if (remaining > 0) setTimeLeft(remaining);
+        }
+    }, []);
+
+    // Countdown Timer Effect
+    React.useEffect(() => {
+        if (timeLeft <= 0) {
+            localStorage.removeItem('loginLockout');
+            return;
+        }
+        const timer = setInterval(() => {
+            setTimeLeft(prev => prev - 1);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [timeLeft]);
+
+    // Check lockout for specific email (Debounced)
+    React.useEffect(() => {
+        const checkEmailLockout = async () => {
+            if (!formData.email || !formData.email.includes('@')) return;
+            try {
+                const res = await api.get(`/auth/check-lockout?email=${formData.email}`);
+                if (res.data.success && res.data.isLocked) {
+                    const serverSeconds = res.data.remainingSeconds;
+                    const serverLockout = res.data.lockoutUntil;
+                    
+                    localStorage.setItem('loginLockout', serverLockout.toString());
+                    setTimeLeft(serverSeconds);
+                    setFailedAttempts(3);
+                } else if (res.data.success && !res.data.isLocked) {
+                    // If not locked on server, and we have a local timer, clear it
+                    // But only if it was for THIS email (we'd need more logic for that, 
+                    // so for now just clear if server says no lockout)
+                    if (timeLeft > 0) setTimeLeft(0);
+                }
+            } catch (err) {
+                console.error("Lockout check failed");
+            }
+        };
+
+        const timeoutId = setTimeout(checkEmailLockout, 500);
+        return () => clearTimeout(timeoutId);
+    }, [formData.email]);
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     const handleMpinChange = (index, value) => {
         if (value.length > 1) return;
@@ -29,15 +86,34 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (timeLeft > 0) return;
+        
         setIsSubmitting(true);
         try {
             const mpinValue = loginMethod === 'mpin' ? mpin.join('') : null;
             const result = await login(formData.email, formData.password, mpinValue);
+            
             if (result.success) {
                 toast.success('Login successful');
+                localStorage.removeItem('loginLockout');
+                setFailedAttempts(0);
                 navigate('/dashboard');
             } else {
-                toast.error(result.message || 'Invalid credentials');
+                // If backend says account is locked (status 429)
+                if (result.isLocked) {
+                    const serverSeconds = result.remainingSeconds || 300;
+                    const serverLockout = result.lockoutUntil || (Date.now() + serverSeconds * 1000);
+                    
+                    localStorage.setItem('loginLockout', serverLockout.toString());
+                    setTimeLeft(serverSeconds);
+                    setFailedAttempts(3);
+                    toast.error(result.message || 'Account locked');
+                } else {
+                    // Update local attempts from backend source of truth
+                    const remaining = result.attemptsLeft !== undefined ? result.attemptsLeft : 3 - (failedAttempts + 1);
+                    setFailedAttempts(3 - remaining);
+                    toast.error(result.message || `Invalid credentials. ${remaining} attempts left`);
+                }
             }
         } catch {
             toast.error('Unable to login right now');
@@ -140,11 +216,22 @@ const Login = () => {
 
                         <button
                             type="submit"
-                            disabled={isSubmitting}
-                            className="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+                            disabled={isSubmitting || timeLeft > 0}
+                            className={`mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60 ${
+                                timeLeft > 0 
+                                ? 'bg-rose-500 hover:bg-rose-600' 
+                                : 'bg-indigo-600 hover:bg-indigo-700'
+                            }`}
                         >
-                            {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Login'}
-                            {!isSubmitting && <ArrowRight size={16} />}
+                            {isSubmitting ? (
+                                <Loader2 size={18} className="animate-spin" />
+                            ) : timeLeft > 0 ? (
+                                `Try again in ${formatTime(timeLeft)}`
+                            ) : (
+                                <>
+                                    Login <ArrowRight size={16} />
+                                </>
+                            )}
                         </button>
                     </motion.form>
 

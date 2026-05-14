@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Package, ShoppingBag, MapPin, Phone, Globe } from 'lucide-react';
 
 const PublicShop = () => {
-    const { shopSlug } = useParams();
+    const { shopSlug, shopId } = useParams();
     const [shopData, setShopData] = useState(null);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,12 +13,17 @@ const PublicShop = () => {
     useEffect(() => {
         const fetchShop = async () => {
             try {
-                // Fetch basic shop details and products by slug
-                const [userRes, prodRes] = await Promise.all([
-                    api.get(`/users/public/${shopSlug}`),
-                    api.get(`/products/public/${shopSlug}`)
-                ]);
+                // Fetch by ID if available, otherwise by slug
+                const userRes = shopId 
+                    ? await api.get(`/users/public/shops/${shopId}`)
+                    : await api.get(`/users/public/${shopSlug}`);
+                
                 setShopData(userRes.data.data);
+
+                const prodRes = shopId
+                    ? await api.get(`/products/public/shop/${shopId}`)
+                    : await api.get(`/products/public/${shopSlug}`);
+                
                 setProducts(prodRes.data.data);
             } catch (error) {
                 console.error("Failed to load shop");
@@ -27,7 +32,14 @@ const PublicShop = () => {
             }
         };
         fetchShop();
-    }, [shopSlug]);
+    }, [shopSlug, shopId]);
+
+    const maskPhone = (phone) => {
+        if (!phone) return 'N/A';
+        const str = phone.toString();
+        if (str.length < 8) return str;
+        return str.substring(0, 5) + '*** **' + str.substring(str.length - 2);
+    };
 
     if (loading) return (
         <div className="min-h-screen bg-secondary-50 dark:bg-black flex items-center justify-center">
@@ -56,7 +68,7 @@ const PublicShop = () => {
                             <div className="flex items-center gap-3 text-[10px] font-black uppercase text-secondary-400 mt-0.5 tracking-widest">
                                 <span className="flex items-center gap-1"><MapPin size={10} /> {shopData.address || 'India'}</span>
                                 <span className="w-1 h-1 bg-secondary-200 rounded-full"></span>
-                                <span className="flex items-center gap-1 text-primary-600"><Phone size={10} /> {shopData.phone}</span>
+                                <span className="flex items-center gap-1 text-primary-600"><Phone size={10} /> {maskPhone(shopData.phone)}</span>
                             </div>
                         </div>
                     </div>

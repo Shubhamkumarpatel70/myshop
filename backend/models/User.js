@@ -16,6 +16,8 @@ const userSchema = new mongoose.Schema({
     profileImage: { type: String, default: '' },
     aadharNumber: { type: String, default: '' },
     aadharImage: { type: String, default: '' },
+    aadharFront: { type: String, default: '' },
+    aadharBack: { type: String, default: '' },
     role: {
         type: String,
         enum: ['super_admin', 'shop_owner', 'manager', 'cashier'],
@@ -69,7 +71,9 @@ const userSchema = new mongoose.Schema({
         amount: Number,
         paymentRef: String
     }],
-    isTrialUsed: { type: Boolean, default: false }
+    isTrialUsed: { type: Boolean, default: false },
+    loginAttempts: { type: Number, default: 0 },
+    lockoutUntil: { type: Date, default: null }
 }, { timestamps: true });
 
 // Helper to create slug

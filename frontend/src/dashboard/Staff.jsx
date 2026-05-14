@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Plus, User, Mail, Phone, Lock, 
+import {
+    Plus, User, Mail, Phone, Lock,
     CreditCard, ShieldCheck, Trash2, Search,
-    ShoppingCart, Activity, Zap, Cpu, ArrowRight, X, ChevronRight, UserCheck
+    ShoppingCart, Activity, Zap, Cpu, ArrowRight, X, ChevronRight, UserCheck, Upload, Eye, ExternalLink, Key
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
@@ -22,9 +22,14 @@ const Staff = () => {
         email: '',
         phone: '',
         password: '',
+        mPin: '',
         aadharNumber: '',
+        aadharFront: '',
+        aadharBack: '',
         role: 'cashier'
     });
+
+    const [uploading, setUploading] = useState({ front: false, back: false });
 
     const [selectedStaffStats, setSelectedStaffStats] = useState(null);
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
@@ -44,6 +49,21 @@ const Staff = () => {
         }
     };
 
+    const uploadToCloudinary = async (file, side) => {
+        const uploadData = new FormData();
+        uploadData.append('image', file);
+        setUploading(prev => ({ ...prev, [side]: true }));
+        try {
+            const res = await api.post('/products/upload', uploadData);
+            setFormData(prev => ({ ...prev, [side === 'front' ? 'aadharFront' : 'aadharBack']: res.data.url }));
+            toast.success(`${side === 'front' ? 'Front' : 'Back'} Image Uploaded`);
+        } catch (error) {
+            toast.error("Upload failed");
+        } finally {
+            setUploading(prev => ({ ...prev, [side]: false }));
+        }
+    };
+
     const handleViewStats = async (member) => {
         try {
             const res = await api.get(`/users/staff/${member._id}/stats`);
@@ -56,11 +76,24 @@ const Staff = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!formData.aadharFront || !formData.aadharBack) {
+            return toast.error("Please upload both Aadhar Front and Back images");
+        }
+
+        if (formData.mPin.length !== 4) {
+            return toast.error("mPin must be 4 digits");
+        }
+
         try {
             await api.post('/users/staff', formData);
             toast.success("New Node Onboarded: Human Asset Synced");
             setIsModalOpen(false);
-            setFormData({ ownerName: '', email: '', phone: '', password: '', aadharNumber: '', role: 'cashier' });
+            setFormData({ 
+                ownerName: '', email: '', phone: '', password: '', 
+                mPin: '', aadharNumber: '', aadharFront: '', aadharBack: '', 
+                role: 'cashier' 
+            });
             fetchStaff();
         } catch (error) {
             if (error.response?.data?.errorCode === 'LIMIT_REACHED') {
@@ -117,7 +150,7 @@ const Staff = () => {
                     <div key={i} className="h-72 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900"></div>
                 )) : filteredStaff.map((member) => (
                     <motion.div key={member._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-                        
+
                         <div className="mb-5 flex items-center gap-3">
                             <div className="grid h-12 w-12 place-items-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
                                 <User size={20} />
@@ -130,7 +163,7 @@ const Staff = () => {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div className="mb-5 space-y-2">
                             <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
                                 <Mail size={16} className="text-indigo-500" /> <span className="truncate">{member.email}</span>
@@ -145,7 +178,7 @@ const Staff = () => {
 
                         <div className="flex gap-2">
                             <button onClick={() => handleViewStats(member)} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-slate-900 text-sm font-semibold text-white hover:bg-indigo-600">
-                                <Activity size={14} /> Metrics
+                                <Activity size={14} /> Details
                             </button>
                             <button className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
                                 <Trash2 size={16} />
@@ -156,51 +189,78 @@ const Staff = () => {
             </div>
 
             {/* Performance Modal */}
-            <Modal isOpen={isStatsModalOpen} onClose={() => setIsStatsModalOpen(false)} title="Operational Telemetry" className="max-w-2xl">
+            <Modal isOpen={isStatsModalOpen} onClose={() => setIsStatsModalOpen(false)} title="Staff Performance" className="max-w-2xl">
                 {selectedStaffStats && (
                     <div className="py-8 space-y-12">
-                        <div className="flex items-center gap-6 p-8 bg-slate-50 dark:bg-slate-950 rounded-[3rem] border border-slate-100 dark:border-white/5 shadow-inner">
-                            <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-indigo-500/20"><Cpu size={36} /></div>
+                        <div className="flex items-center gap-5 p-6 bg-slate-50 dark:bg-slate-950 rounded-[2rem] border border-slate-100 dark:border-white/5 shadow-inner">
+                            <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-indigo-500/20"><Cpu size={28} /></div>
                             <div>
-                                <h3 className="text-3xl font-black uppercase tracking-tighter dark:text-white leading-none">{selectedStaffStats.member.ownerName}</h3>
-                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-2">{selectedStaffStats.member.role} Status: ACTIVE</p>
+                                <h3 className="text-2xl font-black uppercase tracking-tight dark:text-white leading-none">{selectedStaffStats.member.ownerName}</h3>
+                                <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mt-2">{selectedStaffStats.member.role} • ACTIVE</p>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-8">
-                            <div className="p-10 bg-emerald-500 text-white rounded-[3rem] shadow-2xl shadow-emerald-500/20 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="p-8 bg-emerald-500 text-white rounded-[2rem] shadow-xl shadow-emerald-500/10 relative overflow-hidden group text-center">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
                                 <div className="relative z-10">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 opacity-80">Commit Protocol</p>
-                                    <h4 className="text-5xl font-black tracking-tighter">{selectedStaffStats.totalSales}</h4>
-                                    <p className="text-[10px] font-bold mt-2 opacity-60">Total Orders Processed</p>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-2 opacity-80">Sales Count</p>
+                                    <h4 className="text-4xl font-black tracking-tight">{selectedStaffStats.totalSales}</h4>
                                 </div>
                             </div>
-                            <div className="p-10 bg-indigo-600 text-white rounded-[3rem] shadow-2xl shadow-indigo-500/20 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
+                            <div className="p-8 bg-indigo-600 text-white rounded-[2rem] shadow-xl shadow-indigo-500/10 relative overflow-hidden group text-center">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
                                 <div className="relative z-10">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 opacity-80">Value Extraction</p>
-                                    <h4 className="text-5xl font-black tracking-tighter">₹{selectedStaffStats.totalRevenue.toLocaleString()}</h4>
-                                    <p className="text-[10px] font-bold mt-2 opacity-60">Revenue Generation Score</p>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-2 opacity-80">Revenue</p>
+                                    <h4 className="text-4xl font-black tracking-tight">₹{selectedStaffStats.totalRevenue.toLocaleString()}</h4>
                                 </div>
                             </div>
                         </div>
-                        
+
+                        <div className="space-y-6">
+                            <h5 className="font-black text-[10px] uppercase tracking-[0.4em] text-slate-400 ml-4">KYC: Aadhar Card Images</h5>
+                            <div className="grid grid-cols-2 gap-6">
+                                {[
+                                    { label: 'Front Side', field: 'aadharFront' },
+                                    { label: 'Back Side', field: 'aadharBack' }
+                                ].map((side, i) => (
+                                    <div key={i} className="space-y-3">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">{side.label}</p>
+                                        <div className="relative group aspect-video rounded-3xl overflow-hidden border-4 border-slate-100 dark:border-white/5 bg-slate-950 shadow-xl">
+                                            {selectedStaffStats.member[side.field] ? (
+                                                <>
+                                                    <img src={selectedStaffStats.member[side.field]} alt={side.label} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <a href={selectedStaffStats.member[side.field]} target="_blank" rel="noreferrer" className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-950 shadow-2xl hover:scale-110 transition-all"><ExternalLink size={20} /></a>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-100 dark:bg-slate-900">
+                                                    <Eye size={24} className="opacity-20" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest mt-2">No Image</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="space-y-6">
                             <h5 className="font-black text-[10px] uppercase tracking-[0.4em] text-slate-400 ml-4">Recent Protocol Logs</h5>
                             <div className="space-y-3">
                                 {selectedStaffStats.recentSales.length > 0 ? selectedStaffStats.recentSales.map(sale => (
-                                    <div key={sale._id} className="flex justify-between items-center p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-[2rem] hover:border-indigo-500/20 transition-all">
-                                        <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-slate-50 dark:bg-slate-950 rounded-xl flex items-center justify-center text-slate-400"><ShoppingCart size={18} /></div>
+                                    <div key={sale._id} className="flex justify-between items-center p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-[1.5rem] hover:border-indigo-500/20 transition-all shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 bg-slate-50 dark:bg-slate-950 rounded-lg flex items-center justify-center text-slate-400"><ShoppingCart size={16} /></div>
                                             <div>
-                                                <p className="font-black text-sm uppercase dark:text-white leading-none">{sale.customerName}</p>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">{new Date(sale.createdAt).toLocaleDateString()}</p>
+                                                <p className="font-black text-[11px] uppercase dark:text-white leading-none">{sale.customerName}</p>
+                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{new Date(sale.createdAt).toLocaleDateString()}</p>
                                             </div>
                                         </div>
-                                        <p className="font-black text-lg text-emerald-600">+ ₹{sale.totalAmount}</p>
+                                        <p className="font-black text-base text-emerald-600">+ ₹{sale.totalAmount}</p>
                                     </div>
-                                )) : <div className="p-10 text-center bg-slate-50 dark:bg-slate-950 rounded-[2rem] border border-dashed border-slate-200 dark:border-white/10 text-slate-400 font-black uppercase text-[10px] tracking-widest">No active logs recorded</div>}
+                                )) : <div className="p-10 text-center bg-slate-50 dark:bg-slate-950 rounded-[1.5rem] border border-dashed border-slate-200 dark:border-white/10 text-slate-400 font-black uppercase text-[10px] tracking-widest">No active logs recorded</div>}
                             </div>
                         </div>
                     </div>
@@ -208,49 +268,90 @@ const Staff = () => {
             </Modal>
 
             {/* Hire Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Initialize Human Asset" className="max-w-2xl">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Staff" className="max-w-2xl">
                 <form onSubmit={handleSubmit} className="space-y-10 py-6">
                     <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-[3.5rem] bg-slate-50/50 dark:bg-black/20 group relative overflow-hidden">
                         <div className="w-24 h-24 bg-indigo-600 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl shadow-indigo-500/30 animate-float"><Cpu size={48} /></div>
-                        <p className="mt-8 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600 text-center">Protocol: Node Initialization</p>
+                        <p className="mt-8 text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600 text-center">Details: Add staff details</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Full Alias</label>
-                            <input type="text" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.ownerName} onChange={(e) => setFormData({...formData, ownerName: e.target.value})} />
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Full Name</label>
+                            <input type="text" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.ownerName} onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })} />
                         </div>
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Uplink Number</label>
-                            <input type="tel" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Mobile Number</label>
+                            <input type="tel" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                         </div>
                         <div className="md:col-span-2 space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Communication Link (Email)</label>
-                            <input type="email" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Email Id</label>
+                            <input type="email" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                         </div>
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Security Hash (Password)</label>
-                            <input type="password" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Security Password</label>
+                            <input type="password" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
                         </div>
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Vetting ID (Aadhar)</label>
-                            <input type="text" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.aadharNumber} onChange={(e) => setFormData({...formData, aadharNumber: e.target.value})} />
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Aadhar Number</label>
+                            <input type="text" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.aadharNumber} onChange={(e) => setFormData({ ...formData, aadharNumber: e.target.value })} />
                         </div>
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Secure mPin (4 Digits)</label>
+                            <input type="text" maxLength={4} required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.mPin} onChange={(e) => setFormData({ ...formData, mPin: e.target.value.replace(/\D/g, '') })} />
+                        </div>
+
+                        <div className="md:col-span-2 space-y-6">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">KYC: Aadhar Card Images</label>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Front Side</p>
+                                    <div className="relative group aspect-video rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 overflow-hidden flex flex-col items-center justify-center gap-3 transition-all hover:border-indigo-500/50">
+                                        {formData.aadharFront ? (
+                                            <img src={formData.aadharFront} alt="Front" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <>
+                                                <Upload size={24} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload Front</span>
+                                            </>
+                                        )}
+                                        <input type="file" accept="image/*" onChange={(e) => uploadToCloudinary(e.target.files[0], 'front')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        {uploading.front && <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Back Side</p>
+                                    <div className="relative group aspect-video rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 overflow-hidden flex flex-col items-center justify-center gap-3 transition-all hover:border-indigo-500/50">
+                                        {formData.aadharBack ? (
+                                            <img src={formData.aadharBack} alt="Back" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <>
+                                                <Upload size={24} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload Back</span>
+                                            </>
+                                        )}
+                                        <input type="file" accept="image/*" onChange={(e) => uploadToCloudinary(e.target.files[0], 'back')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        {uploading.back && <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="md:col-span-2 space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Permission Layer</label>
-                            <select required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold cursor-pointer appearance-none" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})}>
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Staff Role</label>
+                            <select required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold cursor-pointer appearance-none" value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
                                 <option value="cashier">CASHIER (PROTOCOL: BILLING ONLY)</option>
                                 <option value="manager">MANAGER (PROTOCOL: INVENTORY + BILLING)</option>
                             </select>
                         </div>
                     </div>
                     <div className="flex flex-col md:flex-row gap-6 pt-10 border-t border-slate-50 dark:border-white/5">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-20 flex-1 bg-slate-50 dark:bg-slate-950 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-500">Abort Protocol</button>
-                        <button type="submit" className="h-20 flex-[2] bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-[0_20px_50px_rgba(79,70,229,0.3)] hover:bg-indigo-700 active:scale-95 transition-all">Commit Onboarding</button>
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-20 flex-1 bg-slate-50 dark:bg-slate-950 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-500">Cancel</button>
+                        <button type="submit" className="h-20 flex-[2] bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-[0_20px_50px_rgba(79,70,229,0.3)] hover:bg-indigo-700 active:scale-95 transition-all">Add Staff</button>
                     </div>
                 </form>
             </Modal>
-            
+
             <LimitModal isOpen={isLimitModalOpen} onClose={() => setIsLimitModalOpen(false)} limitType={limitMetadata.type} isTrialUsed={limitMetadata.isTrialUsed} />
         </div>
     );

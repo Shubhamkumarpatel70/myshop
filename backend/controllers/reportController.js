@@ -2,10 +2,13 @@ const Sale = require('../models/Sale');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const User = require('../models/User');
+const Shift = require('../models/Shift');
+const PurchaseOrder = require('../models/PurchaseOrder');
 
 exports.getDashboardStats = async (req, res) => {
     try {
         const filter = req.isAdmin ? {} : { user: req.shopOwnerId };
+        const shopFilter = req.isAdmin ? {} : { shop: req.shopOwnerId };
         
         const totalProducts = await Product.countDocuments(filter);
         const totalCategories = await Category.countDocuments(filter);
@@ -14,9 +17,18 @@ exports.getDashboardStats = async (req, res) => {
             $expr: { $lte: ["$quantity", "$lowStockThreshold"] } 
         });
         
+        const activeShifts = await Shift.countDocuments({ ...shopFilter, status: 'Open' });
+        const pendingPOs = await PurchaseOrder.countDocuments({ ...filter, status: 'Sent' });
+
         const sales = await Sale.find(filter);
         const totalRevenue = sales.reduce((acc, curr) => acc + curr.totalAmount, 0);
         
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todaySales = await Sale.find({ ...filter, createdAt: { $gte: today } });
+        const todayRevenue = todaySales.reduce((acc, curr) => acc + curr.totalAmount, 0);
+        const todayCount = todaySales.length;
+
         let totalCost = 0;
         sales.forEach(sale => {
             sale.items.forEach(item => {
@@ -52,6 +64,10 @@ exports.getDashboardStats = async (req, res) => {
                 expiringProducts,
                 expiredProducts,
                 totalRevenue,
+                todayRevenue,
+                todayCount,
+                activeShifts,
+                pendingPOs,
                 totalProfit,
                 totalSalesCount,
                 recentTransactions: sales.slice(-5).reverse()
@@ -226,11 +242,17 @@ exports.getAdminStats = async (req, res) => {
         const totalOwners = await User.countDocuments({ role: 'shop_owner' });
         const totalStaff = await User.countDocuments({ role: { $in: ['manager', 'cashier'] } });
         const totalProducts = await Product.countDocuments();
+        
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        const todaySales = await Sale.countDocuments({ createdAt: { $gte: today } });
+        const todaySalesDocs = await Sale.find({ createdAt: { $gte: today } });
+        const todayRevenue = todaySalesDocs.reduce((acc, curr) => acc + curr.totalAmount, 0);
+        const todayCount = todaySalesDocs.length;
         const todayProducts = await Product.countDocuments({ createdAt: { $gte: today } });
+        
+        const activeShifts = await Shift.countDocuments({ status: 'Open' });
+        const pendingPOs = await PurchaseOrder.countDocuments({ status: 'Sent' });
         
         const lowStockProducts = await Product.find({ 
             $expr: { $lte: ["$quantity", "$lowStockThreshold"] } 
@@ -243,10 +265,9 @@ exports.getAdminStats = async (req, res) => {
         
         const shops = await User.find({ role: 'shop_owner' });
         
-        // Ensure all shop owners have a shopId and add product counts
         const shopsWithStats = await Promise.all(shops.map(async (shop) => {
             if (!shop.shopId) {
-                await shop.save(); // This triggers the pre-save hook to generate shopId
+                await shop.save();
             }
             const productCount = await Product.countDocuments({ user: shop._id });
             return { ...shop._doc, productCount };
@@ -259,7 +280,10 @@ exports.getAdminStats = async (req, res) => {
                 totalStaff,
                 totalProducts,
                 totalRevenue,
-                todaySales,
+                todayRevenue,
+                todayCount,
+                activeShifts,
+                pendingPOs,
                 todayProducts,
                 lowStockShops,
                 shops: shopsWithStats

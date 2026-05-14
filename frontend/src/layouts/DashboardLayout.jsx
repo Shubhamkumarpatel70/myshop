@@ -25,6 +25,8 @@ import {
     Clock,
     Zap,
     Share2,
+    BarChart3,
+    Truck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -88,19 +90,25 @@ const DashboardLayout = () => {
         { name: 'Overview', icon: LayoutDashboard, path: '/dashboard', roles: ['super_admin', 'shop_owner', 'manager', 'cashier'], priority: true, description: 'Role summary and quick actions', group: 'core' },
         { name: 'Sales', icon: ShoppingCart, path: '/dashboard/sales', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: 'POS transactions and returns', group: 'operations' },
         { name: 'Shifts', icon: Clock, path: '/dashboard/shifts', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: 'Open/close and shift logs', group: 'operations' },
+        { name: 'Reports', icon: BarChart3, path: '/dashboard/reports', roles: ['shop_owner', 'manager', 'super_admin'], priority: true, description: 'Sales and business analytics', group: 'operations' },
         { name: 'Inventory', icon: Package, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'], priority: true, description: 'Stock levels and adjustments', group: 'operations' },
         { name: 'Categories', icon: Layers, path: '/dashboard/categories', roles: ['shop_owner', 'manager'], description: 'Catalog grouping', group: 'operations' },
         { name: 'Staff', icon: Users, path: '/dashboard/staff', roles: ['shop_owner'], description: 'Team access and roles', group: 'management' },
         { name: 'Pricing', icon: Zap, path: '/dashboard/pricing', roles: ['shop_owner'], description: 'Plan and billing controls', group: 'management' },
         { name: 'Payments', icon: CreditCard, path: '/dashboard/payment-settings', roles: ['shop_owner'], description: 'Gateway and UPI settings', group: 'management' },
         { name: 'Share Shop', icon: Share2, path: '/dashboard/share', roles: ['shop_owner'], description: 'Promote your shop link', group: 'management' },
+        { name: 'Customers', icon: Users, path: '/dashboard/customers', roles: ['shop_owner', 'manager'], priority: true, description: 'Client CRM and loyalty', group: 'operations' },
+        { name: 'Purchase Orders', icon: ShoppingCart, path: '/dashboard/purchase-orders', roles: ['shop_owner', 'manager'], description: 'Procurement and restocking', group: 'logistics' },
         { name: 'Account', icon: User, path: '/dashboard/account', roles: ['shop_owner', 'manager', 'cashier'], description: 'Profile and security', group: 'management' },
 
         { name: 'Shops', icon: Store, path: '/dashboard/shops', roles: ['super_admin'], priority: true, description: 'All registered shops', group: 'admin-core' },
         { name: 'Approvals', icon: ShieldCheck, path: '/dashboard/admin/approvals', roles: ['super_admin'], priority: true, description: 'Shop verification queue', group: 'admin-core' },
+        { name: 'Global Staff', icon: Users, path: '/dashboard/admin/staff', roles: ['super_admin'], description: 'Monitor all shop employees', group: 'admin-core' },
         { name: 'Subscriptions', icon: CreditCard, path: '/dashboard/admin/subscriptions', roles: ['super_admin'], description: 'Manage shop subscriptions', group: 'admin-core' },
         { name: 'Admin Sales', icon: ShoppingCart, path: '/dashboard/admin/sales', roles: ['super_admin'], priority: true, description: 'Platform-wide transaction audit', group: 'admin-ops' },
         { name: 'Admin Inventory', icon: Package, path: '/dashboard/admin/inventory', roles: ['super_admin'], priority: true, description: 'Platform-wide inventory view', group: 'admin-ops' },
+        { name: 'Admin POs', icon: ShoppingCart, path: '/dashboard/admin/purchase-orders', roles: ['super_admin'], priority: true, description: 'Platform-wide procurement audit', group: 'admin-ops' },
+        { name: 'Platform Reports', icon: BarChart3, path: '/dashboard/reports', roles: ['super_admin'], priority: true, description: 'Global business intelligence', group: 'admin-ops' },
         { name: 'Shop Finder', icon: Search, path: '/dashboard/admin/shop-finder', roles: ['super_admin'], description: 'Lookup by shop ID', group: 'admin-tools' },
         { name: 'Order Finder', icon: Search, path: '/dashboard/admin/order-finder', roles: ['super_admin'], description: 'Lookup by order or transaction ID', group: 'admin-tools' },
         { name: 'Broadcast', icon: Megaphone, path: '/dashboard/broadcast', roles: ['super_admin'], description: 'Send announcements to shops', group: 'admin-comms' },

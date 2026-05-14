@@ -127,8 +127,13 @@ const Shifts = () => {
                                 </div>
                                 <div className="w-px h-8 bg-white/20 hidden sm:block"></div>
                                 <div>
+                                    <p className="text-indigo-100 text-[9px] font-black uppercase tracking-widest">Revenue (Live)</p>
+                                    <p className="font-bold text-base">₹{currentShift.currentRevenue?.toLocaleString() || '0'}</p>
+                                </div>
+                                <div className="w-px h-8 bg-white/20 hidden sm:block"></div>
+                                <div>
                                     <p className="text-indigo-100 text-[9px] font-black uppercase tracking-widest">Reconciliation</p>
-                                    <p className="font-bold text-base">In Progress</p>
+                                    <p className="font-bold text-base">₹{currentShift.expectedCash?.toLocaleString() || '---'}</p>
                                 </div>
                             </div>
                         </div>

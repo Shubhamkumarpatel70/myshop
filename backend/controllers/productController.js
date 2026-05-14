@@ -156,3 +156,14 @@ exports.getPublicProducts = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+exports.getPublicProductsByShop = async (req, res) => {
+    try {
+        const products = await Product.find({ user: req.params.shopId })
+            .select('productName category sellingPrice quantity unit lowStockThreshold productImage')
+            .populate('category', 'name');
+        res.json({ success: true, data: products });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

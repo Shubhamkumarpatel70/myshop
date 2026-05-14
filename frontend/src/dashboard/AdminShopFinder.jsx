@@ -122,13 +122,41 @@ const AdminShopFinder = () => {
                             <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{shop.address || 'N/A'}</p>
                         </div>
 
-                        {shop.aadharImage && (
-                            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-                                <img
-                                    src={shop.aadharImage.startsWith('http') ? shop.aadharImage : `${BASE_URL}${shop.aadharImage}`}
-                                    alt="KYC"
-                                    className="h-56 w-full object-cover"
-                                />
+                        <div className="mt-4 space-y-4">
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">KYC Verification Documents</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                {[
+                                    { label: 'Aadhar Front', field: 'aadharFront' },
+                                    { label: 'Aadhar Back', field: 'aadharBack' }
+                                ].map((side, i) => (
+                                    <div key={i} className="space-y-1.5">
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">{side.label}</p>
+                                        <div className="overflow-hidden rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-slate-950 aspect-video relative group">
+                                            {shop[side.field] ? (
+                                                <img
+                                                    src={shop[side.field].startsWith('http') ? shop[side.field] : `${BASE_URL}${shop[side.field]}`}
+                                                    alt={side.label}
+                                                    className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-slate-600 italic text-[10px]">Not Provided</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {(shop.paymentScreenshot || shop.pendingSubscription?.screenshot) && (
+                            <div className="mt-6">
+                                <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-2">Payment Verification Proof</p>
+                                <div className="overflow-hidden rounded-xl border border-indigo-200 dark:border-indigo-500/30">
+                                    <img
+                                        src={(shop.paymentScreenshot || shop.pendingSubscription?.screenshot).startsWith('http') ? (shop.paymentScreenshot || shop.pendingSubscription?.screenshot) : `${BASE_URL}${shop.paymentScreenshot || shop.pendingSubscription?.screenshot}`}
+                                        alt="Payment Proof"
+                                        className="h-56 w-full object-cover"
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>

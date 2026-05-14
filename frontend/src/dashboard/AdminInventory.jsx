@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import api from '../utils/api';
+import api, { BASE_URL } from '../utils/api';
 import { ExternalLink, Package, Search, Store } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
+import { Copy } from 'lucide-react';
 
 const formatCurrency = (value) => `₹${(value || 0).toLocaleString()}`;
 
@@ -54,6 +55,12 @@ const AdminInventory = () => {
         } finally {
             setInventoryLoading(false);
         }
+    };
+
+    const copyToClipboard = (id) => {
+        if (!id) return;
+        navigator.clipboard.writeText(id);
+        toast.success(`Shop ID ${id} copied to clipboard`);
     };
 
     return (
@@ -118,14 +125,28 @@ const AdminInventory = () => {
                                 </span>
                             </div>
 
-                            <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                            <div className="mt-4 grid grid-cols-3 gap-2 text-[10px]">
+                                <button 
+                                    onClick={() => copyToClipboard(shop.shopId)}
+                                    className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-slate-500 font-bold uppercase tracking-tight">Shop ID</p>
+                                        <Copy size={10} className="text-slate-300 group-hover:text-indigo-600" />
+                                    </div>
+                                    <p className="mt-1 truncate font-black text-slate-900 dark:text-white">{shop.shopId || 'N/A'}</p>
+                                </button>
                                 <div className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
-                                    <p className="text-slate-500">Shop ID</p>
-                                    <p className="mt-1 truncate font-medium text-slate-900 dark:text-white">{shop.shopId || 'N/A'}</p>
+                                    <p className="text-slate-500 font-bold uppercase tracking-tight">Proof</p>
+                                    {(shop.paymentScreenshot || shop.pendingSubscription?.screenshot) ? (
+                                        <a href={ (shop.paymentScreenshot || shop.pendingSubscription?.screenshot).startsWith('http') ? (shop.paymentScreenshot || shop.pendingSubscription?.screenshot) : `${BASE_URL}${shop.paymentScreenshot || shop.pendingSubscription?.screenshot}`} target="_blank" rel="noreferrer" className="mt-1 block text-indigo-600 font-black hover:underline">VIEW</a>
+                                    ) : (
+                                        <p className="mt-1 font-black text-slate-400">NONE</p>
+                                    )}
                                 </div>
                                 <div className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
-                                    <p className="text-slate-500">Status</p>
-                                    <p className="mt-1 font-medium text-emerald-600 dark:text-emerald-300">Active</p>
+                                    <p className="text-slate-500 font-bold uppercase tracking-tight">Status</p>
+                                    <p className="mt-1 font-black text-emerald-600 dark:text-emerald-300 uppercase tracking-widest">Live</p>
                                 </div>
                             </div>
 

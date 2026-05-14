@@ -7,7 +7,7 @@ import {
     User, Phone, CreditCard, Receipt,
     ChevronRight, Package, X, RefreshCcw,
     Undo2, ArrowRight, ArrowLeft, QrCode, Printer,
-    Barcode, Scan, Notebook, Store, AlertTriangle, ShieldCheck, Zap, Layers, Globe
+    Barcode, Scan, Notebook, Store, AlertTriangle, ShieldCheck, Zap, Layers, Globe, Calendar
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
@@ -24,6 +24,10 @@ const Sales = () => {
     const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
     const [posStep, setPosStep] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState({ total: 0, pages: 1 });
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7)); // Default: Current Month
 
     useEffect(() => {
         if (searchQuery !== undefined) {
@@ -46,6 +50,7 @@ const Sales = () => {
     const [itemToReturn, setItemToReturn] = useState(null);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
     useEffect(() => {
         const handleOnline = () => {
@@ -66,25 +71,27 @@ const Sales = () => {
     }, []);
 
     const syncOfflineSales = async () => {
-        if (!navigator.onLine || isSyncing) return;
         const offlineSales = await posStore.getOfflineSales();
-        if (offlineSales.length > 0) {
-            setIsSyncing(true);
-            const toastId = toast.loading(`Syncing ${offlineSales.length} offline inventory...`);
-            for (const sale of offlineSales) {
-                try {
-                    const { id, ...saleData } = sale;
-                    await api.post('/sales', saleData);
-                    await posStore.deleteOfflineSale(id);
-                } catch (error) {
-                    console.error("Sync failed for sale:", sale);
-                }
+        setPendingSyncCount(offlineSales.length);
+
+        if (!navigator.onLine || isSyncing || offlineSales.length === 0) return;
+
+        setIsSyncing(true);
+        const toastId = toast.loading(`Uplinking ${offlineSales.length} cached transactions...`);
+        for (const sale of offlineSales) {
+            try {
+                const { id, ...saleData } = sale;
+                await api.post('/sales', saleData);
+                await posStore.deleteOfflineSale(id);
+                setPendingSyncCount(prev => prev - 1);
+            } catch (error) {
+                console.error("Sync failed for sale:", sale);
             }
-            toast.dismiss(toastId);
-            toast.success("Ecosystem Synchronized");
-            setIsSyncing(false);
-            fetchSales();
         }
+        toast.dismiss(toastId);
+        toast.success("Ecosystem Synchronized");
+        setIsSyncing(false);
+        fetchSales();
     };
 
     const fetchPaymentConfig = async () => {
@@ -96,18 +103,41 @@ const Sales = () => {
         }
     };
 
-    const fetchSales = async () => {
+    useEffect(() => {
+        fetchSales(1, false);
+    }, [monthFilter]);
+
+    const fetchSales = async (pageNum = 1, append = false) => {
+        if (pageNum === 1) setLoading(true);
+        else setLoadingMore(true);
+
         try {
-            const res = await api.get('/sales');
-            const salesData = res.data.data;
-            setSales(salesData);
-            await posStore.cacheSales(salesData);
+            const res = await api.get(`/sales?page=${pageNum}&limit=10&month=${monthFilter}`);
+            const { data, pagination: pagData } = res.data;
+
+            if (append) {
+                setSales(prev => [...prev, ...data]);
+            } else {
+                setSales(data);
+            }
+
+            setPagination(pagData);
+            setPage(pageNum);
+
+            if (pageNum === 1) await posStore.cacheSales(data);
         } catch (error) {
             console.error("Failed to fetch sales, loading from cache...");
             const cachedSales = await posStore.getCachedSales();
-            if (cachedSales.length > 0) setSales(cachedSales);
+            if (cachedSales.length > 0 && pageNum === 1) setSales(cachedSales);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    const loadMore = () => {
+        if (page < pagination.pages) {
+            fetchSales(page + 1, true);
         }
     };
 
@@ -208,7 +238,8 @@ const Sales = () => {
             };
             if (!navigator.onLine) {
                 await posStore.saveOfflineSale(saleData);
-                toast.success("Offline Node Active: Sale cached locally");
+                toast.success("Offline Active: Sale cached locally");
+                syncOfflineSales();
             } else {
                 await api.post('/sales', saleData);
                 toast.success("Transaction committed to cloud");
@@ -218,17 +249,28 @@ const Sales = () => {
             setUtrNumber('');
             setIsSaleModalOpen(false);
             setIsQrModalOpen(false);
-            fetchSales();
+            setIsQrModalOpen(false);
+
+            // If new sale is in a different month, reset filter to current month to see it
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            if (monthFilter !== currentMonth) {
+                setMonthFilter(currentMonth);
+            } else {
+                fetchSales(1, false);
+            }
             fetchProducts();
         } catch (error) {
             toast.error(error.response?.data?.message || "Protocol Failure");
         }
     };
 
-    const filteredProducts = products.filter(p =>
-        p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.barcode && p.barcode.includes(searchTerm))
-    );
+    const filteredProducts = products.filter(p => {
+        const searchLower = searchTerm.toLowerCase();
+        return p.productName.toLowerCase().includes(searchLower) ||
+            p.barcode?.toLowerCase().includes(searchLower) ||
+            p.category?.name?.toLowerCase().includes(searchLower) ||
+            p.batches?.some(b => b.batchNumber?.toLowerCase().includes(searchLower));
+    });
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -240,49 +282,95 @@ const Sales = () => {
         <div className="space-y-6 pb-10 font-jakarta">
             {/* Status Indicators */}
             <AnimatePresence>
-                {!isOnline && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="rounded-2xl border border-rose-500/30 bg-rose-600 px-4 py-3 text-white shadow-lg sm:px-5">
-                        <div className="flex items-center gap-4">
-                            <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/20"><Globe size={18} /></div>
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide">Offline Node Active</p>
-                                <p className="text-xs opacity-90">Cloud sync paused. Sales are cached locally.</p>
+                {(!isOnline || pendingSyncCount > 0) && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0, y: -20 }}
+                        animate={{ height: 'auto', opacity: 1, y: 0 }}
+                        exit={{ height: 0, opacity: 0, y: -20 }}
+                        className={`rounded-2xl border px-4 py-3 text-white shadow-lg sm:px-5 mb-4 ${!isOnline ? 'bg-rose-600 border-rose-500/30' : 'bg-indigo-600 border-indigo-500/30'
+                            }`}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/20">
+                                    {!isOnline ? <Globe size={18} /> : <RefreshCcw size={18} className={isSyncing ? 'animate-spin' : ''} />}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-widest">
+                                        {!isOnline ? 'Offline Active' : 'Synchronization Pending'}
+                                    </p>
+                                    <p className="text-[10px] font-bold opacity-90 uppercase tracking-tight">
+                                        {pendingSyncCount} transaction(s) queued in local registry.
+                                    </p>
+                                </div>
                             </div>
+                            {isOnline && pendingSyncCount > 0 && (
+                                <button
+                                    onClick={syncOfflineSales}
+                                    disabled={isSyncing}
+                                    className="px-4 py-2 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50"
+                                >
+                                    {isSyncing ? 'Uplinking...' : 'Sync Now'}
+                                </button>
+                            )}
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* Header with High-Fidelity Typography */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-600">
-                        <Zap size={14} /> Terminal Alpha-01
-                    </div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-                        POS <span className="text-indigo-600">Terminal</span>
-                    </h1>
-                    <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-                        High-performance transaction engine for your retail ecosystem.
-                    </p>
+            <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-600">
+                    <Zap size={14} /> Terminal Alpha-01
                 </div>
-                <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
-                    <form onSubmit={handleTransactionSearch} className="flex flex-1 gap-2 lg:w-80">
-                        <div className="relative flex-1 group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                    POS <span className="text-indigo-600">Terminal</span>
+                </h1>
+                <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+                    High-performance transaction engine for your retail ecosystem.
+                </p>
+            </div>
+
+            {/* Tactical Control Bar */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Registry Period</span>
+                        <div className="relative group">
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-600 group-focus-within:scale-110 transition-transform pointer-events-none" size={16} />
                             <input
-                                type="text" placeholder="Transaction ID..."
-                                className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 text-xs font-semibold uppercase tracking-wide text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                                value={transactionSearch} onChange={(e) => setTransactionSearch(e.target.value)}
+                                type="month"
+                                className="h-11 w-full sm:w-44 pl-11 pr-3 rounded-lg border border-slate-300 bg-white text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-600 dark:bg-slate-950 dark:border-white/5 dark:text-white shadow-sm transition-all"
+                                value={monthFilter}
+                                onChange={(e) => setMonthFilter(e.target.value)}
                             />
                         </div>
-                        <button type="submit" disabled={searching} className="h-11 rounded-lg border border-slate-300 bg-white px-4 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
-                            {searching ? '...' : 'Find'}
-                        </button>
-                    </form>
-                    <button onClick={() => setIsSaleModalOpen(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-indigo-700">
-                        <Plus size={20} /> New Sale
-                    </button>
+                    </div>
+
+                    <div className="flex flex-col gap-3 sm:flex-row lg:items-end lg:w-auto flex-1 lg:justify-end">
+                        <form onSubmit={handleTransactionSearch} className="flex gap-2 lg:w-80">
+                            <div className="flex flex-col gap-1.5 flex-1">
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Archive Search</span>
+                                <div className="relative group">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
+                                    <input
+                                        type="text" placeholder="Transaction ID..."
+                                        className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-11 pr-3 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 shadow-sm"
+                                        value={transactionSearch} onChange={(e) => setTransactionSearch(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <button type="submit" disabled={searching} className="h-11 rounded-lg border border-slate-300 bg-white px-4 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 shadow-sm self-end">
+                                {searching ? '...' : 'Find'}
+                            </button>
+                        </form>
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">New Entry</span>
+                            <button onClick={() => setIsSaleModalOpen(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/20">
+                                <Plus size={20} /> New Sale
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -292,11 +380,11 @@ const Sales = () => {
                     <table className="min-w-[980px] w-full text-left">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-800/50">
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Transaction Node</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Transaction ID</th>
                                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Merchant Client</th>
-                                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">Payload</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">Quantity</th>
                                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Settlement</th>
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Protocol</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
                                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Receipt</th>
                             </tr>
                         </thead>
@@ -311,7 +399,7 @@ const Sales = () => {
                                     </td>
                                     <td className="px-4 py-4">
                                         <p className="text-sm font-semibold leading-none text-slate-900 dark:text-white">{sale.customerName}</p>
-                                        <p className="mt-1 text-xs text-slate-500">{sale.customerPhone || 'WALK-IN NODE'}</p>
+                                        <p className="mt-1 text-xs text-slate-500">{sale.customerPhone || 'Take from store'}</p>
                                     </td>
                                     <td className="px-4 py-4 text-center">
                                         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -324,7 +412,7 @@ const Sales = () => {
                                     </td>
                                     <td className="px-4 py-4">
                                         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${sale.status === 'Returned' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' :
-                                                'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+                                            'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
                                             }`}>
                                             {sale.status}
                                         </span>
@@ -339,6 +427,23 @@ const Sales = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {pagination.pages > page && (
+                    <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-center">
+                        <button
+                            onClick={loadMore}
+                            disabled={loadingMore}
+                            className="inline-flex h-11 items-center justify-center gap-2 px-8 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50 shadow-sm"
+                        >
+                            {loadingMore ? (
+                                <RefreshCcw size={14} className="animate-spin" />
+                            ) : (
+                                <ChevronRight size={14} className="rotate-90" />
+                            )}
+                            Load More Transactions
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* POS UI Modal */}
@@ -349,8 +454,8 @@ const Sales = () => {
                             <div
                                 key={step}
                                 className={`rounded-xl border px-3 py-2 text-center text-xs font-semibold transition-colors ${posStep >= step
-                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-500/15 dark:text-indigo-200'
-                                        : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400'
+                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-500/15 dark:text-indigo-200'
+                                    : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400'
                                     }`}
                             >
                                 {step === 1 ? 'Products' : step === 2 ? 'Customer' : 'Payment'}
@@ -507,8 +612,8 @@ const Sales = () => {
                                             key={method}
                                             onClick={() => setCustomerInfo({ ...customerInfo, paymentMethod: method })}
                                             className={`rounded-lg border px-3 py-3 text-sm font-semibold transition-colors ${customerInfo.paymentMethod === method
-                                                    ? 'border-indigo-500 bg-indigo-600 text-white'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800'
+                                                ? 'border-indigo-500 bg-indigo-600 text-white'
+                                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800'
                                                 }`}
                                         >
                                             {method}
@@ -536,7 +641,7 @@ const Sales = () => {
             </Modal>
 
             {/* View Details Modal */}
-            <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Transaction Manifest" className="max-w-2xl">
+            <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Transaction Summary" className="max-w-2xl">
                 {viewingSale && (
                     <div className="py-8 space-y-12">
                         <div className="flex flex-col items-center text-center space-y-4">
@@ -549,13 +654,21 @@ const Sales = () => {
                         <div className="bg-slate-50 dark:bg-slate-950 p-10 rounded-[3rem] border border-slate-100 dark:border-white/5 space-y-8">
                             <div className="flex justify-between items-start pb-8 border-b border-slate-200 dark:border-white/10">
                                 <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Merchant Client</p><p className="font-black text-lg dark:text-white">{viewingSale.customerName}</p></div>
-                                <div className="text-right"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Timestamp</p><p className="font-black text-lg dark:text-white">{formatDate(viewingSale.createdAt)}</p></div>
+                                <div className="text-right"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Date</p><p className="font-black text-lg dark:text-white">{formatDate(viewingSale.createdAt)}</p></div>
                             </div>
                             <div className="space-y-6">
                                 {viewingSale.items.map((item, idx) => (
                                     <div key={idx} className="flex justify-between items-center group">
-                                        <div><p className="font-black text-sm uppercase dark:text-white leading-none">{item.productName}</p><p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">{item.quantity} Unit(s) @ ₹{item.price}</p></div>
-                                        <p className="font-black text-base dark:text-white">₹{item.price * item.quantity}</p>
+                                        <div>
+                                            <p className="font-black text-sm uppercase dark:text-white leading-none">{item.product?.productName || item.productName}</p>
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.quantity} Unit(s) @ ₹{item.price}</p>
+                                                {item.batchNumber && (
+                                                    <span className="text-[8px] px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 rounded-md font-bold">BATCH: {item.batchNumber}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="font-black text-base dark:text-white">₹{item.total || (item.price * item.quantity)}</p>
                                     </div>
                                 ))}
                             </div>

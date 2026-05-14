@@ -140,6 +140,7 @@ const AdminOrderFinder = () => {
                                 <thead className="bg-slate-50 dark:bg-slate-800/50">
                                     <tr>
                                         <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Product Name</th>
+                                        <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Batch & Expiry</th>
                                         <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Category</th>
                                         <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Qty</th>
                                         <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Amount</th>
@@ -151,6 +152,12 @@ const AdminOrderFinder = () => {
                                     {(order.items || []).map((item, idx) => (
                                         <tr key={`${item.product?._id || item.productName}-${idx}`}>
                                             <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-white">{item.productName || item.product?.productName || 'N/A'}</td>
+                                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-[10px] text-indigo-600">{item.batchNumber || '---'}</span>
+                                                    <span className="text-[9px] text-slate-400">{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : '---'}</span>
+                                                </div>
+                                            </td>
                                             <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{item.product?.category?.name || 'N/A'}</td>
                                             <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{item.quantity || 0}</td>
                                             <td className="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white">₹{(item.total || 0).toLocaleString()}</td>

@@ -57,13 +57,13 @@ exports.register = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ success: false, errors: errors.array() });
         }
-        const { shopName, ownerName, email, phone, password, mPin, businessType, address } = req.body;
-
+        const { shopName, ownerName, email, phone, password, mPin, businessType, address, aadharNumber, aadharFront, aadharBack } = req.body;
+ 
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ success: false, message: 'User already exists' });
         }
-
+ 
         const user = await User.create({
             shopName,
             ownerName,
@@ -72,7 +72,10 @@ exports.register = async (req, res) => {
             password,
             mPin,
             businessType,
-            address
+            address,
+            aadharNumber,
+            aadharFront,
+            aadharBack
         });
 
         if (user) {
@@ -94,10 +97,22 @@ exports.login = async (req, res) => {
             return res.status(400).json({ success: false, errors: errors.array() });
         }
         const { email, password, mPin } = req.body;
-        const user = await User.findOne({ email }).select('+refreshToken +mPin +password');
+        const user = await User.findOne({ email }).select('+refreshToken +mPin +password +loginAttempts +lockoutUntil');
 
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid email' });
+            return res.status(401).json({ success: false, message: 'Invalid email or password' });
+        }
+
+        // Check if account is locked
+        if (user.lockoutUntil && user.lockoutUntil > Date.now()) {
+            const remainingSeconds = Math.ceil((user.lockoutUntil - Date.now()) / 1000);
+            const minutesLeft = Math.ceil(remainingSeconds / 60);
+            return res.status(429).json({ 
+                success: false, 
+                message: `Too many login attempts. Please try again after ${minutesLeft} minutes`,
+                remainingSeconds,
+                lockoutUntil: user.lockoutUntil 
+            });
         }
 
         let isMatch = false;
@@ -111,11 +126,40 @@ exports.login = async (req, res) => {
             if (user.isSuspended) {
                 return res.status(403).json({ success: false, message: 'Account is suspended' });
             }
+            
+            // Reset attempts on success
+            user.loginAttempts = 0;
+            user.lockoutUntil = null;
+            await user.save();
+
             await sendTokenResponse(user, 200, res);
         } else {
-            res.status(401).json({ success: false, message: 'Invalid email or password' });
+            // Increment attempts
+            user.loginAttempts = (user.loginAttempts || 0) + 1;
+            
+            if (user.loginAttempts >= 3) {
+                user.lockoutUntil = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+                await user.save();
+                return res.status(429).json({ 
+                    success: false, 
+                    message: 'Too many login attempts. Please try again after 5 minutes',
+                    remainingSeconds: 300,
+                    lockoutUntil: user.lockoutUntil
+                });
+            } else {
+                await user.save();
+                const attemptsLeft = 3 - user.loginAttempts;
+                return res.status(401).json({ 
+                    success: false, 
+                    message: `Invalid email or password. ${attemptsLeft} attempts left`,
+                    attemptsLeft
+                });
+            }
         }
     } catch (error) {
+        if (error.status === 429) {
+            return res.status(429).json({ success: false, message: error.message });
+        }
         console.error("Login Error:", error);
         res.status(500).json({ success: false, message: error.message || 'Server Error' });
     }
@@ -171,6 +215,30 @@ exports.getProfile = async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Check if account is locked
+// @route   GET /api/auth/check-lockout
+// @access  Public
+exports.checkLockout = async (req, res) => {
+    try {
+        const { email } = req.query;
+        if (!email) return res.status(400).json({ success: false });
+
+        const user = await User.findOne({ email }).select('lockoutUntil');
+        if (user && user.lockoutUntil && user.lockoutUntil > Date.now()) {
+            const remainingSeconds = Math.ceil((user.lockoutUntil - Date.now()) / 1000);
+            return res.json({ 
+                success: true, 
+                isLocked: true, 
+                remainingSeconds,
+                lockoutUntil: user.lockoutUntil
+            });
+        }
+        res.json({ success: true, isLocked: false });
+    } catch (error) {
+        res.status(500).json({ success: false });
     }
 };
 

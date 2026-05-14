@@ -34,8 +34,12 @@ const Overview = () => {
                         totalOwners: d.totalOwners || 0,
                         totalProducts: d.totalProducts || 0,
                         totalRevenue: d.totalRevenue || 0,
+                        todayRevenue: d.todayRevenue || 0,
+                        todayCount: d.todayCount || 0,
+                        activeShifts: d.activeShifts || 0,
+                        pendingPOs: d.pendingPOs || 0,
                         lowStockProducts: d.lowStockShops || 0,
-                        todaySales: d.todaySales || 0,
+                        todaySales: d.todayCount || 0,
                         todayProducts: d.todayProducts || 0,
                         recentTransactions: d.shops || [],
                     });
@@ -79,7 +83,7 @@ const Overview = () => {
             ],
         },
         shop_owner: {
-            badge: 'Owner Dashboard',
+            badge: 'Shop Dashboard',
             title: 'Business performance overview',
             description: 'Track sales, stock health, and team operations for your store.',
             quickActions: [
@@ -190,30 +194,92 @@ const Overview = () => {
         );
     }
 
-    return (
-        <div className="space-y-6 pb-8">
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-8">
-                <p className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200">
-                    {currentRoleConfig.badge}
-                </p>
-                <h1 className="mt-3 font-outfit text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-                    {currentRoleConfig.title}
-                </h1>
-                <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">
-                    {currentRoleConfig.description}
-                </p>
+    const stockHealth = stats ? Math.round(((stats.totalProducts - stats.lowStockProducts) / (stats.totalProducts || 1)) * 100) : 0;
 
-                <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {currentRoleConfig.quickActions.map((action) => (
-                        <Link
-                            key={action.label}
-                            to={action.to}
-                            className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-800"
-                        >
-                            {action.label}
-                        </Link>
+    return (
+        <div className="space-y-6 pb-20">
+            {/* Today's Premium Summary */}
+            <section className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative group">
+                {/* Header Area */}
+                <div className="p-8 pb-4 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600">
+                            <ShoppingCart size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+                                {currentRole === 'super_admin' ? 'Network Summary' : "Today's Summary"}
+                            </h2>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                                {currentRole === 'super_admin' ? 'Global platform performance' : 'Live store performance'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-full">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Live</span>
+                    </div>
+                </div>
+
+                {/* Main Stats Grid */}
+                <div className="px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800/50 group/card transition-all hover:bg-white dark:hover:bg-slate-800">
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                            {currentRole === 'super_admin' ? 'Network Revenue' : "Today's Sales"}
+                        </p>
+                        <div className="flex items-baseline gap-2">
+                            <h3 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white group-hover/card:text-indigo-600 transition-colors">
+                                ₹{Number(stats?.todayRevenue || 0).toLocaleString()}
+                            </h3>
+                        </div>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800/50 group/card transition-all hover:bg-white dark:hover:bg-slate-800">
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                            {currentRole === 'super_admin' ? 'Total Orders' : "Today's Orders"}
+                        </p>
+                        <h3 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white group-hover/card:text-indigo-600 transition-colors">
+                            {Number(stats?.todayCount || 0)}
+                        </h3>
+                    </div>
+                </div>
+
+                {/* Stock Health Progress Bar */}
+                <div className="px-8 py-6 border-y border-slate-50 dark:border-slate-800">
+                    <div className="flex justify-between items-end mb-4">
+                        <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+                            {currentRole === 'super_admin' ? 'System Health' : 'Stock Health'}
+                        </h4>
+                        <span className="text-indigo-600 font-black text-lg">{stockHealth}%</span>
+                    </div>
+                    <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-1">
+                        <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${stockHealth}%` }}
+                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
+                        />
+                    </div>
+                </div>
+
+                {/* Detailed Operational Alerts */}
+                <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                        { label: 'Low stock alerts', value: stats?.lowStockProducts || 0, color: 'text-rose-500' },
+                        { label: 'Pending Purchase Orders', value: stats?.pendingPOs || 0, color: 'text-amber-500' },
+                        { label: 'Cashier shifts active', value: stats?.activeShifts || 0, color: 'text-indigo-500' },
+                    ].map((alert, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 border-emerald-500/20 text-emerald-500`}>
+                                <ShieldCheck size={14} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{alert.label}: </span>
+                            <span className={`text-sm font-black ${alert.color}`}>{alert.value}</span>
+                        </div>
                     ))}
                 </div>
+
+                {/* Quick Action Overlay */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-600/10 transition-all duration-700" />
             </section>
 
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -24,6 +24,8 @@ import AdminInventory from './dashboard/AdminInventory';
 import AdminSales from './dashboard/AdminSales';
 import MyShop from './dashboard/MyShop';
 import PublicShop from './dashboard/PublicShop';
+import ReceiptLookup from './pages/ReceiptLookup';
+import ShopFinder from './pages/ShopFinder';
 import PaymentSettings from './dashboard/PaymentSettings';
 import AdminApprovals from './dashboard/AdminApprovals';
 import AdminSettings from './dashboard/AdminSettings';
@@ -32,10 +34,15 @@ import AdminShopFinder from './dashboard/AdminShopFinder';
 import AdminOrderFinder from './dashboard/AdminOrderFinder';
 import Shifts from './dashboard/Shifts';
 import Customers from './dashboard/Customers';
+import Suppliers from './dashboard/Suppliers';
+import PurchaseOrders from './dashboard/PurchaseOrders';
 import Pricing from './dashboard/Pricing';
 import AdminSubscriptions from './dashboard/AdminSubscriptions';
 import AdminPricing from './dashboard/AdminPricing';
 import AdminQueries from './dashboard/AdminQueries';
+import AdminStaff from './dashboard/AdminStaff';
+import AdminPurchaseOrders from './dashboard/AdminPurchaseOrders';
+import PODetails from './dashboard/PODetails';
 import SplashScreen from './components/SplashScreen';
 
 const ProtectedRoute = ({ children }) => {
@@ -59,13 +66,16 @@ const AppContent = () => {
             <PWAHandler />
             <Routes>
                 {/* Public Routes */}
-                <Route path="/" element={<><Navbar /><Home /><Footer /></>} />
-                <Route path="/about" element={<><Navbar /><About /><Footer /></>} />
-                <Route path="/contact" element={<><Navbar /><Contact /><Footer /></>} />
+                <Route path="/" element={<><Navbar /><div className="pt-28"><Home /></div><Footer /></>} />
+                <Route path="/about" element={<><Navbar /><div className="pt-28"><About /></div><Footer /></>} />
+                <Route path="/contact" element={<><Navbar /><div className="pt-28"><Contact /></div><Footer /></>} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/pricing" element={<><Navbar /><div className="max-w-7xl mx-auto px-4 py-12"><Pricing /></div><Footer /></>} />
+                <Route path="/pricing" element={<><Navbar /><div className="max-w-7xl mx-auto px-4 pt-32 pb-12"><Pricing /></div><Footer /></>} />
                 <Route path="/shop/:shopSlug" element={<PublicShop />} />
+                <Route path="/public-shop/:shopId" element={<PublicShop />} />
+                <Route path="/shops" element={<><Navbar /><ShopFinder /><Footer /></>} />
+                <Route path="/lookup-receipt" element={<><Navbar /><div className="pt-28"><ReceiptLookup /></div><Footer /></>} />
 
                 {/* Dashboard Routes */}
                 <Route path="/dashboard" element={
@@ -93,10 +103,15 @@ const AppContent = () => {
                     <Route path="account" element={<Account />} />
                     <Route path="shifts" element={<Shifts />} />
                     <Route path="customers" element={<Customers />} />
+                    <Route path="suppliers" element={<Suppliers />} />
+                    <Route path="purchase-orders" element={<PurchaseOrders />} />
                     <Route path="pricing" element={<Pricing />} />
                     <Route path="admin/subscriptions" element={<AdminSubscriptions />} />
                     <Route path="admin/pricing" element={<AdminPricing />} />
                     <Route path="admin/queries" element={<AdminQueries />} />
+                    <Route path="admin/staff" element={<AdminStaff />} />
+                    <Route path="admin/purchase-orders" element={<AdminPurchaseOrders />} />
+                    <Route path="admin/purchase-orders/:id" element={<PODetails />} />
                 </Route>
             </Routes>
             <Toaster position="top-right" />

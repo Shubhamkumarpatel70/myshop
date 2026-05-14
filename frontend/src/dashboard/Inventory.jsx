@@ -213,8 +213,14 @@ const Inventory = () => {
 
     const filteredProducts = products
         .filter(p => {
-            const matchesSearch = p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                p.category?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+            const searchLower = searchTerm.toLowerCase();
+            const matchesName = p.productName.toLowerCase().includes(searchLower);
+            const matchesCategory = p.category?.name?.toLowerCase().includes(searchLower);
+            const matchesBarcode = p.barcode?.toLowerCase().includes(searchLower);
+            const matchesBatch = p.batches?.some(b => b.batchNumber?.toLowerCase().includes(searchLower));
+            
+            const matchesSearch = matchesName || matchesCategory || matchesBarcode || matchesBatch;
+
             const matchesStock = stockFilter === 'all' ? true :
                 stockFilter === 'low' ? p.quantity <= p.lowStockThreshold :
                     stockFilter === 'out' ? p.quantity === 0 : true;
@@ -295,12 +301,12 @@ const Inventory = () => {
                     <table className="min-w-[980px] w-full text-left">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-800/50">
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Product Node</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Product</th>
                                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Category</th>
                                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Inventory</th>
                                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Price</th>
                                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
-                                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Control</th>
+                                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -392,10 +398,16 @@ const Inventory = () => {
                                     </div>
                                 )}
                             </div>
-                            <label className="absolute -bottom-2 -right-2 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg hover:bg-indigo-700">
-                                <Camera size={18} />
-                                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                            </label>
+                            <div className="flex gap-2 absolute -bottom-3 left-1/2 -translate-x-1/2">
+                                <label className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-white border border-slate-200 text-indigo-600 shadow-sm hover:bg-slate-50 transition-colors">
+                                    <Upload size={16} />
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                </label>
+                                <label className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-all">
+                                    <Camera size={16} />
+                                    <input type="file" className="hidden" accept="image/*" capture="environment" onChange={handleImageUpload} />
+                                </label>
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <p className="text-sm font-semibold text-slate-900 dark:text-white">Product Image</p>
@@ -460,7 +472,7 @@ const Inventory = () => {
             </Modal>
 
             {/* Batch Analysis Modal */}
-            <Modal isOpen={isBatchModalOpen} onClose={() => setIsBatchModalOpen(false)} title="Batch Manifest Analysis" className="max-w-3xl">
+            <Modal isOpen={isBatchModalOpen} onClose={() => setIsBatchModalOpen(false)} title="Batch Details Summary" className="max-w-3xl">
                 {selectedProductBatches && (
                     <div className="space-y-6 py-2">
                         <div className="flex items-center gap-5 p-6 bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-slate-200 dark:border-slate-700">
@@ -483,7 +495,7 @@ const Inventory = () => {
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {sortedBatches.map((batch, idx) => (
                                         <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                            <td className="px-6 py-4 font-bold text-indigo-600 dark:text-indigo-400">{batch.batchNumber || 'NODE-AUX'}</td>
+                                            <td className="px-6 py-4 font-bold text-indigo-600 dark:text-indigo-400">{batch.batchNumber || 'NA'}</td>
                                             <td className="px-6 py-4 text-sm font-medium text-slate-600 dark:text-slate-400">{formatDate(batch.expiryDate)}</td>
                                             <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{batch.quantity}</td>
                                             <td className="px-6 py-4 text-right font-bold text-indigo-600">₹{batch.price}</td>
@@ -496,7 +508,7 @@ const Inventory = () => {
                 )}
             </Modal>
 
-            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Optical Scanner" className="max-w-lg">
+            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Barcode Scanner" className="max-w-lg">
                 <BarcodeScanner isOpen={isScannerOpen} onScanSuccess={handleScanSuccess} onScanError={(err) => console.error(err)} />
             </Modal>
 

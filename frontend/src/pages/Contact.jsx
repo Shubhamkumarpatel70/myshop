@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, MapPin, Phone, Send } from 'lucide-react';
+import { Mail, MapPin, Phone, Send, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
 
 const Contact = () => {
+    const [loading, setLoading] = useState(false);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
         
+        setLoading(true);
         try {
             const res = await api.post('/queries', data);
             if (res.data.success) {
@@ -17,6 +21,8 @@ const Contact = () => {
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to send message');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -126,10 +132,20 @@ const Contact = () => {
 
                             <button
                                 type="submit"
-                                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                                disabled={loading}
+                                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
                             >
-                                Send Message
-                                <Send size={16} />
+                                {loading ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Sending...
+                                    </>
+                                ) : (
+                                    <>
+                                        Send Message
+                                        <Send size={16} />
+                                    </>
+                                )}
                             </button>
                         </form>
                     </motion.div>

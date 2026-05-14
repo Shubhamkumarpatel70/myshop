@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Sale = require('../models/Sale');
 const Product = require('../models/Product');
 const InventoryLog = require('../models/InventoryLog');
+const Customer = require('../models/Customer');
 const { sendNotification } = require('../utils/notificationUtils');
 
 const generateTransactionId = () => {
@@ -16,7 +17,7 @@ const generateTransactionId = () => {
 exports.createSale = async (req, res) => {
     try {
         const { items, customerName, customerPhone, paymentMethod } = req.body;
-        
+
         let totalAmount = 0;
         const processedItems = [];
 
@@ -35,9 +36,9 @@ exports.createSale = async (req, res) => {
             let remainingToDeduct = item.quantity;
             let usedBatchNumber = 'N/A';
             let usedExpiryDate = null;
-            
+
             product.batches.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
-            
+
             for (let batch of product.batches) {
                 if (remainingToDeduct <= 0) break;
                 if (batch.quantity > 0) {
@@ -71,8 +72,8 @@ exports.createSale = async (req, res) => {
             // Send notification if stock is low
             if (product.quantity <= (product.lowStockThreshold || 10)) {
                 await sendNotification(
-                    req.shopOwnerId, 
-                    'Low Stock Alert', 
+                    req.shopOwnerId,
+                    'Low Stock Alert',
                     `Product "${product.productName}" is running low on stock. Only ${product.quantity} units left.`,
                     'Stock'
                 );
@@ -118,6 +119,22 @@ exports.createSale = async (req, res) => {
             );
         }
 
+        // Update Customer Record if phone is provided
+        if (customerPhone) {
+            try {
+                await Customer.findOneAndUpdate(
+                    { phone: customerPhone, user: req.shopOwnerId },
+                    { 
+                        $set: { name: customerName, lastPurchase: new Date() },
+                        $inc: { totalSpent: totalAmount, orderCount: 1 }
+                    },
+                    { upsert: true }
+                );
+            } catch (custError) {
+                console.error("CUSTOMER UPDATE ERROR:", custError);
+            }
+        }
+
         res.status(201).json({ success: true, data: sale });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -146,7 +163,7 @@ exports.returnProduct = async (req, res) => {
             const itemId = i.product._id ? i.product._id.toString() : i.product.toString();
             return itemId === productId && !i.isReturned;
         });
-        
+
         if (!item) return res.status(400).json({ success: false, message: 'Item not found or already returned' });
 
         const returnQty = parseInt(quantity) || item.quantity;
@@ -154,14 +171,14 @@ exports.returnProduct = async (req, res) => {
         item.returnReason = returnReason || 'Customer Return';
         sale.status = 'Partial Return';
         if (sale.items.every(i => i.isReturned)) sale.status = 'Returned';
-        
+
         await sale.save();
 
         const product = await Product.findById(productId);
         if (product) {
             const oldQuantity = product.quantity;
             product.quantity += returnQty;
-            
+
             // Add back to the first available batch or create one if none exist
             if (product.batches && product.batches.length > 0) {
                 product.batches[0].quantity += returnQty;
@@ -172,7 +189,7 @@ exports.returnProduct = async (req, res) => {
                     price: product.price
                 }];
             }
-            
+
             await product.save();
 
             await InventoryLog.create({
@@ -195,12 +212,42 @@ exports.returnProduct = async (req, res) => {
 
 exports.getSales = async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
         const filter = req.isAdmin ? {} : { user: req.shopOwnerId };
+
+        if (req.query.month) {
+            const [year, mon] = req.query.month.split('-');
+            filter.createdAt = {
+                $gte: new Date(year, mon - 1, 1),
+                $lte: new Date(year, mon, 0, 23, 59, 59, 999)
+            };
+        }
+
+        const total = await Sale.countDocuments(filter);
         const sales = await Sale.find(filter)
-            .populate('items.product', 'productName')
+            .populate({
+                path: 'items.product',
+                select: 'productName',
+                populate: { path: 'category', select: 'name' }
+            })
             .populate('user', 'shopName')
-            .sort({ createdAt: -1 });
-        res.json({ success: true, data: sales });
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            success: true,
+            data: sales,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -210,26 +257,64 @@ exports.getSaleById = async (req, res) => {
     try {
         const id = req.params.id;
         let sale;
-        
+
         if (mongoose.Types.ObjectId.isValid(id)) {
             sale = await Sale.findById(id)
-                .populate('items.product')
+                .populate({
+                    path: 'items.product',
+                    populate: { path: 'category', select: 'name' }
+                })
                 .populate('user', 'shopName');
         }
-        
+
         if (!sale) {
             sale = await Sale.findOne({ transactionId: id.toUpperCase() })
-                .populate('items.product')
+                .populate({
+                    path: 'items.product',
+                    populate: { path: 'category', select: 'name' }
+                })
                 .populate('user', 'shopName');
         }
-            
+
         if (!sale) return res.status(404).json({ success: false, message: 'Transaction ID not found' });
-        
+
         if (!req.isAdmin && sale.user._id.toString() !== req.shopOwnerId.toString()) {
             return res.status(401).json({ success: false, message: 'Not authorized' });
         }
         res.json({ success: true, data: sale });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Invalid Transaction ID: ' + error.message });
+    }
+};
+exports.getPublicSale = async (req, res) => {
+    try {
+        const id = req.params.id;
+        let sale;
+        
+        const populateOptions = [
+            {
+                path: 'items.product',
+                select: 'productName',
+                populate: { path: 'category', select: 'name' }
+            },
+            {
+                path: 'user',
+                select: 'shopName address phone'
+            }
+        ];
+
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            sale = await Sale.findById(id).populate(populateOptions);
+        }
+        
+        if (!sale) {
+            sale = await Sale.findOne({ transactionId: id.toUpperCase() }).populate(populateOptions);
+        }
+            
+        if (!sale) return res.status(404).json({ success: false, message: 'Transaction ID not found' });
+        
+        res.json({ success: true, data: sale });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error fetching receipt: ' + error.message });
     }
 };

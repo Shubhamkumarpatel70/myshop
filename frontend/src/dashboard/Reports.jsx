@@ -24,11 +24,12 @@ const Reports = () => {
     const [monthFilter, setMonthFilter] = useState('');
     const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
+    const [periodFilter, setPeriodFilter] = useState('30');
     const { user } = useAuth(); // Assuming useAuth is available for role check
 
     useEffect(() => {
         fetchData();
-    }, [dateFilter, monthFilter, paymentMethodFilter, categoryFilter]);
+    }, [dateFilter, monthFilter, paymentMethodFilter, categoryFilter, periodFilter]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -36,7 +37,9 @@ const Reports = () => {
             let url = '/reports/sales';
             const params = new URLSearchParams();
             if (dateFilter) params.append('date', dateFilter);
-            if (monthFilter) params.append('month', monthFilter);
+            else if (monthFilter) params.append('month', monthFilter);
+            else params.append('period', periodFilter);
+            
             if (paymentMethodFilter) params.append('paymentMethod', paymentMethodFilter);
             if (categoryFilter) params.append('shopCategory', categoryFilter);
             
@@ -61,6 +64,7 @@ const Reports = () => {
         setMonthFilter('');
         setPaymentMethodFilter('');
         setCategoryFilter('');
+        setPeriodFilter('30');
     };
 
     const handleExportPDF = () => {
@@ -203,11 +207,27 @@ const Reports = () => {
                             value={monthFilter}
                             onChange={(e) => { setMonthFilter(e.target.value); setDateFilter(''); }}
                         />
-                        {(dateFilter || monthFilter || paymentMethodFilter || categoryFilter) && (
+                        {(dateFilter || monthFilter || paymentMethodFilter || categoryFilter || periodFilter !== '30') && (
                             <button onClick={clearFilters} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all">
                                 <X size={16} />
                             </button>
                         )}
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                        {[
+                            { label: '7D', value: '7' },
+                            { label: '30D', value: '30' },
+                            { label: '90D', value: '90' }
+                        ].map(p => (
+                            <button
+                                key={p.value}
+                                onClick={() => { setPeriodFilter(p.value); setDateFilter(''); setMonthFilter(''); }}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all ${periodFilter === p.value ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Admin Only Advanced Filters */}

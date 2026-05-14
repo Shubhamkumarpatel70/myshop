@@ -4,7 +4,7 @@ import api from '../utils/api';
 import { motion } from 'framer-motion';
 import { 
     Share2, ExternalLink, Package, 
-    Copy, Check, Globe, LayoutGrid, List
+    Copy, Check, Globe, LayoutGrid, List, MessageSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';

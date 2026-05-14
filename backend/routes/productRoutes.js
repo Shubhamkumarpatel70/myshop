@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { getProducts, createProduct, updateProduct, deleteProduct, getPublicProducts } = require('../controllers/productController');
+const { 
+    getProducts, createProduct, updateProduct, deleteProduct, 
+    getPublicProducts, getPublicProductsByShop 
+} = require('../controllers/productController');
 const { protect } = require('../middleware/authMiddleware');
 
+router.get('/public/shop/:shopId', getPublicProductsByShop);
 router.get('/public/:shopSlug', getPublicProducts);
 
 const multer = require('multer');

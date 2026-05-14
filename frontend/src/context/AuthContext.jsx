@@ -61,7 +61,14 @@ export const AuthProvider = ({ children }) => {
             }
             return { success: false, message: res.data.message };
         } catch (error) {
-            return { success: false, message: error.response?.data?.message || "Login failed" };
+            return { 
+                success: false, 
+                message: error.response?.data?.message || "Login failed",
+                attemptsLeft: error.response?.data?.attemptsLeft,
+                lockoutUntil: error.response?.data?.lockoutUntil,
+                remainingSeconds: error.response?.data?.remainingSeconds,
+                isLocked: error.response?.status === 429
+            };
         }
     };
 

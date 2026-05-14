@@ -68,7 +68,23 @@ exports.closeShift = async (req, res) => {
 exports.getCurrentShift = async (req, res) => {
     try {
         const shift = await Shift.findOne({ user: req.user._id, status: 'Open' });
-        res.json({ success: true, data: shift });
+        if (shift) {
+            // Calculate live revenue
+            const sales = await Sale.find({
+                processedBy: req.user._id,
+                createdAt: { $gte: shift.startTime }
+            });
+
+            const totalRevenue = sales.reduce((acc, curr) => acc + curr.totalAmount, 0);
+            const cashSales = sales.filter(s => s.paymentMethod === 'Cash').reduce((acc, curr) => acc + curr.totalAmount, 0);
+            
+            const shiftData = shift.toObject();
+            shiftData.currentRevenue = totalRevenue;
+            shiftData.expectedCash = shift.openingCash + cashSales;
+            
+            return res.json({ success: true, data: shiftData });
+        }
+        res.json({ success: true, data: null });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

@@ -40,7 +40,7 @@ exports.updateProfile = async (req, res) => {
 
 exports.addStaff = async (req, res) => {
     try {
-        const { ownerName, email, phone, password, role, aadharNumber, aadharImage } = req.body;
+        const { ownerName, email, phone, password, role, aadharNumber, aadharFront, aadharBack, mPin } = req.body;
         
         if (!['manager', 'cashier'].includes(role)) {
             return res.status(400).json({ success: false, message: 'Invalid staff role. Choose manager or cashier.' });
@@ -56,11 +56,13 @@ exports.addStaff = async (req, res) => {
             email,
             phone,
             password,
+            mPin,
             businessType: req.user.businessType,
             address: req.user.address,
             role,
             aadharNumber,
-            aadharImage,
+            aadharFront,
+            aadharBack,
             createdBy: req.user._id
         });
 
@@ -72,7 +74,8 @@ exports.addStaff = async (req, res) => {
 
 exports.getStaff = async (req, res) => {
     try {
-        const staff = await User.find({ createdBy: req.user._id });
+        const filter = req.user.role === 'super_admin' ? { role: { $in: ['manager', 'cashier'] } } : { createdBy: req.user._id };
+        const staff = await User.find(filter).populate('createdBy', 'shopName ownerName shopId');
         res.json({ success: true, data: staff });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -130,6 +133,29 @@ exports.toggleUserSuspension = async (req, res) => {
         await user.save();
         
         res.json({ success: true, message: `Shop ${user.isSuspended ? 'suspended' : 'activated'} successfully`, data: user });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Public: Get all registered shops
+exports.getPublicShops = async (req, res) => {
+    try {
+        const shops = await User.find({ role: 'shop_owner', isSuspended: false })
+            .select('shopName address phone profileImage createdAt shopId');
+        res.json({ success: true, data: shops });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Public: Get a specific shop's details
+exports.getPublicShopDetails = async (req, res) => {
+    try {
+        const shop = await User.findById(req.params.id)
+            .select('shopName address phone profileImage ownerName businessType');
+        if (!shop) return res.status(404).json({ success: false, message: 'Shop not found' });
+        res.json({ success: true, data: shop });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

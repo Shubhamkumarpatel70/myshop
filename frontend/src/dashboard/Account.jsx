@@ -50,7 +50,6 @@ const Account = () => {
                 >
                     <p className="text-xs font-semibold uppercase tracking-wider text-indigo-300">Shop Identity</p>
                     <p className="mt-3 break-all font-mono text-2xl font-bold tracking-tight">{user?.shopId || 'N/A'}</p>
-                    <p className="mt-2 text-sm text-slate-300">Use this ID for admin support and onboarding verification.</p>
                     <button
                         onClick={handleCopyId}
                         className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-white px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
