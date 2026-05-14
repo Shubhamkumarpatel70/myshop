@@ -12,6 +12,9 @@ const path = require('path');
 const app = express();
 const fs = require('fs');
 
+// Trust Proxy (Essential for production behind Nginx/Render/Heroku)
+app.set('trust proxy', 1);
+
 // Ensure upload directories exist
 const uploadDirs = ['uploads', 'uploads/products', 'uploads/profile', 'uploads/kyc'];
 uploadDirs.forEach(dir => {
@@ -53,8 +56,8 @@ app.use(cors({
     credentials: true
 }));
 app.use(helmet({
-    crossOriginResourcePolicy: false,
-    contentSecurityPolicy: false // Disable for dev, enable with config in production
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false 
 }));
 app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
@@ -75,6 +78,7 @@ app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/shifts', require('./routes/shiftRoutes'));
 app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api/suppliers', require('./routes/supplierRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/purchase-orders', require('./routes/purchaseOrderRoutes'));
 app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
 app.use('/api/queries', require('./routes/queryRoutes'));
@@ -98,6 +102,13 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+const server = app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+    console.log(`Error: ${err.message}`);
+    // Close server & exit process
+    server.close(() => process.exit(1));
 });

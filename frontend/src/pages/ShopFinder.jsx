@@ -31,8 +31,11 @@ const ShopFinder = () => {
     const maskPhone = (phone) => {
         if (!phone) return 'N/A';
         const str = phone.toString();
-        if (str.length < 8) return str;
-        return str.substring(0, 5) + '*** **' + str.substring(str.length - 2);
+        if (str.length < 5) return str;
+        const firstTwo = str.substring(0, 2);
+        const lastTwo = str.substring(str.length - 2);
+        const maskedLength = str.length - 4;
+        return `${firstTwo}${'*'.repeat(maskedLength)}${lastTwo}`;
     };
 
     const filteredShops = shops.filter(shop => 

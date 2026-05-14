@@ -26,13 +26,17 @@ import {
     Zap,
     Share2,
     BarChart3,
-    Truck
+    Truck,
+    IndianRupee,
+    Undo2,
+    ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import NotificationDropdown from '../components/NotificationDropdown';
 import RegistrationPayment from '../components/RegistrationPayment';
+import UserTour from '../components/UserTour';
 
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -91,14 +95,14 @@ const DashboardLayout = () => {
         { name: 'Sales', icon: ShoppingCart, path: '/dashboard/sales', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: 'POS transactions and returns', group: 'operations' },
         { name: 'Shifts', icon: Clock, path: '/dashboard/shifts', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: 'Open/close and shift logs', group: 'operations' },
         { name: 'Reports', icon: BarChart3, path: '/dashboard/reports', roles: ['shop_owner', 'manager', 'super_admin'], priority: true, description: 'Sales and business analytics', group: 'operations' },
-        { name: 'Inventory', icon: Package, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'], priority: true, description: 'Stock levels and adjustments', group: 'operations' },
-        { name: 'Categories', icon: Layers, path: '/dashboard/categories', roles: ['shop_owner', 'manager'], description: 'Catalog grouping', group: 'operations' },
+        { name: 'Inventory', icon: Package, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'], priority: true, description: 'Stock levels and adjustments', group: 'inventory' },
+        { name: 'Categories', icon: Layers, path: '/dashboard/categories', roles: ['shop_owner', 'manager'], description: 'Catalog grouping', group: 'inventory' },
         { name: 'Staff', icon: Users, path: '/dashboard/staff', roles: ['shop_owner'], description: 'Team access and roles', group: 'management' },
         { name: 'Pricing', icon: Zap, path: '/dashboard/pricing', roles: ['shop_owner'], description: 'Plan and billing controls', group: 'management' },
         { name: 'Payments', icon: CreditCard, path: '/dashboard/payment-settings', roles: ['shop_owner'], description: 'Gateway and UPI settings', group: 'management' },
-        { name: 'Share Shop', icon: Share2, path: '/dashboard/share', roles: ['shop_owner'], description: 'Promote your shop link', group: 'management' },
-        { name: 'Customers', icon: Users, path: '/dashboard/customers', roles: ['shop_owner', 'manager'], priority: true, description: 'Client CRM and loyalty', group: 'operations' },
-        { name: 'Purchase Orders', icon: ShoppingCart, path: '/dashboard/purchase-orders', roles: ['shop_owner', 'manager'], description: 'Procurement and restocking', group: 'logistics' },
+        { name: 'Share Shop', icon: Share2, path: '/dashboard/share', roles: ['shop_owner'], description: 'Promote your shop link', group: 'community' },
+        { name: 'Customers', icon: Users, path: '/dashboard/customers', roles: ['shop_owner', 'manager'], priority: true, description: 'Client CRM and loyalty', group: 'community' },
+        { name: 'Purchase Orders', icon: ShoppingCart, path: '/dashboard/purchase-orders', roles: ['shop_owner', 'manager'], description: 'Procurement and restocking', group: 'inventory' },
         { name: 'Account', icon: User, path: '/dashboard/account', roles: ['shop_owner', 'manager', 'cashier'], description: 'Profile and security', group: 'management' },
 
         { name: 'Shops', icon: Store, path: '/dashboard/shops', roles: ['super_admin'], priority: true, description: 'All registered shops', group: 'admin-core' },
@@ -116,6 +120,7 @@ const DashboardLayout = () => {
         { name: 'Activity', icon: Activity, path: '/dashboard/activity', roles: ['super_admin'], description: 'Platform activity logs', group: 'admin-comms' },
         { name: 'Pricing Config', icon: Zap, path: '/dashboard/admin/pricing', roles: ['super_admin'], description: 'Manage plans and pricing', group: 'admin-system' },
         { name: 'Settings', icon: Settings, path: '/dashboard/admin/settings', roles: ['super_admin'], description: 'Global platform configuration', group: 'admin-system' },
+        { name: 'Platform Revenue', icon: IndianRupee, path: '/dashboard/admin/revenue', roles: ['super_admin'], priority: true, description: 'Subscription earnings audit', group: 'admin-system' },
     ];
 
     const navItems = useMemo(
@@ -125,7 +130,20 @@ const DashboardLayout = () => {
 
     const groupedNavItems = useMemo(() => {
         if (user?.role !== 'super_admin') {
-            return [{ key: 'workspace', label: 'Workspace', items: navItems }];
+            const sections = [
+                { key: 'core', label: 'Main' },
+                { key: 'operations', label: 'Operations' },
+                { key: 'inventory', label: 'Supply Chain' },
+                { key: 'community', label: 'Community' },
+                { key: 'management', label: 'Administrative' },
+            ];
+
+            return sections
+                .map((section) => ({
+                    ...section,
+                    items: navItems.filter((item) => item.group === section.key),
+                }))
+                .filter((section) => section.items.length > 0);
         }
 
         const sections = [
@@ -171,7 +189,22 @@ const DashboardLayout = () => {
 
     const handleLogout = () => {
         logout();
+        localStorage.removeItem('is_impersonating');
+        localStorage.removeItem('admin_token');
         navigate('/login');
+    };
+
+    const handleExitImpersonation = () => {
+        const adminToken = localStorage.getItem('admin_token');
+        const adminUser = localStorage.getItem('admin_user');
+        if (adminToken && adminUser) {
+            localStorage.setItem('token', adminToken);
+            localStorage.setItem('user', adminUser);
+            localStorage.removeItem('is_impersonating');
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_user');
+            window.location.href = '/dashboard/shops'; 
+        }
     };
 
     const businessTypes = [
@@ -228,6 +261,7 @@ const DashboardLayout = () => {
 
     return (
         <div className="flex h-screen bg-slate-50 text-slate-900 dark:bg-[#020617] dark:text-white">
+            <UserTour user={user} />
             <aside
                 className={[
                     'hidden shrink-0 border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-900 lg:flex lg:flex-col',
@@ -296,6 +330,22 @@ const DashboardLayout = () => {
             </aside>
 
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                {localStorage.getItem('is_impersonating') === 'true' && (
+                    <div className="bg-amber-500 text-white px-4 py-2 flex items-center justify-between z-50">
+                        <div className="flex items-center gap-3">
+                            <ShieldAlert size={16} />
+                            <span className="text-xs font-black uppercase tracking-widest">
+                                IMPERSONATION MODE ACTIVE: Viewing as <span className="underline">{user?.shopName}</span>
+                            </span>
+                        </div>
+                        <button 
+                            onClick={handleExitImpersonation}
+                            className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                            <Undo2 size={12} /> Exit Session
+                        </button>
+                    </div>
+                )}
                 <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
                     <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
                         <div className="flex min-w-0 items-center gap-3">

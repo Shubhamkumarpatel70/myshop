@@ -122,8 +122,17 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
         setUser(null);
-        delete axios.defaults.headers.common['Authorization'];
+        delete api.defaults.headers.common['Authorization'];
+    };
+
+    const setSession = (userData, token) => {
+        const userWithToken = { ...userData, token };
+        localStorage.setItem('user', JSON.stringify(userWithToken));
+        localStorage.setItem('token', token);
+        setUser(userWithToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     };
 
     const updateUser = (userData) => {
@@ -133,7 +142,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+        <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser, setSession }}>
             {children}
         </AuthContext.Provider>
     );

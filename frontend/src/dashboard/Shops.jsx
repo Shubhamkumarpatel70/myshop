@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
-import { Download, Search, ShieldAlert, ShieldCheck, Store, Eye, Mail, Phone, MapPin, User, Calendar, Briefcase } from 'lucide-react';
+import { Download, Search, ShieldAlert, ShieldCheck, Store, Eye, Mail, Phone, MapPin, User, Calendar, Briefcase, Key } from 'lucide-react';
 import Modal from '../components/Modal';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const planClass = (plan) => {
     if (plan === 'Elite' || plan === 'Enterprise') return 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300';
@@ -19,6 +21,8 @@ const Shops = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedShop, setSelectedShop] = useState(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const { setSession } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchShops = async () => {
@@ -72,6 +76,26 @@ const Shops = () => {
             );
         } catch {
             toast.error('Failed to update merchant status');
+        }
+    };
+
+    const handleImpersonate = async (shop) => {
+        if (!window.confirm(`SECURE ACCESS: Do you want to impersonate ${shop.shopName}?`)) return;
+
+        try {
+            const res = await api.post(`/admin/impersonate/${shop._id}`);
+            if (res.data.success) {
+                // Store impersonation flag and original identity
+                localStorage.setItem('is_impersonating', 'true');
+                localStorage.setItem('admin_token', localStorage.getItem('token')); 
+                localStorage.setItem('admin_user', localStorage.getItem('user'));
+
+                setSession(res.data.user, res.data.token);
+                toast.success(`Access Tunnel Established: ${shop.shopName}`);
+                navigate('/dashboard/overview');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Access Denied');
         }
     };
 
@@ -235,6 +259,13 @@ const Shops = () => {
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleImpersonate(shop)}
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300"
+                                                    title="Impersonate Shop"
+                                                >
+                                                    <Key size={14} />
+                                                </button>
                                                 <button
                                                     onClick={() => { setSelectedShop(shop); setIsViewModalOpen(true); }}
                                                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300"

@@ -226,6 +226,15 @@ exports.getSales = async (req, res) => {
             };
         }
 
+        if (req.query.search) {
+            const searchRegex = new RegExp(req.query.search, 'i');
+            filter.$or = [
+                { transactionId: searchRegex },
+                { customerName: searchRegex },
+                { customerPhone: searchRegex }
+            ];
+        }
+
         const total = await Sale.countDocuments(filter);
         const sales = await Sale.find(filter)
             .populate({

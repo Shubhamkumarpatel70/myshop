@@ -22,18 +22,11 @@ const PODetails = () => {
 
     const fetchPODetails = async () => {
         try {
-            // Use the admin endpoint if user is admin, otherwise shop owner endpoint
-            // For now, let's assume this is for admin audit
-            const res = await api.get(`/purchase-orders/admin`);
-            const found = res.data.data.find(p => p._id === id);
-            if (!found) {
-                toast.error("PO not found");
-                navigate('/dashboard/admin/purchase-orders');
-                return;
-            }
-            setPo(found);
+            const res = await api.get(`/purchase-orders/${id}`);
+            setPo(res.data.data);
         } catch (error) {
             toast.error("Failed to load PO details");
+            navigate(-1);
         } finally {
             setLoading(false);
         }

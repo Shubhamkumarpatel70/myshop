@@ -13,7 +13,8 @@ const {
     getSubscriptions,
     updateSubscription,
     terminateSubscription,
-    toggleSuspension
+    toggleSuspension,
+    getRevenueStats
 } = require('../controllers/subscriptionController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
@@ -35,5 +36,6 @@ router.post('/admin/refund', protect, adminOnly, updateRefundUtr);
 router.put('/admin/update', protect, adminOnly, updateSubscription);
 router.post('/admin/terminate', protect, adminOnly, terminateSubscription);
 router.post('/admin/toggle-suspension', protect, adminOnly, toggleSuspension);
+router.get('/admin/revenue', protect, adminOnly, getRevenueStats);
 
 module.exports = router;

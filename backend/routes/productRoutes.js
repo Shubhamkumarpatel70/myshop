@@ -5,6 +5,7 @@ const {
     getPublicProducts, getPublicProductsByShop 
 } = require('../controllers/productController');
 const { protect } = require('../middleware/authMiddleware');
+const { checkProductLimit } = require('../middleware/limitMiddleware');
 
 router.get('/public/shop/:shopId', getPublicProductsByShop);
 router.get('/public/:shopSlug', getPublicProducts);
@@ -23,7 +24,7 @@ router.post('/upload', upload.single('image'), (req, res) => {
 
 router.route('/')
     .get(getProducts)
-    .post(createProduct);
+    .post(checkProductLimit, createProduct);
 
 router.route('/:id')
     .put(updateProduct)

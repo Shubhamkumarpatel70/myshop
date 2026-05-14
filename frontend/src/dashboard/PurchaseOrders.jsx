@@ -3,9 +3,10 @@ import api from '../utils/api';
 import { 
     FileText, Plus, Search, Download, Trash2, 
     X, CheckCircle2, ShoppingCart, Calendar,
-    User, Store, MapPin, Phone, Hash, Zap
+    User, Store, MapPin, Phone, Hash, Zap, Eye, Edit
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -17,6 +18,8 @@ const PurchaseOrders = () => {
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [editingPO, setEditingPO] = useState(null);
+    const navigate = useNavigate();
     
     const [formData, setFormData] = useState({
         supplierName: '',
@@ -102,6 +105,35 @@ const PurchaseOrders = () => {
         }
     };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this Purchase Order?")) return;
+        try {
+            await api.delete(`/purchase-orders/${id}`);
+            toast.success("Purchase Order Deleted");
+            fetchInitialData();
+        } catch (error) {
+            toast.error("Failed to delete PO");
+        }
+    };
+
+    const handleEdit = (po) => {
+        setEditingPO(po);
+        setFormData({
+            supplierName: po.supplierName || po.supplier?.name || '',
+            supplierPhone: po.supplierPhone || po.supplier?.phone || '',
+            supplierEmail: po.supplierEmail || po.supplier?.email || '',
+            items: po.items.map(item => ({
+                productName: item.productName,
+                productId: item.productId?._id || item.productId,
+                quantity: item.quantity,
+                expectedPrice: item.expectedPrice
+            })),
+            notes: po.notes || '',
+            expectedDelivery: po.expectedDelivery ? new Date(po.expectedDelivery).toISOString().split('T')[0] : ''
+        });
+        setShowAddModal(true);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.supplierName) return toast.error("Enter supplier name");
@@ -109,24 +141,30 @@ const PurchaseOrders = () => {
         const totalAmount = formData.items.reduce((acc, item) => acc + (item.quantity * item.expectedPrice), 0);
         
         try {
-            // We'll store the supplier info in the PO itself or create a temporary one
-            await api.post('/purchase-orders', { 
+            const payload = { 
                 ...formData, 
                 totalAmount,
-                // If the backend expects a supplier ID, we might need to adjust. 
-                // But I'll modify the backend to accept manual info too.
                 manualSupplier: {
                     name: formData.supplierName,
                     phone: formData.supplierPhone,
                     email: formData.supplierEmail
                 }
-            });
-            toast.success("Purchase Order Created");
+            };
+
+            if (editingPO) {
+                await api.put(`/purchase-orders/${editingPO._id}`, payload);
+                toast.success("Purchase Order Updated");
+            } else {
+                await api.post('/purchase-orders', payload);
+                toast.success("Purchase Order Created");
+            }
+
             setShowAddModal(false);
+            setEditingPO(null);
             setFormData({ supplierName: '', supplierPhone: '', supplierEmail: '', items: [{ productName: '', productId: '', quantity: 1, expectedPrice: 0 }], notes: '', expectedDelivery: '' });
             fetchInitialData();
         } catch (error) {
-            toast.error("Failed to create PO");
+            toast.error(editingPO ? "Failed to update PO" : "Failed to create PO");
         }
     };
 
@@ -241,7 +279,11 @@ const PurchaseOrders = () => {
                 </div>
                 
                 <button 
-                    onClick={() => setShowAddModal(true)}
+                    onClick={() => {
+                        setEditingPO(null);
+                        setFormData({ supplierName: '', supplierPhone: '', supplierEmail: '', items: [{ productName: '', productId: '', quantity: 1, expectedPrice: 0 }], notes: '', expectedDelivery: '' });
+                        setShowAddModal(true);
+                    }}
                     className="h-14 px-8 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                     <Plus size={16} /> Create New PO
@@ -293,12 +335,36 @@ const PurchaseOrders = () => {
                                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Amount</p>
                                 <p className="text-xl font-black text-indigo-600">₹{po.totalAmount.toLocaleString()}</p>
                             </div>
-                            <button 
-                                onClick={() => downloadPO(po)}
-                                className="h-12 w-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all"
-                            >
-                                <Download size={20} />
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={() => navigate(`/dashboard/purchase-orders/${po._id}`)}
+                                    className="h-12 w-12 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition-all"
+                                    title="View Details"
+                                >
+                                    <Eye size={20} />
+                                </button>
+                                <button 
+                                    onClick={() => handleEdit(po)}
+                                    className="h-12 w-12 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition-all"
+                                    title="Edit PO"
+                                >
+                                    <Edit size={20} />
+                                </button>
+                                <button 
+                                    onClick={() => handleDelete(po._id)}
+                                    className="h-12 w-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-100 transition-all"
+                                    title="Delete PO"
+                                >
+                                    <Trash2 size={20} />
+                                </button>
+                                <button 
+                                    onClick={() => downloadPO(po)}
+                                    className="h-12 w-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all"
+                                    title="Download PDF"
+                                >
+                                    <Download size={20} />
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 ))}
@@ -313,7 +379,7 @@ const PurchaseOrders = () => {
                             {/* Modal Header */}
                             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
                                 <div>
-                                    <h2 className="text-xl font-black uppercase tracking-tight">Create Purchase Order</h2>
+                                    <h2 className="text-xl font-black uppercase tracking-tight">{editingPO ? 'Update' : 'Create'} Purchase Order</h2>
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Procurement System</p>
                                 </div>
                                 <button type="button" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all">
@@ -398,7 +464,7 @@ const PurchaseOrders = () => {
                                     <p className="text-2xl font-black text-indigo-600">₹{formData.items.reduce((acc, item) => acc + (item.quantity * item.expectedPrice), 0).toLocaleString()}</p>
                                 </div>
                                 <button type="submit" onClick={handleSubmit} className="h-12 px-8 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-500/20">
-                                    Generate PO
+                                    {editingPO ? 'Update PO' : 'Generate PO'}
                                 </button>
                             </div>
                         </motion.div>

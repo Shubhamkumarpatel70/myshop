@@ -45,15 +45,25 @@ exports.getDashboardStats = async (req, res) => {
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
+        const expiringProducts = await Product.countDocuments({
+            ...filter,
+            expiryDate: { $lte: thirtyDaysFromNow, $gte: now }
+        });
+
+        const expiringProductsList = await Product.find({
+            ...filter,
+            expiryDate: { $lte: thirtyDaysFromNow, $gte: now }
+        }).sort({ expiryDate: 1 }).limit(5);
+
         const expiredProducts = await Product.countDocuments({
             ...filter,
             expiryDate: { $lt: now }
         });
 
-        const expiringProducts = await Product.countDocuments({
+        const expiredProductsList = await Product.find({
             ...filter,
-            expiryDate: { $lte: thirtyDaysFromNow, $gte: now }
-        });
+            expiryDate: { $lt: now }
+        }).sort({ expiryDate: 1 }).limit(5);
 
         res.json({
             success: true,
@@ -63,6 +73,8 @@ exports.getDashboardStats = async (req, res) => {
                 lowStockProducts,
                 expiringProducts,
                 expiredProducts,
+                expiringProductsList,
+                expiredProductsList,
                 totalRevenue,
                 todayRevenue,
                 todayCount,

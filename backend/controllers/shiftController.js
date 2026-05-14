@@ -59,6 +59,18 @@ exports.closeShift = async (req, res) => {
 
         await shift.save();
 
+        // Send notification to owner
+        const { sendNotification } = require('../utils/notificationUtils');
+        const User = require('../models/User');
+        const staffMember = await User.findById(req.user._id);
+        
+        await sendNotification(
+            req.shopOwnerId,
+            'Shift Closed',
+            `Staff ${staffMember.ownerName} has closed their shift. Total Sales: ₹${shift.totalSales.toLocaleString()}. Expected Cash: ₹${shift.expectedCash.toLocaleString()}.`,
+            'Sale'
+        );
+
         res.json({ success: true, data: shift });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

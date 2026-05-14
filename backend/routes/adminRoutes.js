@@ -7,7 +7,8 @@ const {
     getGlobalSettings, 
     updateGlobalSettings,
     confirmRegistrationPayment,
-    getShopById
+    getShopById,
+    impersonateUser
 } = require('../controllers/adminController');
 
 // All routes here are protected
@@ -20,6 +21,7 @@ router.post('/confirm-payment', confirmRegistrationPayment);
 router.get('/pending-approvals', admin, getPendingApprovals);
 router.put('/approvals/:id', admin, updateApprovalStatus);
 router.get('/shop-lookup/:shopId', admin, getShopById);
+router.post('/impersonate/:id', admin, impersonateUser);
 router.get('/settings', getGlobalSettings); // Everyone needs to see settings for payment
 router.put('/settings', admin, updateGlobalSettings);
 

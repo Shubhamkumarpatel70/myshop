@@ -248,3 +248,40 @@ exports.getSubscriptions = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// @desc    Admin: Get Revenue Stats
+exports.getRevenueStats = async (req, res) => {
+    try {
+        const users = await User.find({ role: 'shop_owner' });
+        
+        let totalEarnings = 0;
+        let planDistribution = { 'Free': 0, 'Professional': 0, 'Enterprise': 0 };
+        let activeSubscriptions = 0;
+
+        users.forEach(user => {
+            // Plan distribution
+            planDistribution[user.subscriptionPlan] = (planDistribution[user.subscriptionPlan] || 0) + 1;
+            
+            if (user.subscriptionPlan !== 'Free') activeSubscriptions++;
+
+            // Sum historical earnings
+            if (user.subscriptionHistory) {
+                user.subscriptionHistory.forEach(h => {
+                    totalEarnings += (h.amount || 0);
+                });
+            }
+        });
+
+        res.json({ 
+            success: true, 
+            data: {
+                totalEarnings,
+                planDistribution,
+                activeSubscriptions,
+                totalShops: users.length
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

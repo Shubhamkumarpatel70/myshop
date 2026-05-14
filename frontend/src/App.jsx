@@ -43,6 +43,7 @@ import AdminQueries from './dashboard/AdminQueries';
 import AdminStaff from './dashboard/AdminStaff';
 import AdminPurchaseOrders from './dashboard/AdminPurchaseOrders';
 import PODetails from './dashboard/PODetails';
+import AdminRevenue from './dashboard/AdminRevenue';
 import SplashScreen from './components/SplashScreen';
 
 const ProtectedRoute = ({ children }) => {
@@ -76,6 +77,7 @@ const AppContent = () => {
                 <Route path="/public-shop/:shopId" element={<PublicShop />} />
                 <Route path="/shops" element={<><Navbar /><ShopFinder /><Footer /></>} />
                 <Route path="/lookup-receipt" element={<><Navbar /><div className="pt-28"><ReceiptLookup /></div><Footer /></>} />
+                <Route path="/invoice/:id" element={<><Navbar /><div className="pt-28"><ReceiptLookup /></div><Footer /></>} />
 
                 {/* Dashboard Routes */}
                 <Route path="/dashboard" element={
@@ -84,6 +86,7 @@ const AppContent = () => {
                     </ProtectedRoute>
                 }>
                     <Route index element={<Overview />} />
+                    <Route path="overview" element={<Overview />} />
                     <Route path="inventory" element={<Inventory />} />
                     <Route path="share" element={<MyShop />} />
                     <Route path="categories" element={<Categories />} />
@@ -105,6 +108,7 @@ const AppContent = () => {
                     <Route path="customers" element={<Customers />} />
                     <Route path="suppliers" element={<Suppliers />} />
                     <Route path="purchase-orders" element={<PurchaseOrders />} />
+                    <Route path="purchase-orders/:id" element={<PODetails />} />
                     <Route path="pricing" element={<Pricing />} />
                     <Route path="admin/subscriptions" element={<AdminSubscriptions />} />
                     <Route path="admin/pricing" element={<AdminPricing />} />
@@ -112,6 +116,7 @@ const AppContent = () => {
                     <Route path="admin/staff" element={<AdminStaff />} />
                     <Route path="admin/purchase-orders" element={<AdminPurchaseOrders />} />
                     <Route path="admin/purchase-orders/:id" element={<PODetails />} />
+                    <Route path="admin/revenue" element={<AdminRevenue />} />
                 </Route>
             </Routes>
             <Toaster position="top-right" />

@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Mail, MapPin, Phone, ShoppingBag } from 'lucide-react';
+import packageJson from '../../package.json';
 
 const Footer = () => {
     const year = new Date().getFullYear();
+    const version = packageJson.version;
 
     return (
         <footer className="relative overflow-hidden border-t border-slate-200 bg-white pt-16 text-slate-700 dark:border-slate-800 dark:bg-[#020617] dark:text-slate-300">
@@ -76,7 +78,7 @@ const Footer = () => {
 
             <div className="border-t border-slate-200/80 py-5 dark:border-slate-800">
                 <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 text-xs text-slate-500 sm:flex-row sm:px-6">
-                    <p>© {year} StockSaathi. All rights reserved.</p>
+                    <p>© {year} StockSaathi. All rights reserved. <span className="ml-2 font-bold opacity-30 tracking-tighter">v{version}</span></p>
                     <p>Built for modern retail operations.</p>
                 </div>
             </div>

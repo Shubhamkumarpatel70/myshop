@@ -138,13 +138,13 @@ const Overview = () => {
                     hint: 'Products across all shops',
                 },
                 {
-                    label: 'Revenue',
-                    value: `₹${Number(stats.totalRevenue || 0).toLocaleString()}`,
-                    icon: <DollarSign size={18} className="text-amber-600" />,
-                    hint: 'Aggregate platform sales',
+                    label: 'Net Profit',
+                    value: `₹${Number(stats.totalProfit || 0).toLocaleString()}`,
+                    icon: <TrendingUp size={18} className="text-violet-600" />,
+                    hint: 'Total earnings after cost',
                 },
                 {
-                    label: 'Low stock shops',
+                    label: 'Low stock alerts',
                     value: stats.lowStockProducts || 0,
                     icon: <AlertTriangle size={18} className="text-rose-600" />,
                     hint: 'Shops requiring stock action',
@@ -160,16 +160,16 @@ const Overview = () => {
                 hint: 'Total sales for selected period',
             },
             {
-                label: 'Transactions',
-                value: Number(stats.totalSalesCount || 0).toLocaleString(),
-                icon: <ShoppingCart size={18} className="text-emerald-600" />,
-                hint: 'Completed sales entries',
+                label: 'Net Profit',
+                value: `₹${Number(stats.totalProfit || 0).toLocaleString()}`,
+                icon: <TrendingUp size={18} className="text-emerald-600" />,
+                hint: 'Revenue minus purchase cost',
             },
             {
-                label: 'Products',
-                value: Number(stats.totalProducts || 0).toLocaleString(),
-                icon: <Package size={18} className="text-amber-600" />,
-                hint: 'Active catalog count',
+                label: 'Transactions',
+                value: Number(stats.totalSalesCount || 0).toLocaleString(),
+                icon: <ShoppingCart size={18} className="text-amber-600" />,
+                hint: 'Completed sales entries',
             },
             {
                 label: 'Low stock alerts',
@@ -375,27 +375,68 @@ const Overview = () => {
             )}
 
             {currentRole !== 'super_admin' && (
-                <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <div className="mb-3 inline-flex rounded-lg bg-indigo-50 p-2 dark:bg-indigo-500/15">
-                            <TrendingUp size={18} className="text-indigo-600" />
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Expiry Watchlist */}
+                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                        <div className="flex justify-between items-center mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-rose-50 dark:bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-600">
+                                    <Clock size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-black uppercase tracking-tight">Expiry Watchlist</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Action Required</p>
+                                </div>
+                            </div>
+                            <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                {stats?.expiringProducts || 0} Items
+                            </span>
                         </div>
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Performance focus</h3>
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Track daily sales consistency and bill throughput.</p>
+
+                        <div className="space-y-3">
+                            {(stats?.expiringProductsList || []).length > 0 ? (
+                                stats.expiringProductsList.map((item) => (
+                                    <div key={item._id} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                                        <div>
+                                            <p className="font-black text-sm uppercase text-slate-900 dark:text-white truncate max-w-[150px]">{item.productName}</p>
+                                            <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Expires: {new Date(item.expiryDate).toLocaleDateString()}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-black text-slate-900 dark:text-white">Qty: {item.quantity}</p>
+                                            <Link to="/dashboard/inventory" className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Manage</Link>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="py-10 text-center">
+                                    <ShieldCheck size={32} className="mx-auto text-emerald-100 mb-2" />
+                                    <p className="text-xs font-bold text-slate-400 uppercase">No upcoming expiries</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <div className="mb-3 inline-flex rounded-lg bg-emerald-50 p-2 dark:bg-emerald-500/15">
-                            <ShieldCheck size={18} className="text-emerald-600" />
+
+                    {/* Performance focus */}
+                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 p-8 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col justify-between">
+                        <div>
+                            <div className="mb-6 inline-flex rounded-xl bg-indigo-50 p-3 dark:bg-indigo-500/15">
+                                <TrendingUp size={24} className="text-indigo-600" />
+                            </div>
+                            <h3 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Performance focus</h3>
+                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 font-medium">
+                                Your net margin is currently healthy. Focus on clearing high-risk stock items shown in the watchlist to minimize losses.
+                            </p>
                         </div>
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Operational quality</h3>
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Use role-based access and shift logs for accountability.</p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <div className="mb-3 inline-flex rounded-lg bg-amber-50 p-2 dark:bg-amber-500/15">
-                            <Clock size={18} className="text-amber-600" />
+                        <div className="mt-8 pt-8 border-t border-slate-50 dark:border-slate-800 grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Monthly Profit</p>
+                                <p className="text-2xl font-black text-emerald-600">₹{Number(stats?.totalProfit || 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Avg Transaction</p>
+                                <p className="text-2xl font-black text-indigo-600">₹{Math.round((stats?.totalRevenue || 0) / (stats?.totalSalesCount || 1)).toLocaleString()}</p>
+                            </div>
                         </div>
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Daily discipline</h3>
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Resolve low-stock alerts and close transactions on time.</p>
                     </div>
                 </section>
             )}

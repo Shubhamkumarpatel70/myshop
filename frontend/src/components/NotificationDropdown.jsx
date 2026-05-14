@@ -16,6 +16,8 @@ const formatDate = (dateString) => {
     });
 };
 
+import { requestNotificationPermission, showBrowserNotification } from '../utils/pushNotification';
+
 const NotificationDropdown = () => {
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +27,19 @@ const NotificationDropdown = () => {
         try {
             setLoading(true);
             const res = await api.get('/notifications');
-            setNotifications(res.data.data);
+            const newNotifications = res.data.data;
+            
+            // Check for brand new unread notifications to trigger Browser Push
+            const lastNotifId = localStorage.getItem('last_notification_id');
+            const unread = newNotifications.filter(n => !n.isRead);
+            
+            if (unread.length > 0 && unread[0]._id !== lastNotifId) {
+                const latest = unread[0];
+                showBrowserNotification(latest.title, latest.message);
+                localStorage.setItem('last_notification_id', latest._id);
+            }
+
+            setNotifications(newNotifications);
         } catch (error) {
             console.error("Failed to fetch notifications");
         } finally {
@@ -34,15 +48,16 @@ const NotificationDropdown = () => {
     };
 
     useEffect(() => {
+        requestNotificationPermission();
         fetchNotifications();
-        // Refresh every 2 minutes
-        const interval = setInterval(fetchNotifications, 120000);
+        // Refresh every 30 seconds for live feel
+        const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
     }, []);
 
     const markAllRead = async () => {
         try {
-            await api.put('/notifications/mark-read');
+            await api.patch('/notifications/read-all');
             setNotifications(notifications.map(n => ({ ...n, isRead: true })));
             toast.success("All caught up!");
         } catch (error) {
@@ -52,7 +67,7 @@ const NotificationDropdown = () => {
 
     const markRead = async (id) => {
         try {
-            await api.put(`/notifications/${id}/read`);
+            await api.patch(`/notifications/${id}/read`);
             setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
         } catch (error) {
             toast.error("Failed to mark as read");

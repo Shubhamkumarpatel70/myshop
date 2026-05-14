@@ -18,33 +18,33 @@ const Home = () => {
     const features = [
         {
             icon: <ScanLine className="h-6 w-6 text-indigo-600" />,
-            title: 'Inventory Intelligence',
-            description: 'Track stock movement in real time and receive low-stock recommendations before shelf-outs happen.',
+            title: 'Lightning POS & Barcode',
+            description: 'Checkout screens optimized for speed. Integrated barcode scanning and keyboard-first inputs for high-volume retail.',
+        },
+        {
+            icon: <ShoppingBag className="h-6 w-6 text-indigo-600" />,
+            title: 'WhatsApp Digital Billing',
+            description: 'Instantly share professional digital invoices with customers via WhatsApp. Save paper, go green, and look modern.',
         },
         {
             icon: <BarChart3 className="h-6 w-6 text-indigo-600" />,
-            title: 'Revenue Analytics',
-            description: 'Daily sales, margin, and top-SKU performance in one place with export-ready reports.',
+            title: 'Net Profit Intelligence',
+            description: 'Real-time daily, monthly, and yearly net profit tracking. Automated reports that help you make better decisions.',
+        },
+        {
+            icon: <CheckCircle2 className="h-6 w-6 text-indigo-600" />,
+            title: 'Auto-Restock System',
+            description: 'Never run out of stock. Automatically generate purchase orders and restock inventory when levels are low.',
         },
         {
             icon: <ShieldCheck className="h-6 w-6 text-indigo-600" />,
-            title: 'Role-Based Access',
-            description: 'Owner, manager, and cashier permissions so every user sees only what they need.',
-        },
-        {
-            icon: <Globe2 className="h-6 w-6 text-indigo-600" />,
-            title: 'Multi-Store Sync',
-            description: 'Operate multiple outlets from a single dashboard with live updates across branches.',
-        },
-        {
-            icon: <Clock3 className="h-6 w-6 text-indigo-600" />,
-            title: 'Fast Billing Flow',
-            description: 'Checkout screens are optimized for speed with keyboard-first input and barcode support.',
+            title: 'Smart Alerts & Expiry',
+            description: 'Native browser push notifications for low stock, expiring batches, and shift closing reports.',
         },
         {
             icon: <Users2 className="h-6 w-6 text-indigo-600" />,
-            title: 'Customer Insights',
-            description: 'Build repeat business with customer history, purchase trends, and targeted follow-ups.',
+            title: 'Staff & Shift Control',
+            description: 'Manage staff roles, track attendance, and monitor cash drawers with secure shift closing protocols.',
         },
     ];
 
@@ -146,7 +146,7 @@ const Home = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Sales</p>
-                                    <p className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">$12,640</p>
+                                    <p className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">₹12,640</p>
                                 </div>
                                 <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Orders</p>

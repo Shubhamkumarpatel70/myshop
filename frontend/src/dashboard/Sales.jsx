@@ -6,7 +6,7 @@ import {
     Plus, Search, ShoppingCart, Trash2,
     User, Phone, CreditCard, Receipt,
     ChevronRight, Package, X, RefreshCcw,
-    Undo2, ArrowRight, ArrowLeft, QrCode, Printer,
+    Undo2, ArrowRight, ArrowLeft, QrCode, Printer, Share2,
     Barcode, Scan, Notebook, Store, AlertTriangle, ShieldCheck, Zap, Layers, Globe, Calendar
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -112,7 +112,7 @@ const Sales = () => {
         else setLoadingMore(true);
 
         try {
-            const res = await api.get(`/sales?page=${pageNum}&limit=10&month=${monthFilter}`);
+            const res = await api.get(`/sales?page=${pageNum}&limit=10&month=${monthFilter}&search=${transactionSearch}`);
             const { data, pagination: pagData } = res.data;
 
             if (append) {
@@ -159,20 +159,40 @@ const Sales = () => {
         }
     };
 
+    const handleReturn = async () => {
+        if (!itemToReturn || !returnReasonInput) {
+            toast.error("Protocol Error: Reason required");
+            return;
+        }
+
+        try {
+            const res = await api.post('/sales/return-product', {
+                saleId: viewingSale._id,
+                productId: itemToReturn.product?._id || itemToReturn.product,
+                quantity: itemToReturn.quantity,
+                returnReason: returnReasonInput
+            });
+
+            if (res.data.success) {
+                toast.success("Registry Adjusted: Product Returned");
+                setIsReturnModalOpen(false);
+                setReturnReasonInput('');
+                setItemToReturn(null);
+                // Refresh data
+                fetchSales(page, false);
+                setIsViewModalOpen(false);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Return Protocol Failed");
+        }
+    };
+
     const handleTransactionSearch = async (e) => {
         if (e) e.preventDefault();
-        if (!transactionSearch || transactionSearch.length < 5) return;
-        setSearching(true);
-        try {
-            const res = await api.get(`/sales/${transactionSearch}`);
-            setViewingSale(res.data.data);
-            setIsViewModalOpen(true);
-            setTransactionSearch('');
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Node not found in registry");
-        } finally {
-            setSearching(false);
-        }
+        // If searching, we temporarily clear the month filter to find the record across all time
+        // but keep it as is if the user wants to search within the month. 
+        // For better UX, we'll search globally if a specific term is entered.
+        fetchSales(1, false);
     };
 
     const handleScanSuccess = (decodedText) => {
@@ -272,6 +292,14 @@ const Sales = () => {
             p.batches?.some(b => b.batchNumber?.toLowerCase().includes(searchLower));
     });
 
+    const handleShare = (sale) => {
+        const url = `${window.location.origin}/invoice/${sale.transactionId || sale._id}`;
+        const message = `Hi ${sale.customerName || 'Customer'}, here is your digital receipt from ${sale.user?.shopName || 'our shop'}: ${url}`;
+        const whatsappUrl = `https://wa.me/${sale.customerPhone ? '91' + sale.customerPhone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+        toast.success("Opening WhatsApp...");
+    };
+
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
@@ -354,7 +382,7 @@ const Sales = () => {
                                 <div className="relative group">
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
                                     <input
-                                        type="text" placeholder="Transaction ID..."
+                                        type="text" placeholder="ID, Name, or Mobile..."
                                         className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-11 pr-3 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 shadow-sm"
                                         value={transactionSearch} onChange={(e) => setTransactionSearch(e.target.value)}
                                     />
@@ -411,16 +439,25 @@ const Sales = () => {
                                         <p className="mt-1 text-xs text-slate-500">{sale.paymentMethod}</p>
                                     </td>
                                     <td className="px-4 py-4">
-                                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${sale.status === 'Returned' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' :
+                                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${sale.status === 'Returned' || sale.status === 'Partial Return' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' :
                                             'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
                                             }`}>
                                             {sale.status}
                                         </span>
                                     </td>
                                     <td className="px-4 py-4 text-right">
-                                        <button onClick={() => { setViewingSale(sale); setIsViewModalOpen(true); }} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                                            <Receipt size={16} />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button 
+                                                onClick={() => handleShare(sale)}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900"
+                                                title="Share via WhatsApp"
+                                            >
+                                                <Share2 size={16} />
+                                            </button>
+                                            <button onClick={() => { setViewingSale(sale); setIsViewModalOpen(true); }} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                                                <Receipt size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -659,8 +696,11 @@ const Sales = () => {
                             <div className="space-y-6">
                                 {viewingSale.items.map((item, idx) => (
                                     <div key={idx} className="flex justify-between items-center group">
-                                        <div>
-                                            <p className="font-black text-sm uppercase dark:text-white leading-none">{item.product?.productName || item.productName}</p>
+                                        <div className="flex-1 pr-4">
+                                            <div className="flex items-center gap-2">
+                                                <p className={`font-black text-sm uppercase dark:text-white leading-none ${item.isReturned ? 'line-through text-slate-400' : ''}`}>{item.product?.productName || item.productName}</p>
+                                                {item.isReturned && <span className="text-[8px] px-1.5 py-0.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-md font-bold">RETURNED</span>}
+                                            </div>
                                             <div className="flex items-center gap-2 mt-2">
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.quantity} Unit(s) @ ₹{item.price}</p>
                                                 {item.batchNumber && (
@@ -668,7 +708,18 @@ const Sales = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <p className="font-black text-base dark:text-white">₹{item.total || (item.price * item.quantity)}</p>
+                                        <div className="flex items-center gap-4">
+                                            <p className={`font-black text-base dark:text-white ${item.isReturned ? 'line-through text-slate-400' : ''}`}>₹{item.total || (item.price * item.quantity)}</p>
+                                            {!item.isReturned && (
+                                                <button 
+                                                    onClick={() => { setItemToReturn(item); setIsReturnModalOpen(true); }}
+                                                    className="p-2 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all"
+                                                    title="Return Product"
+                                                >
+                                                    <Undo2 size={16} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -678,11 +729,41 @@ const Sales = () => {
                             </div>
                         </div>
                         <div className="flex gap-4">
-                            <button onClick={() => window.print()} className="h-20 flex-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3"><Printer size={20} /> Print Receipt</button>
+                            <button onClick={() => window.print()} className="h-20 flex-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3"><Printer size={20} /> Print</button>
+                            <button onClick={() => handleShare(viewingSale)} className="h-20 flex-1 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3"><Share2 size={20} /> Share WhatsApp</button>
                             <button onClick={() => setIsViewModalOpen(false)} className="h-20 flex-1 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest">Acknowledge</button>
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* Return Reason Modal */}
+            <Modal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} title="Return Protocol" className="max-w-md">
+                <div className="py-6 space-y-8">
+                    <div className="p-8 bg-rose-500 text-white rounded-[2.5rem] space-y-4 shadow-xl shadow-rose-500/20 rotate-1">
+                        <Undo2 size={48} />
+                        <div>
+                            <h4 className="text-xl font-black uppercase tracking-tight">Initiate Return?</h4>
+                            <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">This will restock the item and mark the transaction.</p>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] ml-4">Return Reason</label>
+                        <textarea 
+                            required 
+                            placeholder="e.g. Expired, Damaged, Customer choice..." 
+                            className="w-full p-6 rounded-2xl bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 outline-none focus:border-rose-500 h-32 resize-none font-bold dark:text-white" 
+                            value={returnReasonInput} 
+                            onChange={(e) => setReturnReasonInput(e.target.value)} 
+                        />
+                    </div>
+
+                    <div className="flex gap-4">
+                        <button onClick={() => setIsReturnModalOpen(false)} className="h-14 flex-1 bg-slate-50 dark:bg-slate-900 rounded-xl font-black uppercase text-[10px] tracking-widest text-slate-500">Abort</button>
+                        <button onClick={handleReturn} className="h-14 flex-[2] bg-rose-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-700 transition-all">Confirm Return</button>
+                    </div>
+                </div>
             </Modal>
 
             <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Optical Uplink" className="max-w-lg">
