@@ -6,8 +6,9 @@ import {
     Plus, Search, Filter, MoreVertical,
     Edit, Trash2, Package, AlertCircle,
     ArrowUpDown, Download, CreditCard,
-    Image as ImageIcon, Upload, Camera, Scan, ShieldCheck, Box, Tag, Layers
+    Image as ImageIcon, Upload, Camera, Scan, ShieldCheck, Box, Tag, Layers, RefreshCw, Zap
 } from 'lucide-react';
+import BarcodeImage from '../components/BarcodeImage';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
 import BarcodeScanner from '../components/BarcodeScanner';
@@ -100,9 +101,40 @@ const Inventory = () => {
         }
     };
 
+    const handleBarcodeLookup = async (barcode) => {
+        if (!barcode || barcode.length < 5) return;
+        try {
+            const res = await api.get(`/barcodes/lookup/${barcode}`);
+            if (res.data.success && res.data.data) {
+                const { productName, productImage } = res.data.data;
+                setFormData(prev => ({
+                    ...prev,
+                    productName: productName || prev.productName,
+                    productImage: productImage || prev.productImage
+                }));
+                toast.success("Identity Found: Details Auto-filled");
+            }
+        } catch (error) {
+            // Silently fail if not found, it's a new product
+        }
+    };
+
+    const handleGenerateBarcode = async () => {
+        try {
+            const res = await api.post('/barcodes/generate');
+            if (res.data.success) {
+                setFormData(prev => ({ ...prev, barcode: res.data.barcode }));
+                toast.success("Signal Generated: New Barcode Assigned");
+            }
+        } catch (error) {
+            toast.error("Signal failure during generation");
+        }
+    };
+
     const handleScanSuccess = (decodedText) => {
         setIsScannerOpen(false);
         setFormData(prev => ({ ...prev, barcode: decodedText }));
+        handleBarcodeLookup(decodedText);
         toast.success("Uplink Successful: Barcode Synced");
     };
 
@@ -151,7 +183,7 @@ const Inventory = () => {
                 toast.success("Asset Manifest Updated");
             } else {
                 await api.post('/products', formData);
-                toast.success("New Asset Initialized");
+                toast.success("New Product Added");
             }
             fetchData();
             setIsModalOpen(false);
@@ -218,7 +250,7 @@ const Inventory = () => {
             const matchesCategory = p.category?.name?.toLowerCase().includes(searchLower);
             const matchesBarcode = p.barcode?.toLowerCase().includes(searchLower);
             const matchesBatch = p.batches?.some(b => b.batchNumber?.toLowerCase().includes(searchLower));
-            
+
             const matchesSearch = matchesName || matchesCategory || matchesBarcode || matchesBatch;
 
             const matchesStock = stockFilter === 'all' ? true :
@@ -238,146 +270,197 @@ const Inventory = () => {
     return (
         <div className="space-y-6 pb-10 font-jakarta">
             {/* Header with High-Contrast Typography */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-600">
-                        <Layers size={14} /> Asset Surveillance
+            {/* Inventory Command Center */}
+            {/* Simplified Inventory Header */}
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 border border-slate-100 dark:border-slate-800 shadow-sm mb-8">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10">
+                    <div className="space-y-2">
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
+                            Stock <span className="text-indigo-600">Inventory</span>
+                        </h1>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+                            Real-time Warehouse Intelligence
+                        </p>
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-                        Master <span className="text-indigo-600">Inventory</span>
-                    </h1>
-                    <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-                        Global oversight and lifecycle management of your merchant stock inventory.
-                    </p>
+                    <div className="flex w-full sm:w-auto gap-3">
+                        <button 
+                            onClick={handleExport} 
+                            className="h-14 px-6 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-black uppercase tracking-widest text-[10px] border border-slate-100 dark:border-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Download size={18} /> Export
+                        </button>
+                        <button 
+                            onClick={() => handleOpenModal()} 
+                            className="flex-1 sm:flex-none h-14 px-8 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Plus size={20} /> Add Product
+                        </button>
+                    </div>
                 </div>
-                <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
-                    <button onClick={handleExport} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
-                        <Download size={18} /> Export CSV
-                    </button>
-                    <button onClick={() => handleOpenModal()} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">
-                        <Plus size={20} /> Add Product
-                    </button>
-                </div>
-            </div>
 
-            {/* Tactical Control Bar */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                    <div className="relative flex-1 w-full">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Filter by product name, category or barcode..."
-                            className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-11 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                <div className="flex flex-col xl:flex-row gap-4">
+                    <div className="relative flex-1 group">
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+                        <input 
+                            type="text" 
+                            placeholder="Search by name, category or barcode..." 
+                            className="w-full h-14 md:h-16 pl-16 pr-6 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none font-bold text-sm md:text-base outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:w-[360px]">
-                        <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                            <select className="h-11 w-full appearance-none rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-xs font-semibold uppercase tracking-wide text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200" value={stockFilter} onChange={(e) => setStockFilter(e.target.value)}>
-                                <option value="all">Status: All</option>
-                                <option value="low">Alert: Low</option>
-                                <option value="out">Alert: Out</option>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative flex-1 sm:flex-none">
+                            <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <select 
+                                className="h-14 md:h-16 w-full sm:w-52 appearance-none rounded-2xl bg-slate-50 dark:bg-slate-800 border-none pl-12 pr-10 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 outline-none cursor-pointer focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                                value={stockFilter} 
+                                onChange={(e) => setStockFilter(e.target.value)}
+                            >
+                                <option value="all">Status: All Stock</option>
+                                <option value="low">Status: Low Stock</option>
+                                <option value="out">Status: Out of Stock</option>
                             </select>
                         </div>
-                        <div className="relative">
-                            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                            <select className="h-11 w-full appearance-none rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-xs font-semibold uppercase tracking-wide text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200" onChange={(e) => handleSort(e.target.value)}>
-                                <option value="">Sort: None</option>
-                                <option value="productName">Name</option>
-                                <option value="quantity">Stock</option>
-                                <option value="price">Price</option>
+                        <div className="relative flex-1 sm:flex-none">
+                            <ArrowUpDown className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <select 
+                                className="h-14 md:h-16 w-full sm:w-52 appearance-none rounded-2xl bg-slate-50 dark:bg-slate-800 border-none pl-12 pr-10 text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 outline-none cursor-pointer focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                                onChange={(e) => handleSort(e.target.value)}
+                            >
+                                <option value="">Sort: Default</option>
+                                <option value="productName">Sort: Name</option>
+                                <option value="quantity">Sort: Stock</option>
+                                <option value="price">Sort: Price</option>
                             </select>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Inventory Grid Table */}
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-                <div className="overflow-x-auto">
-                    <table className="min-w-[980px] w-full text-left">
+            {/* Inventory Table/Cards */}
+            <div className="space-y-4">
+                {/* Desktop/Tablet Table View */}
+                <div className="hidden md:block overflow-x-auto rounded-[2.5rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                    <table className="w-full text-left min-w-[1000px]">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-800/50">
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Product</th>
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Category</th>
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Inventory</th>
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Price</th>
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
-                                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Product Specification</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Category</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Stock Metric</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Price Points</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Health Status</th>
+                                <th className="px-8 py-5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Control</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {loading ? [1, 2, 3, 4, 5].map(i => (
-                                <tr key={i} className="animate-pulse"><td colSpan="6" className="px-4 py-6 h-16 bg-slate-50/20 dark:bg-slate-800/10"></td></tr>
-                            )) : filteredProducts.length > 0 ? filteredProducts.map((product) => (
-                                <tr key={product._id} className="group transition-all hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-12 w-12 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 text-indigo-600 shadow-inner transition-transform duration-300 group-hover:scale-105 dark:border-slate-700 dark:bg-slate-800">
+                                <tr key={i} className="animate-pulse"><td colSpan="6" className="px-8 py-10 h-24 bg-slate-50/20 dark:bg-slate-800/10"></td></tr>
+                            )) : filteredProducts.map((product) => (
+                                <tr key={product._id} className="group transition-all hover:bg-indigo-50/30 dark:hover:bg-indigo-500/5">
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-16 w-16 overflow-hidden rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-indigo-600 transition-all group-hover:border-indigo-500/30">
                                                 {product.productImage ? (
                                                     <img src={product.productImage.startsWith('http') ? product.productImage : `${BASE_URL}${product.productImage}`} alt={product.productName} className="w-full h-full object-cover" />
-                                                ) : <Box size={28} />}
+                                                ) : <Box size={24} />}
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-semibold leading-none text-slate-900 dark:text-white">{product.productName}</p>
-                                                <div className="mt-2 flex gap-2">
-                                                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300">ID: {product.barcode || 'N/A'}</span>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-black dark:text-white truncate max-w-[200px]">{product.productName}</p>
+                                                <div className="mt-1 flex items-center gap-2">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ID: {product.barcode || 'N/A'}</span>
                                                     {product.batches?.length > 1 && (
-                                                        <button onClick={() => { setSelectedProductBatches(product); setIsBatchModalOpen(true); }} className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-600 transition-all hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300">{product.batches.length} Batches</button>
+                                                        <button onClick={() => { setSelectedProductBatches(product); setIsBatchModalOpen(true); }} className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 rounded text-[8px] font-black uppercase tracking-widest">Multiple Batches</button>
                                                     )}
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-4">
-                                        <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                            {product.category?.name || 'GENERIC'}
-                                        </span>
+                                    <td className="px-8 py-6">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-full">{product.category?.name || 'GENERIC'}</span>
                                     </td>
-                                    <td className="px-4 py-4">
-                                        <p className="text-sm font-semibold leading-none text-slate-900 dark:text-white">{product.quantity} <span className="ml-1 text-xs font-medium text-slate-500">Units</span></p>
-                                        {product.expiryDate && (
-                                            <p className={`mt-1 text-xs font-medium ${new Date(product.expiryDate) < new Date() ? 'text-rose-500' : 'text-slate-500'}`}>
-                                                EXP: {formatDate(product.expiryDate)}
-                                            </p>
-                                        )}
+                                    <td className="px-8 py-6">
+                                        <p className="text-sm font-black dark:text-white leading-none">{product.quantity}</p>
+                                        <p className="mt-1 text-[9px] font-black text-slate-400 uppercase tracking-widest">Units In Stock</p>
                                     </td>
-                                    <td className="px-4 py-4">
-                                        <p className="text-sm font-semibold leading-none text-indigo-600">₹{product.price}</p>
-                                        <p className="mt-1 text-xs font-medium text-slate-500">Cost: ₹{product.purchasePrice || 0}</p>
+                                    <td className="px-8 py-6">
+                                        <p className="text-sm font-black text-indigo-600 leading-none">₹{product.price}</p>
+                                        <p className="mt-1 text-[9px] font-black text-slate-400 uppercase tracking-widest">Cost: ₹{product.purchasePrice || 0}</p>
                                     </td>
-                                    <td className="px-4 py-4">
+                                    <td className="px-8 py-6">
                                         {product.quantity <= product.lowStockThreshold ? (
                                             <div className="flex items-center gap-2 text-rose-500">
                                                 <AlertCircle size={14} />
-                                                <span className="text-xs font-semibold">Low Stock</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Critical Low</span>
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-2 text-emerald-500">
                                                 <ShieldCheck size={14} />
-                                                <span className="text-xs font-semibold">Healthy</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Nominal</span>
                                             </div>
                                         )}
                                     </td>
-                                    <td className="px-4 py-4 text-right">
+                                    <td className="px-8 py-6 text-right">
                                         <div className="flex justify-end gap-2">
-                                            <button onClick={() => handleOpenModal(product)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                                            <button onClick={() => handleOpenModal(product)} className="w-10 h-10 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-600 rounded-xl flex items-center justify-center transition-all border border-slate-100 dark:border-slate-800 hover:border-indigo-500/30">
                                                 <Edit size={16} />
                                             </button>
-                                            <button onClick={() => handleDelete(product._id)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-rose-300 hover:text-rose-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                                            <button onClick={() => handleDelete(product._id)} className="w-10 h-10 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-rose-600 rounded-xl flex items-center justify-center transition-all border border-slate-100 dark:border-slate-800 hover:border-rose-500/30">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
-                            )) : (
-                                <tr><td colSpan="6" className="px-4 py-20 text-center text-sm text-slate-500">No products found.</td></tr>
-                            )}
+                            ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Cards View */}
+                <div className="md:hidden grid grid-cols-1 gap-4">
+                    {loading ? [1, 2, 3].map(i => (
+                        <div key={i} className="h-40 bg-white dark:bg-slate-900 rounded-3xl animate-pulse" />
+                    )) : filteredProducts.map(product => (
+                        <div key={product._id} className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
+                            <div className="flex gap-4">
+                                <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-indigo-600">
+                                    {product.productImage ? (
+                                        <img src={product.productImage.startsWith('http') ? product.productImage : `${BASE_URL}${product.productImage}`} alt={product.productName} className="w-full h-full object-cover" />
+                                    ) : <Box size={24} />}
+                                </div>
+                                <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                                    <div>
+                                        <div className="flex justify-between items-start">
+                                            <p className="text-sm font-black dark:text-white truncate pr-2">{product.productName}</p>
+                                            <p className="text-sm font-black text-indigo-600">₹{product.price}</p>
+                                        </div>
+                                        <span className="inline-block mt-1 text-[8px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-md">{product.category?.name || 'GENERIC'}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div>
+                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Units</p>
+                                                <p className="text-xs font-black dark:text-white">{product.quantity}</p>
+                                            </div>
+                                            <div className="h-4 w-px bg-slate-100 dark:bg-slate-800"></div>
+                                            <div>
+                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Status</p>
+                                                <span className={`text-[8px] font-black uppercase ${product.quantity <= product.lowStockThreshold ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                                    {product.quantity <= product.lowStockThreshold ? 'Low' : 'Healthy'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex gap-1.5">
+                                            <button onClick={() => handleOpenModal(product)} className="w-9 h-9 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-xl flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition-all"><Edit size={14} /></button>
+                                            <button onClick={() => handleDelete(product._id)} className="w-9 h-9 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={14} /></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 
@@ -450,13 +533,27 @@ const Inventory = () => {
                             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Barcode</label>
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
-                                    <input type="text" className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 pr-8 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="Manual entry" value={formData.barcode} onChange={(e) => setFormData({ ...formData, barcode: e.target.value })} />
+                                    <input
+                                        type="text"
+                                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 pr-8 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                        placeholder="Manual entry"
+                                        value={formData.barcode}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, barcode: e.target.value });
+                                            if (e.target.value.length >= 10) handleBarcodeLookup(e.target.value);
+                                        }}
+                                    />
                                     <Tag className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                 </div>
-                                <button type="button" onClick={() => setIsScannerOpen(true)} className="inline-flex h-11 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200">
+                                <button type="button" onClick={() => setIsScannerOpen(true)} className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200" title="Scan Barcode">
                                     <Scan size={16} />
                                 </button>
                             </div>
+                            {formData.barcode && formData.barcode.length === 13 && (
+                                <div className="mt-2 flex justify-center p-2 rounded-lg bg-white border border-slate-100 dark:bg-slate-950 dark:border-slate-800">
+                                    <BarcodeImage value={formData.barcode} className="w-48 h-16" />
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Expiry Date</label>

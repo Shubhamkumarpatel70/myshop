@@ -358,16 +358,16 @@ const Reports = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     className="card p-8 lg:p-10 rounded-[3rem]"
                 >
-                    <div className="flex justify-between items-center mb-10">
-                        <h3 className="text-xl font-black uppercase tracking-tight">Revenue Velocity</h3>
+                    <div className="flex justify-between items-center mb-6 md:mb-10">
+                        <h3 className="text-lg md:text-xl font-black uppercase tracking-tight">Revenue Velocity</h3>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full bg-indigo-600"></div>
-                                <span className="text-[10px] font-black uppercase text-slate-400">Gross</span>
+                                <div className="w-2 md:w-3 h-2 md:h-3 rounded-full bg-indigo-600"></div>
+                                <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-400">Gross</span>
                             </div>
                         </div>
                     </div>
-                    <div className="h-[400px]">
+                    <div className="h-[250px] md:h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={dailySales}>
                                 <defs>
@@ -380,7 +380,7 @@ const Reports = () => {
                                 <XAxis dataKey="_id" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
                                 <Tooltip 
-                                    contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', backgroundColor: '#1e293b', color: '#fff' }}
+                                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', backgroundColor: '#1e293b', color: '#fff', fontSize: '10px' }}
                                     itemStyle={{ color: '#fff', fontWeight: 900 }}
                                 />
                                 <Area type="monotone" dataKey="total" stroke="#4f46e5" strokeWidth={4} fill="url(#chartGrad)" />
@@ -396,8 +396,8 @@ const Reports = () => {
                     transition={{ delay: 0.2 }}
                     className="card p-8 lg:p-10 rounded-[3rem]"
                 >
-                    <h3 className="text-xl font-black uppercase tracking-tight mb-10">Transaction Intensity</h3>
-                    <div className="h-[400px]">
+                    <h3 className="text-lg md:text-xl font-black uppercase tracking-tight mb-6 md:mb-10">Transaction Intensity</h3>
+                    <div className="h-[250px] md:h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={dailySales}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -405,7 +405,7 @@ const Reports = () => {
                                 <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 900, fill: '#94a3b8'}} />
                                 <Tooltip 
                                     cursor={{fill: '#f8fafc'}}
-                                    contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', backgroundColor: '#1e293b', color: '#fff' }}
+                                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', backgroundColor: '#1e293b', color: '#fff', fontSize: '10px' }}
                                     itemStyle={{ color: '#fff', fontWeight: 900 }}
                                 />
                                 <Bar dataKey="count" fill="#10b981" radius={[8, 8, 0, 0]} />

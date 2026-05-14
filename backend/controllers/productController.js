@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const InventoryLog = require('../models/InventoryLog');
 const { sendNotification } = require('../utils/notificationUtils');
+const { registerMetadata } = require('./barcodeController');
 
 exports.getProducts = async (req, res) => {
     try {
@@ -80,6 +81,10 @@ exports.createProduct = async (req, res) => {
             });
         }
 
+        if (product.barcode && product.barcode !== '---') {
+            await registerMetadata(product.barcode, product.productName, product.productImage, req.shopOwnerId);
+        }
+
         res.status(201).json({ success: true, data: product });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -116,6 +121,10 @@ exports.updateProduct = async (req, res) => {
                     'Stock'
                 );
             }
+        }
+
+        if (product.barcode && product.barcode !== '---') {
+            await registerMetadata(product.barcode, product.productName, product.productImage, req.shopOwnerId);
         }
 
         res.json({ success: true, data: product });

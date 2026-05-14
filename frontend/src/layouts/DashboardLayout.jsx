@@ -29,7 +29,8 @@ import {
     Truck,
     IndianRupee,
     Undo2,
-    ShieldAlert
+    ShieldAlert,
+    Tag
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -97,6 +98,7 @@ const DashboardLayout = () => {
         { name: 'Reports', icon: BarChart3, path: '/dashboard/reports', roles: ['shop_owner', 'manager', 'super_admin'], priority: true, description: 'Sales and business analytics', group: 'operations' },
         { name: 'Inventory', icon: Package, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'], priority: true, description: 'Stock levels and adjustments', group: 'inventory' },
         { name: 'Categories', icon: Layers, path: '/dashboard/categories', roles: ['shop_owner', 'manager'], description: 'Catalog grouping', group: 'inventory' },
+        { name: 'Barcodes', icon: Tag, path: '/dashboard/barcodes', roles: ['shop_owner', 'manager'], description: 'Manage product identifiers', group: 'inventory' },
         { name: 'Staff', icon: Users, path: '/dashboard/staff', roles: ['shop_owner'], description: 'Team access and roles', group: 'management' },
         { name: 'Pricing', icon: Zap, path: '/dashboard/pricing', roles: ['shop_owner'], description: 'Plan and billing controls', group: 'management' },
         { name: 'Payments', icon: CreditCard, path: '/dashboard/payment-settings', roles: ['shop_owner'], description: 'Gateway and UPI settings', group: 'management' },
@@ -108,6 +110,7 @@ const DashboardLayout = () => {
         { name: 'Shops', icon: Store, path: '/dashboard/shops', roles: ['super_admin'], priority: true, description: 'All registered shops', group: 'admin-core' },
         { name: 'Approvals', icon: ShieldCheck, path: '/dashboard/admin/approvals', roles: ['super_admin'], priority: true, description: 'Shop verification queue', group: 'admin-core' },
         { name: 'Global Staff', icon: Users, path: '/dashboard/admin/staff', roles: ['super_admin'], description: 'Monitor all shop employees', group: 'admin-core' },
+        { name: 'Admin Barcodes', icon: Tag, path: '/dashboard/admin/barcodes', roles: ['super_admin'], description: 'Global identifier registry', group: 'admin-core' },
         { name: 'Subscriptions', icon: CreditCard, path: '/dashboard/admin/subscriptions', roles: ['super_admin'], description: 'Manage shop subscriptions', group: 'admin-core' },
         { name: 'Admin Sales', icon: ShoppingCart, path: '/dashboard/admin/sales', roles: ['super_admin'], priority: true, description: 'Platform-wide transaction audit', group: 'admin-ops' },
         { name: 'Admin Inventory', icon: Package, path: '/dashboard/admin/inventory', roles: ['super_admin'], priority: true, description: 'Platform-wide inventory view', group: 'admin-ops' },

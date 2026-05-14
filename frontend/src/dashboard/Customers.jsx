@@ -120,40 +120,40 @@ const Customers = () => {
             {/* Search & Tactical Filters */}
             <div className="flex flex-col xl:flex-row gap-4">
                 <div className="relative flex-1 group">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+                    <Search className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
                     <input 
                         type="text" 
-                        placeholder="Search Registry (Name or Phone)..." 
-                        className="w-full h-14 md:h-16 pl-16 pr-6 rounded-2xl md:rounded-[2rem] bg-white dark:bg-slate-900 border-none shadow-lg shadow-slate-200/50 dark:shadow-none font-bold text-base md:text-lg focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                        placeholder="Search Registry..." 
+                        className="w-full h-14 md:h-16 pl-12 md:pl-16 pr-6 rounded-xl md:rounded-[2rem] bg-white dark:bg-slate-900 border-none shadow-lg shadow-slate-200/50 dark:shadow-none font-bold text-sm md:text-lg focus:ring-4 focus:ring-indigo-500/10 transition-all"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex flex-wrap items-center gap-2 p-1.5 md:p-2 bg-white dark:bg-slate-900 rounded-2xl md:rounded-[2rem] shadow-lg shadow-slate-200/50 dark:shadow-none">
+                <div className="flex flex-wrap items-center gap-2 p-1.5 md:p-2 bg-white dark:bg-slate-900 rounded-xl md:rounded-[2rem] shadow-lg shadow-slate-200/50 dark:shadow-none">
                     <button 
                         onClick={() => setFilterTier('All')}
-                        className={`px-5 md:px-8 py-2 md:py-3 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === 'All' ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                        className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-lg md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === 'All' ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
                     >
-                        All Records
+                        All
                     </button>
                     <button 
                         onClick={() => setFilterTier('VIP')}
-                        className={`px-5 md:px-8 py-2 md:py-3 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === 'VIP' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                        className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-lg md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === 'VIP' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:bg-slate-50'}`}
                     >
-                        VIP Tier
+                        VIP
                     </button>
                     <button 
                         onClick={() => setFilterTier('Dormant')}
-                        className={`px-5 md:px-8 py-2 md:py-3 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === 'Dormant' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                        className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-lg md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === 'Dormant' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'text-slate-400 hover:bg-slate-50'}`}
                     >
                         Dormant
                     </button>
-                    <div className="w-px h-6 bg-slate-100 dark:bg-slate-800 mx-1 hidden md:block" />
+                    <div className="w-px h-6 bg-slate-100 dark:bg-slate-800 mx-1 hidden sm:block" />
                     <button 
                         onClick={() => setShowAddModal(true)}
-                        className="h-10 md:h-12 px-5 md:px-8 bg-indigo-600 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-indigo-700 transition-all flex items-center gap-2"
+                        className="h-10 md:h-12 px-4 md:px-8 bg-indigo-600 text-white rounded-lg md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none"
                     >
-                        <Plus size={14} /> New Customer
+                        <Plus size={14} /> New
                     </button>
                 </div>
             </div>
@@ -170,7 +170,7 @@ const Customers = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="group relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/5 transition-all cursor-default"
+                        className="group relative bg-white dark:bg-slate-900 rounded-3xl md:rounded-[2.5rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/5 transition-all cursor-default"
                     >
                         {/* VIP Badge */}
                         {customer.totalSpent > 1000 && (
@@ -179,43 +179,43 @@ const Customers = () => {
                             </div>
                         )}
 
-                        <div className="flex items-center gap-5 mb-8">
-                            <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-2xl shadow-inner">
+                        <div className="flex items-center gap-4 md:gap-5 mb-6 md:mb-8">
+                            <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-50 dark:bg-slate-800 rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-600 font-black text-xl md:text-2xl shadow-inner">
                                 {customer.name.charAt(0)}
                             </div>
                             <div>
-                                <h3 className="text-xl font-black tracking-tight">{customer.name}</h3>
-                                <div className="flex items-center gap-2 text-slate-400 mt-1">
+                                <h3 className="text-lg md:text-xl font-black tracking-tight">{customer.name}</h3>
+                                <div className="flex items-center gap-2 text-slate-400 mt-0.5 md:mt-1">
                                     <Phone size={12} />
-                                    <span className="text-xs font-bold">{customer.phone}</span>
+                                    <span className="text-[10px] md:text-xs font-bold">{customer.phone}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Lifetime</p>
-                                <p className="text-xl font-black text-emerald-600">₹{customer.totalSpent.toLocaleString()}</p>
+                        <div className="grid grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
+                            <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl md:rounded-2xl">
+                                <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest mb-0.5 md:mb-1">Lifetime</p>
+                                <p className="text-lg md:text-xl font-black text-emerald-600">₹{customer.totalSpent.toLocaleString()}</p>
                             </div>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Orders</p>
-                                <p className="text-xl font-black text-indigo-600">{customer.orderCount}</p>
+                            <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl md:rounded-2xl">
+                                <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest mb-0.5 md:mb-1">Orders</p>
+                                <p className="text-lg md:text-xl font-black text-indigo-600">{customer.orderCount}</p>
                             </div>
                         </div>
 
-                                <div className="flex items-center gap-3">
-                                    <button 
-                                        onClick={() => {
-                                            setSelectedCustomer(customer);
-                                            fetchCustomerDetails(customer.phone);
-                                        }}
-                                className="flex-1 h-12 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <button 
+                                onClick={() => {
+                                    setSelectedCustomer(customer);
+                                    fetchCustomerDetails(customer.phone);
+                                }}
+                                className="flex-1 h-10 md:h-12 bg-indigo-600 text-white rounded-lg md:rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
                             >
                                 <ShoppingBag size={14} /> History
                             </button>
                             <button 
                                 onClick={() => handleSendWhatsApp(customer._id, customer.name)}
-                                className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                                className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-lg md:rounded-xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
                                 title="Send WhatsApp Discount"
                             >
                                 <MessageCircle size={18} />

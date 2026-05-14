@@ -203,7 +203,7 @@ const Sales = () => {
             addToCart(foundProduct);
             toast.success(`Uplink: ${foundProduct.productName} Added`);
         } else {
-            toast.error("Unknown asset identified");
+            toast.error("Unknown product identified");
         }
     };
 
@@ -300,10 +300,171 @@ const Sales = () => {
         toast.success("Opening WhatsApp...");
     };
 
+    const handlePrintInvoice = (sale) => {
+        const printWindow = window.open('', '_blank');
+        const shopInfo = sale.user || {};
+        
+        let subtotal = 0;
+        let returnsTotal = 0;
+
+        const itemsHtml = sale.items.map(item => {
+            const itemTotal = item.price * item.quantity;
+            if (item.isReturned) {
+                returnsTotal += itemTotal;
+            } else {
+                subtotal += itemTotal;
+            }
+
+            return `
+                <tr style="${item.isReturned ? 'background-color: #fff1f2; opacity: 0.7;' : ''}">
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">
+                        <div style="font-weight: 800; color: #1e293b; font-size: 10pt; text-transform: uppercase; ${item.isReturned ? 'text-decoration: line-through;' : ''}">
+                            ${item.product?.productName || item.productName}
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
+                            ${item.isReturned ? `<span style="font-size: 6pt; font-weight: 900; color: #e11d48; background: white; padding: 1px 4px; border: 1px solid #e11d48; border-radius: 4px;">RETURNED</span>` : ''}
+                            ${item.batchNumber ? `<span style="font-size: 6pt; font-weight: 900; color: #6366f1; background: #eef2ff; padding: 1px 4px; border-radius: 4px;">BATCH: ${item.batchNumber}</span>` : ''}
+                            ${item.expiryDate ? `<span style="font-size: 6pt; font-weight: 900; color: #f43f5e; background: #fff1f2; padding: 1px 4px; border-radius: 4px;">EXP: ${new Date(item.expiryDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).toUpperCase()}</span>` : ''}
+                        </div>
+                    </td>
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700; color: #475569; ${item.isReturned ? 'text-decoration: line-through;' : ''}">${item.quantity}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 700; color: #475569; ${item.isReturned ? 'text-decoration: line-through;' : ''}">₹${item.price.toLocaleString()}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 900; color: #1e293b; ${item.isReturned ? 'text-decoration: line-through;' : ''}">₹${itemTotal.toLocaleString()}</td>
+                </tr>
+            `;
+        }).join('');
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Invoice - ${sale.transactionId || sale._id.toUpperCase()}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+                        @page { size: A4; margin: 0; }
+                        body { 
+                            margin: 0; 
+                            padding: 20mm; 
+                            font-family: 'Inter', sans-serif; 
+                            color: #1e293b; 
+                            background: white; 
+                        }
+                        .invoice-container { max-width: 100%; }
+                        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 4px solid #4f46e5; padding-bottom: 20px; }
+                        .shop-details { flex: 1; }
+                        .shop-name { font-size: 24pt; font-weight: 900; color: #4f46e5; letter-spacing: -1px; text-transform: uppercase; margin-bottom: 5px; }
+                        .shop-sub { font-size: 9pt; color: #64748b; font-weight: 600; max-width: 300px; line-height: 1.4; }
+                        .invoice-label { text-align: right; }
+                        .label-text { font-size: 32pt; font-weight: 900; color: #f1f5f9; text-transform: uppercase; line-height: 1; }
+                        .id-text { font-size: 10pt; font-weight: 800; color: #1e293b; margin-top: 10px; }
+                        
+                        .meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; margin-bottom: 40px; }
+                        .meta-box h4 { font-size: 8pt; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+                        .meta-content { font-size: 10pt; font-weight: 700; color: #1e293b; }
+                        .meta-content div { margin-bottom: 4px; }
+
+                        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+                        .items-table th { background: #f8fafc; padding: 12px; text-align: left; font-size: 8pt; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #e2e8f0; }
+                        
+                        .totals-container { display: flex; justify-content: flex-end; }
+                        .totals-box { width: 320px; background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #f1f5f9; }
+                        .total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+                        .total-row:last-child { margin-bottom: 0; padding-top: 12px; border-top: 2px solid #e2e8f0; }
+                        
+                        .footer { margin-top: 60px; text-align: center; font-size: 8pt; color: #94a3b8; font-weight: 600; border-top: 1px solid #f1f5f9; padding-top: 20px; }
+                        .return-notice { font-size: 7pt; color: #e11d48; font-weight: 800; text-transform: uppercase; margin-top: 5px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="invoice-container">
+                        <div class="header">
+                            <div class="shop-details">
+                                <div class="shop-name">${shopInfo.shopName || 'RETAIL SAATHI'}</div>
+                                <div class="shop-sub">
+                                    ${shopInfo.address || 'Smart Retail Node 101, Business District'}<br>
+                                    Ph: ${shopInfo.phone || 'N/A'} | Email: ${shopInfo.email || ''}
+                                </div>
+                            </div>
+                            <div class="invoice-label">
+                                <div class="label-text">INVOICE</div>
+                                <div class="id-text">ID: #${sale.transactionId || sale._id.slice(-8).toUpperCase()}</div>
+                                ${sale.status === 'Partial Return' || sale.status === 'Returned' ? `<div class="return-notice">ADJUSTED FOR RETURNS</div>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="meta-grid">
+                            <div class="meta-box">
+                                <h4>Billed To</h4>
+                                <div class="meta-content">
+                                    <div style="font-size: 12pt; color: #4f46e5;">${sale.customerName}</div>
+                                    <div>Ph: ${sale.customerPhone || 'N/A'}</div>
+                                </div>
+                            </div>
+                            <div class="meta-box" style="text-align: right;">
+                                <h4>Payment Details</h4>
+                                <div class="meta-content">
+                                    <div>Date: ${formatDate(sale.createdAt)}</div>
+                                    <div>Method: ${sale.paymentMethod}</div>
+                                    ${sale.utrNumber ? `<div>UTR: ${sale.utrNumber}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th style="text-align: center;">Qty</th>
+                                    <th style="text-align: right;">Rate</th>
+                                    <th style="text-align: right;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+
+                        <div class="totals-container">
+                            <div class="totals-box">
+                                <div class="total-row">
+                                    <span style="font-size: 8pt; font-weight: 800; color: #64748b; text-transform: uppercase;">Gross Total</span>
+                                    <span style="font-weight: 700; color: #64748b;">₹${(subtotal + returnsTotal).toLocaleString()}</span>
+                                </div>
+                                ${returnsTotal > 0 ? `
+                                <div class="total-row">
+                                    <span style="font-size: 8pt; font-weight: 800; color: #e11d48; text-transform: uppercase;">Returns Adjustment</span>
+                                    <span style="font-weight: 700; color: #e11d48;">- ₹${returnsTotal.toLocaleString()}</span>
+                                </div>
+                                ` : ''}
+                                <div class="total-row">
+                                    <span style="font-size: 10pt; font-weight: 900; color: #1e293b; text-transform: uppercase;">Net Payable</span>
+                                    <span style="font-size: 14pt; font-weight: 900; color: #4f46e5;">₹${subtotal.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="footer">
+                            This is a digitally generated invoice by StockSaathi Retail OS.<br>
+                            Thank you for your business!
+                        </div>
+                    </div>
+                    <script>
+                        window.onload = () => { 
+                            setTimeout(() => {
+                                window.print(); 
+                                window.close();
+                            }, 500);
+                        };
+                    </script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase();
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
     };
 
     return (
@@ -346,17 +507,30 @@ const Sales = () => {
                 )}
             </AnimatePresence>
 
-            {/* Header with High-Fidelity Typography */}
-            <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-600">
-                    <Zap size={14} /> Terminal Alpha-01
+            {/* Simplified Terminal Header */}
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 border border-slate-100 dark:border-slate-800 shadow-sm mb-8">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <div className="h-1 w-8 bg-indigo-400 rounded-full"></div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">Terminal Node</span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
+                            POS <span className="text-indigo-600">Terminal</span>
+                        </h1>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+                            High-performance transaction engine for your retail ecosystem.
+                        </p>
+                    </div>
+                    <div className="flex w-full sm:w-auto gap-3">
+                        <button 
+                            onClick={() => setIsSaleModalOpen(true)} 
+                            className="flex-1 sm:flex-none h-14 px-10 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"
+                        >
+                            <Plus size={20} /> New Sale
+                        </button>
+                    </div>
                 </div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-                    POS <span className="text-indigo-600">Terminal</span>
-                </h1>
-                <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-                    High-performance transaction engine for your retail ecosystem.
-                </p>
             </div>
 
             {/* Tactical Control Bar */}
@@ -447,7 +621,7 @@ const Sales = () => {
                                     </td>
                                     <td className="px-4 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <button 
+                                            <button
                                                 onClick={() => handleShare(sale)}
                                                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900"
                                                 title="Share via WhatsApp"
@@ -680,28 +854,28 @@ const Sales = () => {
             {/* View Details Modal */}
             <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Transaction Summary" className="max-w-2xl">
                 {viewingSale && (
-                    <div className="py-8 space-y-12">
+                    <div className="py-4 md:py-8 space-y-6 md:space-y-12">
                         <div className="flex flex-col items-center text-center space-y-4">
-                            <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-500/10 rounded-[2rem] flex items-center justify-center text-indigo-600 border border-indigo-100 dark:border-indigo-500/20 shadow-inner"><Receipt size={36} /></div>
+                            <div className="w-16 h-16 md:w-20 md:h-20 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-indigo-600 border border-indigo-100 dark:border-indigo-500/20 shadow-inner"><Receipt size={30} className="md:w-9 md:h-9" /></div>
                             <div>
-                                <h3 className="text-3xl font-black uppercase tracking-tight dark:text-white leading-none">Receipt Registry</h3>
+                                <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tight dark:text-white leading-none">Receipt Registry</h3>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">ID: {viewingSale.transactionId || viewingSale._id.toUpperCase()}</p>
                             </div>
                         </div>
-                        <div className="bg-slate-50 dark:bg-slate-950 p-10 rounded-[3rem] border border-slate-100 dark:border-white/5 space-y-8">
-                            <div className="flex justify-between items-start pb-8 border-b border-slate-200 dark:border-white/10">
-                                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Merchant Client</p><p className="font-black text-lg dark:text-white">{viewingSale.customerName}</p></div>
-                                <div className="text-right"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Date</p><p className="font-black text-lg dark:text-white">{formatDate(viewingSale.createdAt)}</p></div>
+                        <div className="bg-slate-50 dark:bg-slate-950 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border border-slate-100 dark:border-white/5 space-y-6 md:space-y-8">
+                            <div className="flex justify-between items-start pb-6 md:pb-8 border-b border-slate-200 dark:border-white/10">
+                                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 md:mb-2">Merchant Client</p><p className="font-black text-base md:text-lg dark:text-white leading-tight">{viewingSale.customerName}</p></div>
+                                <div className="text-right"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 md:mb-2">Date</p><p className="font-black text-base md:text-lg dark:text-white leading-tight">{formatDate(viewingSale.createdAt)}</p></div>
                             </div>
-                            <div className="space-y-6">
+                            <div className="space-y-5 md:space-y-6">
                                 {viewingSale.items.map((item, idx) => (
                                     <div key={idx} className="flex justify-between items-center group">
                                         <div className="flex-1 pr-4">
                                             <div className="flex items-center gap-2">
-                                                <p className={`font-black text-sm uppercase dark:text-white leading-none ${item.isReturned ? 'line-through text-slate-400' : ''}`}>{item.product?.productName || item.productName}</p>
+                                                <p className={`font-black text-xs md:text-sm uppercase dark:text-white leading-tight ${item.isReturned ? 'line-through text-slate-400' : ''}`}>{item.product?.productName || item.productName}</p>
                                                 {item.isReturned && <span className="text-[8px] px-1.5 py-0.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-md font-bold">RETURNED</span>}
                                             </div>
-                                            <div className="flex items-center gap-2 mt-2">
+                                            <div className="flex items-center gap-2 mt-1 md:mt-2">
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.quantity} Unit(s) @ ₹{item.price}</p>
                                                 {item.batchNumber && (
                                                     <span className="text-[8px] px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 rounded-md font-bold">BATCH: {item.batchNumber}</span>
@@ -709,9 +883,9 @@ const Sales = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <p className={`font-black text-base dark:text-white ${item.isReturned ? 'line-through text-slate-400' : ''}`}>₹{item.total || (item.price * item.quantity)}</p>
+                                            <p className={`font-black text-sm md:text-base dark:text-white ${item.isReturned ? 'line-through text-slate-400' : ''}`}>₹{item.total || (item.price * item.quantity)}</p>
                                             {!item.isReturned && (
-                                                <button 
+                                                <button
                                                     onClick={() => { setItemToReturn(item); setIsReturnModalOpen(true); }}
                                                     className="p-2 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-all"
                                                     title="Return Product"
@@ -723,15 +897,29 @@ const Sales = () => {
                                     </div>
                                 ))}
                             </div>
-                            <div className="pt-8 border-t border-slate-200 dark:border-white/10 flex justify-between items-center">
-                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Total Settlement</p>
-                                <p className="text-3xl font-black dark:text-white tracking-tighter">₹{viewingSale.totalAmount.toLocaleString()}</p>
+                            <div className="pt-6 md:pt-8 border-t border-slate-200 dark:border-white/10 space-y-4">
+                                {viewingSale.items.some(i => i.isReturned) && (
+                                    <>
+                                        <div className="flex justify-between items-center opacity-60">
+                                            <p className="text-[9px] font-black uppercase tracking-widest">Gross Total</p>
+                                            <p className="font-bold">₹{viewingSale.items.reduce((acc, item) => acc + (item.price * item.quantity), 0).toLocaleString()}</p>
+                                        </div>
+                                        <div className="flex justify-between items-center text-rose-500">
+                                            <p className="text-[9px] font-black uppercase tracking-widest">Returns Deduction</p>
+                                            <p className="font-bold">- ₹{viewingSale.items.reduce((acc, item) => item.isReturned ? acc + (item.price * item.quantity) : acc, 0).toLocaleString()}</p>
+                                        </div>
+                                    </>
+                                )}
+                                <div className="flex justify-between items-center">
+                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] md:tracking-[0.3em]">Net Settlement</p>
+                                    <p className="text-2xl md:text-3xl font-black dark:text-white tracking-tighter">₹{viewingSale.items.reduce((acc, item) => item.isReturned ? acc : acc + (item.price * item.quantity), 0).toLocaleString()}</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => window.print()} className="h-20 flex-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3"><Printer size={20} /> Print</button>
-                            <button onClick={() => handleShare(viewingSale)} className="h-20 flex-1 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3"><Share2 size={20} /> Share WhatsApp</button>
-                            <button onClick={() => setIsViewModalOpen(false)} className="h-20 flex-1 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest">Acknowledge</button>
+                        <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                            <button onClick={() => handlePrintInvoice(viewingSale)} className="h-14 md:h-20 flex-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3"><Printer size={18} /> Print</button>
+                            <button onClick={() => handleShare(viewingSale)} className="h-14 md:h-20 flex-1 bg-emerald-600 text-white rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3"><Share2 size={18} /> Share WhatsApp</button>
+                            <button onClick={() => setIsViewModalOpen(false)} className="h-14 md:h-20 flex-1 bg-indigo-600 text-white rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest">Acknowledge</button>
                         </div>
                     </div>
                 )}
@@ -747,15 +935,15 @@ const Sales = () => {
                             <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">This will restock the item and mark the transaction.</p>
                         </div>
                     </div>
-                    
+
                     <div className="space-y-4">
                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] ml-4">Return Reason</label>
-                        <textarea 
-                            required 
-                            placeholder="e.g. Expired, Damaged, Customer choice..." 
-                            className="w-full p-6 rounded-2xl bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 outline-none focus:border-rose-500 h-32 resize-none font-bold dark:text-white" 
-                            value={returnReasonInput} 
-                            onChange={(e) => setReturnReasonInput(e.target.value)} 
+                        <textarea
+                            required
+                            placeholder="e.g. Expired, Damaged, Customer choice..."
+                            className="w-full p-6 rounded-2xl bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 outline-none focus:border-rose-500 h-32 resize-none font-bold dark:text-white"
+                            value={returnReasonInput}
+                            onChange={(e) => setReturnReasonInput(e.target.value)}
                         />
                     </div>
 

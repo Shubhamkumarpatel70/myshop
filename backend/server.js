@@ -39,9 +39,11 @@ const authLimiter = rateLimit({
 // Connect to Database
 connectDB().then(async () => {
     const { checkExpiringProducts } = require('./utils/expiryCheck');
+    const { startBarcodeCleanupTask } = require('./utils/barcodeCleanup');
     const seedAdmin = require('./utils/seeder');
     await seedAdmin();
     checkExpiringProducts();
+    startBarcodeCleanupTask();
 });
 
 // Middleware
@@ -57,7 +59,13 @@ app.use(cors({
 }));
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false 
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "img-src": ["'self'", "data:", "blob:", "res.cloudinary.com", "*.cloudinary.com"],
+            "connect-src": ["'self'", "res.cloudinary.com", "*.cloudinary.com"],
+        },
+    },
 }));
 app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
@@ -82,6 +90,7 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/purchase-orders', require('./routes/purchaseOrderRoutes'));
 app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
 app.use('/api/queries', require('./routes/queryRoutes'));
+app.use('/api/barcodes', require('./routes/barcodeRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

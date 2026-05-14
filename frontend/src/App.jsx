@@ -38,12 +38,14 @@ import Suppliers from './dashboard/Suppliers';
 import PurchaseOrders from './dashboard/PurchaseOrders';
 import Pricing from './dashboard/Pricing';
 import AdminSubscriptions from './dashboard/AdminSubscriptions';
+import ShopBarcodes from './dashboard/ShopBarcodes';
 import AdminPricing from './dashboard/AdminPricing';
 import AdminQueries from './dashboard/AdminQueries';
 import AdminStaff from './dashboard/AdminStaff';
 import AdminPurchaseOrders from './dashboard/AdminPurchaseOrders';
 import PODetails from './dashboard/PODetails';
 import AdminRevenue from './dashboard/AdminRevenue';
+import AdminBarcodes from './dashboard/AdminBarcodes';
 import SplashScreen from './components/SplashScreen';
 
 const ProtectedRoute = ({ children }) => {
@@ -90,6 +92,7 @@ const AppContent = () => {
                     <Route path="inventory" element={<Inventory />} />
                     <Route path="share" element={<MyShop />} />
                     <Route path="categories" element={<Categories />} />
+                    <Route path="barcodes" element={<ShopBarcodes />} />
                     <Route path="staff" element={<Staff />} />
                     <Route path="shops" element={<Shops />} />
                     <Route path="activity" element={<Activity />} />
@@ -117,6 +120,7 @@ const AppContent = () => {
                     <Route path="admin/purchase-orders" element={<AdminPurchaseOrders />} />
                     <Route path="admin/purchase-orders/:id" element={<PODetails />} />
                     <Route path="admin/revenue" element={<AdminRevenue />} />
+                    <Route path="admin/barcodes" element={<AdminBarcodes />} />
                 </Route>
             </Routes>
             <Toaster position="top-right" />
