@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    ShoppingBag, ArrowRight, ArrowLeft, 
-    Store, User, Mail, Phone, Lock, 
-    CheckCircle2, Loader2
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Lock, Mail, Phone, ShoppingBag, Store, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -20,216 +16,217 @@ const Register = () => {
         password: '',
         confirmPassword: '',
         mPin: '',
-        // These will be collected during onboarding in dashboard
         businessType: 'General Store',
-        address: 'Incomplete' 
+        address: 'Incomplete',
     });
 
     const { register } = useAuth();
     const navigate = useNavigate();
 
     const nextStep = () => {
-        if (step === 1 && (!formData.shopName || !formData.ownerName)) return toast.error("Please fill in your names");
-        setStep(step + 1);
+        if (!formData.shopName || !formData.ownerName) {
+            toast.error('Shop name and owner name are required');
+            return;
+        }
+        setStep(2);
     };
 
-    const prevStep = () => setStep(step - 1);
+    const prevStep = () => setStep(1);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (formData.password !== formData.confirmPassword) {
-            return toast.error("Passwords do not match");
+            toast.error('Passwords do not match');
+            return;
         }
-        
+
+        if (!/^\d{4}$/.test(formData.mPin)) {
+            toast.error('mPIN must be 4 digits');
+            return;
+        }
+
         setLoading(true);
         try {
             const res = await register(formData);
             if (res.success) {
-                toast.success("Welcome aboard!");
+                toast.success('Account created successfully');
                 navigate('/dashboard');
             } else {
-                toast.error(res.message || "Registration failed");
+                toast.error(res.message || 'Registration failed');
             }
-        } catch (error) {
-            toast.error("An error occurred. Please try again.");
+        } catch {
+            toast.error('Unable to register right now');
         } finally {
             setLoading(false);
         }
     };
 
-    const stepVariants = {
-        hidden: { opacity: 0, x: 50 },
-        visible: { opacity: 1, x: 0 },
-        exit: { opacity: 0, x: -50 }
-    };
-
     return (
-        <div className="min-h-screen bg-secondary-50 dark:bg-secondary-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-                <Link to="/" className="inline-flex items-center gap-3 mb-6">
-                    <img src="/favicon.png" alt="StockSaathi" className="w-10 h-10 object-contain" />
-                    <span className="text-3xl font-black tracking-tight dark:text-white">Stock<span className="text-primary-600">Saathi</span></span>
-                </Link>
-                <h2 className="text-3xl font-extrabold text-secondary-900 dark:text-white">
-                    Create Your Account
-                </h2>
-                <p className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
-                    Join 500+ businesses scaling with StockSaathi.
-                </p>
-            </div>
+        <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-100/60 px-4 py-8 text-slate-900 sm:px-6">
+            <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-8 rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8 lg:grid-cols-2 lg:p-10">
+                <section className="rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-sky-600 p-6 text-white sm:p-8">
+                    <Link to="/" className="inline-flex items-center gap-3 text-white">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+                            <ShoppingBag size={20} />
+                        </span>
+                        <span className="font-outfit text-xl font-extrabold tracking-tight">StockSaathi</span>
+                    </Link>
+                    <h1 className="mt-8 font-outfit text-3xl font-bold leading-tight sm:text-4xl">Create your account</h1>
+                    <p className="mt-3 text-sm leading-relaxed text-indigo-100 sm:text-base">
+                        Set up your store in a few minutes and start managing billing, stock, and staff from one dashboard.
+                    </p>
+                    <div className="mt-8 space-y-2 text-sm text-indigo-100">
+                        <p>Step 1: Store profile</p>
+                        <p>Step 2: Credentials and access setup</p>
+                    </div>
+                </section>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
-                <div className="bg-white dark:bg-secondary-900 py-10 px-8 shadow-2xl rounded-[2.5rem] border border-secondary-100 dark:border-secondary-800 relative overflow-hidden">
-                    
-                    {/* Progress Bar */}
-                    <div className="absolute top-0 left-0 w-full h-1.5 bg-secondary-100 dark:bg-secondary-800">
-                        <motion.div 
-                            className="h-full bg-primary-600"
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                    <div className="mb-5 h-1.5 rounded-full bg-slate-200">
+                        <motion.div
                             initial={{ width: '50%' }}
-                            animate={{ width: `${(step / 2) * 100}%` }}
+                            animate={{ width: `${step === 1 ? 50 : 100}%` }}
+                            className="h-full rounded-full bg-indigo-600"
                         />
                     </div>
 
                     <AnimatePresence mode="wait">
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-4" key={step}>
                             {step === 1 && (
-                                <motion.div
-                                    key="step1"
-                                    variants={stepVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    exit="exit"
-                                    className="space-y-6"
-                                >
+                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-bold text-secondary-700 dark:text-secondary-300 mb-2 uppercase tracking-wide">
-                                            Shop Name
-                                        </label>
+                                        <label className="mb-1 block text-sm font-medium text-slate-700">Shop name</label>
                                         <div className="relative">
-                                            <Store className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400" size={20} />
+                                            <Store size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                             <input
-                                                type="text" required className="input-field pl-12 py-4"
-                                                placeholder="e.g. Metro Medicals"
+                                                type="text"
+                                                required
                                                 value={formData.shopName}
-                                                onChange={(e) => setFormData({...formData, shopName: e.target.value})}
+                                                onChange={(e) => setFormData({ ...formData, shopName: e.target.value })}
+                                                placeholder="Your shop name"
+                                                className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-500"
                                             />
                                         </div>
                                     </div>
+
                                     <div>
-                                        <label className="block text-sm font-bold text-secondary-700 dark:text-secondary-300 mb-2 uppercase tracking-wide">
-                                            Owner Name
-                                        </label>
+                                        <label className="mb-1 block text-sm font-medium text-slate-700">Owner name</label>
                                         <div className="relative">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400" size={20} />
+                                            <User size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                             <input
-                                                type="text" required className="input-field pl-12 py-4"
-                                                placeholder="Your Full Name"
+                                                type="text"
+                                                required
                                                 value={formData.ownerName}
-                                                onChange={(e) => setFormData({...formData, ownerName: e.target.value})}
+                                                onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                                                placeholder="Full name"
+                                                className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-500"
                                             />
                                         </div>
                                     </div>
-                                    <button 
-                                        type="button" 
+
+                                    <button
+                                        type="button"
                                         onClick={nextStep}
-                                        className="btn btn-primary w-full py-4 text-lg font-bold"
+                                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
                                     >
-                                        Continue <ArrowRight size={20} />
+                                        Continue
+                                        <ArrowRight size={16} />
                                     </button>
                                 </motion.div>
                             )}
 
                             {step === 2 && (
-                                <motion.div
-                                    key="step2"
-                                    variants={stepVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    exit="exit"
-                                    className="space-y-4"
-                                >
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-secondary-500 uppercase mb-1">Email Address</label>
-                                        <div className="relative">
-                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
-                                            <input
-                                                type="email" required className="input-field pl-10 py-3 text-sm"
-                                                placeholder="email@example.com"
-                                                value={formData.email}
-                                                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-secondary-500 uppercase mb-1">Mobile Number</label>
-                                        <div className="relative">
-                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
-                                            <input
-                                                type="tel" required className="input-field pl-10 py-3 text-sm"
-                                                placeholder="+1 234 567 890"
-                                                value={formData.phone}
-                                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label className="block text-[10px] font-bold text-secondary-500 uppercase mb-1">Password</label>
+                                            <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
                                             <div className="relative">
-                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
+                                                <Mail size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                                 <input
-                                                    type="password" required className="input-field pl-10 py-3 text-sm"
+                                                    type="email"
+                                                    required
+                                                    value={formData.email}
+                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                    className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-500"
+                                                    placeholder="you@shop.com"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-slate-700">Phone</label>
+                                            <div className="relative">
+                                                <Phone size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                                <input
+                                                    type="tel"
+                                                    required
+                                                    value={formData.phone}
+                                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                                    className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-500"
+                                                    placeholder="+91..."
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
+                                            <div className="relative">
+                                                <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                                <input
+                                                    type="password"
+                                                    required
                                                     value={formData.password}
-                                                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                    className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-500"
+                                                    placeholder="Create password"
                                                 />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-secondary-500 uppercase mb-1">Confirm Password</label>
+                                            <label className="mb-1 block text-sm font-medium text-slate-700">Confirm password</label>
                                             <div className="relative">
-                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
+                                                <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                                 <input
-                                                    type="password" required className="input-field pl-10 py-3 text-sm"
+                                                    type="password"
+                                                    required
                                                     value={formData.confirmPassword}
-                                                    onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                                                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                                    className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-500"
+                                                    placeholder="Repeat password"
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-[10px] font-bold text-secondary-500 uppercase mb-1">Set 4-Digit mPin</label>
-                                        <div className="relative">
-                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
-                                            <input
-                                                type="text" 
-                                                required 
-                                                maxLength="4"
-                                                pattern="\d{4}"
-                                                className="input-field pl-10 py-3 text-sm tracking-[1em] font-black"
-                                                placeholder="0000"
-                                                value={formData.mPin}
-                                                onChange={(e) => {
-                                                    const val = e.target.value.replace(/\D/g, '').substring(0, 4);
-                                                    setFormData({...formData, mPin: val});
-                                                }}
-                                            />
-                                        </div>
-                                        <p className="text-[9px] text-secondary-400 mt-1 italic">Use this 4-digit PIN for quick login on mobile.</p>
+                                        <label className="mb-1 block text-sm font-medium text-slate-700">4-digit mPIN</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            maxLength={4}
+                                            value={formData.mPin}
+                                            onChange={(e) => setFormData({ ...formData, mPin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                                            className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm tracking-[0.3em] text-slate-900 outline-none transition-colors focus:border-indigo-500"
+                                            placeholder="0000"
+                                        />
                                     </div>
 
-                                    <div className="pt-4 flex gap-4">
-                                        <button type="button" onClick={prevStep} className="btn btn-secondary w-1/4 py-4 font-bold">
-                                            <ArrowLeft size={20} />
-                                        </button>
-                                        <button 
-                                            type="submit" 
-                                            disabled={loading}
-                                            className="btn btn-primary flex-1 py-4 text-lg font-bold disabled:opacity-50"
+                                    <div className="grid grid-cols-[44px_1fr] gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={prevStep}
+                                            className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-100"
                                         >
-                                            {loading ? <Loader2 className="animate-spin" /> : 'Create StockSaathi Account'}
+                                            <ArrowLeft size={16} />
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={loading}
+                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+                                        >
+                                            {loading ? <Loader2 size={18} className="animate-spin" /> : 'Create account'}
                                         </button>
                                     </div>
                                 </motion.div>
@@ -237,17 +234,15 @@ const Register = () => {
                         </form>
                     </AnimatePresence>
 
-                    <div className="mt-8 pt-8 border-t border-secondary-100 dark:border-secondary-800 text-center">
-                        <p className="text-secondary-500 dark:text-secondary-400">
-                            Already have a shop?{' '}
-                            <Link to="/login" className="text-primary-600 font-bold hover:underline">
-                                Login Here
-                            </Link>
-                        </p>
-                    </div>
-                </div>
+                    <p className="mt-4 text-center text-sm text-slate-500">
+                        Already have an account?{' '}
+                        <Link to="/login" className="font-semibold text-indigo-600 hover:text-indigo-700">
+                            Login
+                        </Link>
+                    </p>
+                </section>
             </div>
-        </div>
+        </main>
     );
 };
 

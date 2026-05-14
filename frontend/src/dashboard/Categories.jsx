@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import api from '../utils/api';
 import { motion } from 'framer-motion';
 import { Plus, Edit, Trash2, Layers, Search } from 'lucide-react';
@@ -6,6 +7,7 @@ import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
 
 const Categories = () => {
+    const { searchQuery } = useOutletContext() || { searchQuery: '' };
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +18,10 @@ const Categories = () => {
     useEffect(() => {
         fetchCategories();
     }, []);
+
+    useEffect(() => {
+        if (searchQuery !== undefined) setSearchTerm(searchQuery);
+    }, [searchQuery]);
 
     const fetchCategories = async () => {
         try {
@@ -73,26 +79,26 @@ const Categories = () => {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-10">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight uppercase">Categories</h1>
-                    <p className="text-secondary-500 font-medium">Strategic organization for your product ecosystem.</p>
+                    <h1 className="text-3xl font-black tracking-tight uppercase dark:text-white">Categories</h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">Organize products for faster inventory and billing workflows.</p>
                 </div>
                 <button 
                     onClick={() => handleOpenModal()}
-                    className="btn btn-primary h-12 px-8"
+                    className="h-12 rounded-xl bg-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-colors hover:bg-indigo-700"
                 >
-                    <Plus size={20} /> Add Category
+                    <span className="inline-flex items-center gap-2"><Plus size={18} /> Add Category</span>
                 </button>
             </div>
 
             <div className="relative w-full max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={20} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input 
                     type="text" 
                     placeholder="Search categories..." 
-                    className="input-field pl-10"
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition-colors focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -135,7 +141,7 @@ const Categories = () => {
                         </motion.div>
                     ))
                 ) : (
-                    <div className="col-span-full py-20 text-center text-secondary-500">
+                    <div className="col-span-full py-20 text-center text-slate-500 dark:text-slate-400">
                         No categories found. Create one to get started!
                     </div>
                 )}

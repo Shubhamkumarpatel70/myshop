@@ -1,168 +1,261 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingBag, TrendingUp, Shield, Smartphone, ArrowRight, BarChart2, Package, Layers } from 'lucide-react';
+import {
+    ArrowRight,
+    BarChart3,
+    CheckCircle2,
+    Clock3,
+    Globe2,
+    ScanLine,
+    ShieldCheck,
+    ShoppingBag,
+    Sparkles,
+    Users2,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Home = () => {
     const features = [
         {
-            icon: <Package className="w-6 h-6 text-primary-600" />,
-            title: "Inventory Tracking",
-            description: "Real-time tracking of products, categories, and stock levels with automated alerts."
+            icon: <ScanLine className="h-6 w-6 text-indigo-600" />,
+            title: 'Inventory Intelligence',
+            description: 'Track stock movement in real time and receive low-stock recommendations before shelf-outs happen.',
         },
         {
-            icon: <TrendingUp className="w-6 h-6 text-accent-600" />,
-            title: "Sales Analytics",
-            description: "Detailed insights into your revenue, sales trends, and top-performing products."
+            icon: <BarChart3 className="h-6 w-6 text-indigo-600" />,
+            title: 'Revenue Analytics',
+            description: 'Daily sales, margin, and top-SKU performance in one place with export-ready reports.',
         },
         {
-            icon: <Shield className="w-6 h-6 text-primary-600" />,
-            title: "Secure Access",
-            description: "Role-based access control and secure JWT authentication for your staff."
+            icon: <ShieldCheck className="h-6 w-6 text-indigo-600" />,
+            title: 'Role-Based Access',
+            description: 'Owner, manager, and cashier permissions so every user sees only what they need.',
         },
         {
-            icon: <Smartphone className="w-6 h-6 text-accent-600" />,
-            title: "Mobile Ready",
-            description: "Manage your business on the go with our fully responsive mobile interface."
+            icon: <Globe2 className="h-6 w-6 text-indigo-600" />,
+            title: 'Multi-Store Sync',
+            description: 'Operate multiple outlets from a single dashboard with live updates across branches.',
         },
         {
-            icon: <BarChart2 className="w-6 h-6 text-primary-600" />,
-            title: "Smart Reports",
-            description: "Generate PDF and Excel reports for sales and inventory with a single click."
+            icon: <Clock3 className="h-6 w-6 text-indigo-600" />,
+            title: 'Fast Billing Flow',
+            description: 'Checkout screens are optimized for speed with keyboard-first input and barcode support.',
         },
         {
-            icon: <Layers className="w-6 h-6 text-accent-600" />,
-            title: "Multi-Business",
-            description: "Tailored for various business types including Medical, Hardware, and Grocery stores."
-        }
+            icon: <Users2 className="h-6 w-6 text-indigo-600" />,
+            title: 'Customer Insights',
+            description: 'Build repeat business with customer history, purchase trends, and targeted follow-ups.',
+        },
     ];
 
-    const businessTypes = [
-        "Medical Store", "Hardware Store", "Grocery Store", "Electronics Store", "Clothing Store", "General Store"
+    const highlights = [
+        { value: '99.9%', label: 'Uptime' },
+        { value: '< 2s', label: 'Checkout Speed' },
+        { value: '30+', label: 'Business Reports' },
+        { value: '24/7', label: 'Cloud Access' },
     ];
 
     return (
-        <div className="overflow-hidden">
-            {/* Hero Section */}
-            <section className="relative pt-20 pb-32 lg:pt-32 lg:pb-48">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center">
+        <main className="overflow-x-hidden bg-slate-50 text-slate-900 transition-colors duration-500 dark:bg-[#020617] dark:text-white">
+            <section className="relative pt-32 sm:pt-36">
+                <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:pb-24">
+                    <div className="space-y-8">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-sm font-bold mb-8"
+                            className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-4 py-2 text-xs font-semibold text-indigo-700 shadow-sm dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200"
                         >
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
-                            </span>
-                            Trusted by 500+ Small Businesses
+                            <Sparkles className="h-4 w-4" />
+                            Trusted by growing retail teams
                         </motion.div>
+
                         <motion.h1
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8"
+                            transition={{ duration: 0.6 }}
+                            className="font-outfit text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
                         >
-                            Smart Inventory for <br />
-                            <span className="bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">Growing Businesses</span>
+                            Professional POS & inventory software built for modern stores
                         </motion.h1>
+
                         <motion.p
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="max-w-2xl mx-auto text-xl text-secondary-500 dark:text-secondary-400 mb-10"
+                            className="max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300"
                         >
-                            Streamline your operations, reduce waste, and increase profits with StockSaathi's intelligent inventory management system.
+                            Manage billing, stock, teams, and reports from one platform. Designed for fast daily operations and long-term scalability.
                         </motion.p>
+
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3 }}
-                            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+                            className="flex flex-col gap-3 sm:flex-row"
                         >
-                            <Link to="/register" className="btn btn-primary px-8 py-4 text-lg">
-                                Start Your Free Trial <ArrowRight className="w-5 h-5" />
+                            <Link
+                                to="/register"
+                                className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(79,70,229,0.35)] transition-colors hover:bg-indigo-700"
+                            >
+                                Start Free Trial
+                                <ArrowRight className="h-4 w-4" />
                             </Link>
-                            <Link to="/about" className="btn btn-secondary px-8 py-4 text-lg">
-                                See How It Works
+                            <Link
+                                to="/pricing"
+                                className="inline-flex h-12 items-center justify-center rounded-lg border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                            >
+                                View Pricing
                             </Link>
                         </motion.div>
-                    </div>
-                </div>
-                
-                {/* Background Blobs */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 opacity-30">
-                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-300 rounded-full blur-[128px] animate-pulse"></div>
-                    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent-300 rounded-full blur-[128px] animate-pulse"></div>
-                </div>
-            </section>
 
-            {/* Features Section */}
-            <section className="py-24 bg-secondary-50 dark:bg-secondary-900/50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-20">
-                        <h2 className="text-3xl md:text-5xl font-bold mb-4">Everything You Need</h2>
-                        <p className="text-secondary-500 dark:text-secondary-400">Powerful features to help you manage your shop efficiently.</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {features.map((feature, index) => (
-                            <motion.div
-                                key={index}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                viewport={{ once: true }}
-                                className="card hover:shadow-lg hover:-translate-y-1 transition-all"
-                            >
-                                <div className="mb-6">{feature.icon}</div>
-                                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                                <p className="text-secondary-500 dark:text-secondary-400 leading-relaxed">
-                                    {feature.description}
-                                </p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Business Types Section */}
-            <section className="py-24">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold mb-4">Tailored for Your Business</h2>
-                        <p className="text-secondary-500">Whatever you sell, we've got you covered.</p>
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-4">
-                        {businessTypes.map((type, index) => (
-                            <span key={index} className="px-6 py-3 bg-white dark:bg-secondary-900 rounded-full border border-secondary-200 dark:border-secondary-800 shadow-sm font-medium">
-                                {type}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA Section */}
-            <section className="py-24">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="relative overflow-hidden bg-primary-600 rounded-[2.5rem] p-12 md:p-24 text-center text-white">
-                        <div className="relative z-10">
-                            <h2 className="text-4xl md:text-6xl font-extrabold mb-8">Ready to Transform Your Shop?</h2>
-                            <p className="text-xl text-primary-100 mb-12 max-w-2xl mx-auto">
-                                Join hundreds of shop owners who are saving hours every week on inventory management.
-                            </p>
-                            <Link to="/register" className="inline-flex items-center gap-2 px-10 py-5 bg-white text-primary-600 rounded-2xl font-bold text-xl hover:bg-primary-50 transition-colors">
-                                Get Started Now <ArrowRight className="w-6 h-6" />
-                            </Link>
+                        <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-4">
+                            {highlights.map((item) => (
+                                <div
+                                    key={item.label}
+                                    className="rounded-xl border border-slate-200 bg-white p-3 text-center dark:border-slate-700 dark:bg-slate-900"
+                                >
+                                    <p className="font-outfit text-xl font-bold text-slate-900 dark:text-white">{item.value}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
+                                </div>
+                            ))}
                         </div>
-                        {/* Abstract Decorations */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent-500/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
+                    </div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-900 sm:p-6"
+                    >
+                        <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
+                                    <ShoppingBag className="h-4 w-4" />
+                                </span>
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Today&apos;s Summary</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Live store performance</p>
+                                </div>
+                            </div>
+                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                                Live
+                            </span>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Sales</p>
+                                    <p className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">$12,640</p>
+                                </div>
+                                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Orders</p>
+                                    <p className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">286</p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Stock Health</p>
+                                    <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">93%</p>
+                                </div>
+                                <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800">
+                                    <div className="h-full w-[93%] rounded-full bg-indigo-600" />
+                                </div>
+                            </div>
+
+                            <ul className="space-y-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
+                                {['Low stock alerts: 4', 'Pending invoices: 6', 'Cashier shifts active: 9'].map((item) => (
+                                    <li key={item} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </motion.div>
+                </div>
+
+                <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+                    <div className="absolute -left-24 top-16 h-64 w-64 rounded-full bg-indigo-500/15 blur-3xl" />
+                    <div className="absolute -right-24 top-28 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+                </div>
+            </section>
+
+            <section className="border-y border-slate-200/70 bg-white py-16 dark:border-slate-800 dark:bg-slate-950/30 sm:py-20">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6">
+                    <div className="mb-10 flex flex-col justify-between gap-6 sm:mb-12 lg:flex-row lg:items-end">
+                        <div>
+                            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">Capabilities</p>
+                            <h2 className="mt-2 font-outfit text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+                                Everything your store needs in one workflow
+                            </h2>
+                        </div>
+                        <p className="max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                            Replace disconnected tools with one reliable stack for billing, stock, and reporting.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {features.map((feature, index) => (
+                            <motion.article
+                                key={feature.title}
+                                initial={{ opacity: 0, y: 16 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.06 }}
+                                viewport={{ once: true, margin: '-60px' }}
+                                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 sm:p-6"
+                            >
+                                <div className="mb-4 inline-flex rounded-xl bg-indigo-50 p-3 dark:bg-indigo-500/15">
+                                    {feature.icon}
+                                </div>
+                                <h3 className="mb-2 font-outfit text-xl font-bold text-slate-900 dark:text-white">{feature.title}</h3>
+                                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{feature.description}</p>
+                            </motion.article>
+                        ))}
                     </div>
                 </div>
             </section>
-        </div>
+
+            <section className="py-16 sm:py-20">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 p-8 text-white shadow-[0_20px_60px_rgba(15,23,42,0.35)] sm:p-10 lg:p-14"
+                    >
+                        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+                            <div>
+                                <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-200">Get Started</p>
+                                <h2 className="font-outfit text-3xl font-bold tracking-tight sm:text-4xl">
+                                    Launch your digital retail operation in days, not months
+                                </h2>
+                                <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-200 sm:text-base">
+                                    Move from spreadsheets and manual billing to a reliable system with clear visibility and real-time control.
+                                </p>
+                            </div>
+
+                            <div className="space-y-3">
+                                <Link
+                                    to="/register"
+                                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-white px-6 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
+                                >
+                                    Create Account
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                                <Link
+                                    to="/contact"
+                                    className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-white/30 px-6 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                                >
+                                    Talk to Sales
+                                </Link>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+        </main>
     );
 };
 

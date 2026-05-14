@@ -1,80 +1,83 @@
 import React from 'react';
-import { ShoppingBag, Mail, Phone, MapPin, Share2, Globe, MessageCircle, Link as LinkIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, Mail, MapPin, Phone, ShoppingBag } from 'lucide-react';
 
 const Footer = () => {
+    const year = new Date().getFullYear();
+
     return (
-        <footer className="bg-white dark:bg-secondary-950 border-t border-secondary-200 dark:border-secondary-900 pt-16 pb-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-                    {/* Brand Section */}
-                    <div className="space-y-6">
-                        <Link to="/" className="flex items-center gap-3">
-                            <img src="/favicon.png" alt="StockSaathi" className="w-9 h-9 object-contain" />
-                            <span className="text-xl font-bold tracking-tight">Stock<span className="text-primary-600">Saathi</span></span>
+        <footer className="relative overflow-hidden border-t border-slate-200 bg-white pt-16 text-slate-700 dark:border-slate-800 dark:bg-[#020617] dark:text-slate-300">
+            <div className="pointer-events-none absolute inset-0">
+                <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+                <div className="absolute -right-24 top-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+            </div>
+
+            <div className="relative mx-auto grid max-w-7xl gap-12 px-4 pb-10 sm:px-6 lg:grid-cols-12">
+                <div className="lg:col-span-5">
+                    <Link to="/" className="inline-flex items-center gap-3">
+                        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.35)]">
+                            <ShoppingBag size={20} />
+                        </span>
+                        <span className="font-outfit text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                            Stock<span className="text-indigo-600">Saathi</span>
+                        </span>
+                    </Link>
+                    <p className="mt-5 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                        Professional POS and inventory platform for growing retailers. Manage billing, stock, teams, and reports from one reliable system.
+                    </p>
+                    <div className="mt-6 flex flex-wrap gap-3">
+                        <Link to="/register" className="inline-flex h-10 items-center justify-center rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-indigo-700">
+                            Start Free
                         </Link>
-                        <p className="text-secondary-500 dark:text-secondary-400 leading-relaxed">
-                            Smart inventory management for small businesses. Simplify your workflow, track stock efficiently, and grow your business with StockSaathi.
-                        </p>
-                        <div className="flex gap-4">
-                            <a href="#" className="p-2 bg-secondary-100 dark:bg-secondary-900 rounded-lg hover:bg-primary-600 hover:text-white transition-all"><MessageCircle className="w-5 h-5" /></a>
-                            <a href="#" className="p-2 bg-secondary-100 dark:bg-secondary-900 rounded-lg hover:bg-primary-600 hover:text-white transition-all"><Share2 className="w-5 h-5" /></a>
-                            <a href="#" className="p-2 bg-secondary-100 dark:bg-secondary-900 rounded-lg hover:bg-primary-600 hover:text-white transition-all"><Globe className="w-5 h-5" /></a>
-                            <a href="#" className="p-2 bg-secondary-100 dark:bg-secondary-900 rounded-lg hover:bg-primary-600 hover:text-white transition-all"><LinkIcon className="w-5 h-5" /></a>
-                        </div>
-                    </div>
-
-                    {/* Quick Links */}
-                    <div>
-                        <h4 className="text-lg font-bold mb-6">Quick Links</h4>
-                        <ul className="space-y-4">
-                            <li><Link to="/" className="text-secondary-500 hover:text-primary-600 transition-colors">Home</Link></li>
-                            <li><Link to="/about" className="text-secondary-500 hover:text-primary-600 transition-colors">About Us</Link></li>
-                            <li><Link to="/contact" className="text-secondary-500 hover:text-primary-600 transition-colors">Contact</Link></li>
-                            <li><Link to="/login" className="text-secondary-500 hover:text-primary-600 transition-colors">Login</Link></li>
-                            <li><Link to="/register" className="text-secondary-500 hover:text-primary-600 transition-colors">Register</Link></li>
-                        </ul>
-                    </div>
-
-                    {/* Support */}
-                    <div>
-                        <h4 className="text-lg font-bold mb-6">Support</h4>
-                        <ul className="space-y-4">
-                            <li><a href="#" className="text-secondary-500 hover:text-primary-600 transition-colors">Documentation</a></li>
-                            <li><a href="#" className="text-secondary-500 hover:text-primary-600 transition-colors">Help Center</a></li>
-                            <li><a href="#" className="text-secondary-500 hover:text-primary-600 transition-colors">Privacy Policy</a></li>
-                            <li><a href="#" className="text-secondary-500 hover:text-primary-600 transition-colors">Terms of Service</a></li>
-                            <li><a href="#" className="text-secondary-500 hover:text-primary-600 transition-colors">FAQ</a></li>
-                        </ul>
-                    </div>
-
-                    {/* Contact Details */}
-                    <div>
-                        <h4 className="text-lg font-bold mb-6">Contact Us</h4>
-                        <ul className="space-y-4">
-                            <li className="flex items-start gap-3 text-secondary-500">
-                                <MapPin className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                                <span>123 Business Avenue, Suite 100, Tech City, 54321</span>
-                            </li>
-                            <li className="flex items-center gap-3 text-secondary-500">
-                                <Phone className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                                <span>+1 (234) 567-890</span>
-                            </li>
-                            <li className="flex items-center gap-3 text-secondary-500">
-                                <Mail className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                                <span>support@stocksaathi.com</span>
-                            </li>
-                        </ul>
+                        <Link to="/pricing" className="inline-flex h-10 items-center justify-center gap-1 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
+                            View Pricing
+                            <ArrowRight size={15} />
+                        </Link>
                     </div>
                 </div>
 
-                <div className="border-t border-secondary-100 dark:border-secondary-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-secondary-400 text-sm">
-                        &copy; {new Date().getFullYear()} StockSaathi. All rights reserved.
-                    </p>
-                    <p className="text-secondary-400 text-sm flex items-center gap-1">
-                        Made with <span className="text-red-500">&hearts;</span> for small businesses.
-                    </p>
+                <div className="lg:col-span-2">
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Product</h4>
+                    <ul className="mt-4 space-y-2 text-sm">
+                        <li><Link to="/" className="hover:text-indigo-600">Home</Link></li>
+                        <li><Link to="/about" className="hover:text-indigo-600">About</Link></li>
+                        <li><Link to="/pricing" className="hover:text-indigo-600">Pricing</Link></li>
+                        <li><Link to="/contact" className="hover:text-indigo-600">Contact</Link></li>
+                    </ul>
+                </div>
+
+                <div className="lg:col-span-2">
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Account</h4>
+                    <ul className="mt-4 space-y-2 text-sm">
+                        <li><Link to="/login" className="hover:text-indigo-600">Login</Link></li>
+                        <li><Link to="/register" className="hover:text-indigo-600">Register</Link></li>
+                        <li><Link to="/dashboard" className="hover:text-indigo-600">Dashboard</Link></li>
+                    </ul>
+                </div>
+
+                <div className="lg:col-span-3">
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Contact</h4>
+                    <ul className="mt-4 space-y-3 text-sm">
+                        <li className="flex items-start gap-2">
+                            <Mail size={16} className="mt-0.5 text-indigo-600" />
+                            <span>support@stocksaathi.com</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <Phone size={16} className="mt-0.5 text-indigo-600" />
+                            <span>+91 90000 00000</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <MapPin size={16} className="mt-0.5 text-indigo-600" />
+                            <span>Mumbai, India</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div className="border-t border-slate-200/80 py-5 dark:border-slate-800">
+                <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 text-xs text-slate-500 sm:flex-row sm:px-6">
+                    <p>© {year} StockSaathi. All rights reserved.</p>
+                    <p>Built for modern retail operations.</p>
                 </div>
             </div>
         </footer>

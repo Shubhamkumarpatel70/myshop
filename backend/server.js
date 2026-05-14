@@ -75,6 +75,7 @@ app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/shifts', require('./routes/shiftRoutes'));
 app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
+app.use('/api/queries', require('./routes/queryRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

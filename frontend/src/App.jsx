@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import PWAHandler from './components/PWAHandler';
 import Home from './pages/Home';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -34,6 +35,7 @@ import Customers from './dashboard/Customers';
 import Pricing from './dashboard/Pricing';
 import AdminSubscriptions from './dashboard/AdminSubscriptions';
 import AdminPricing from './dashboard/AdminPricing';
+import AdminQueries from './dashboard/AdminQueries';
 import SplashScreen from './components/SplashScreen';
 
 const ProtectedRoute = ({ children }) => {
@@ -54,6 +56,7 @@ const AppContent = () => {
 
     return (
         <div className="min-h-screen flex flex-col">
+            <PWAHandler />
             <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<><Navbar /><Home /><Footer /></>} />
@@ -72,7 +75,7 @@ const AppContent = () => {
                 }>
                     <Route index element={<Overview />} />
                     <Route path="inventory" element={<Inventory />} />
-                    <Route path="my-shop" element={<MyShop />} />
+                    <Route path="share" element={<MyShop />} />
                     <Route path="categories" element={<Categories />} />
                     <Route path="staff" element={<Staff />} />
                     <Route path="shops" element={<Shops />} />
@@ -93,6 +96,7 @@ const AppContent = () => {
                     <Route path="pricing" element={<Pricing />} />
                     <Route path="admin/subscriptions" element={<AdminSubscriptions />} />
                     <Route path="admin/pricing" element={<AdminPricing />} />
+                    <Route path="admin/queries" element={<AdminQueries />} />
                 </Route>
             </Routes>
             <Toaster position="top-right" />

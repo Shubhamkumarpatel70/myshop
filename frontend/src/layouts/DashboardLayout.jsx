@@ -1,12 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    LayoutDashboard, Package, Layers, ShoppingCart, 
-    BarChart3, Settings, Menu, X, Bell, 
-    Search, LogOut, ChevronLeft, ChevronRight,
-    Sun, Moon, MapPin, Store, ArrowRight,
-    Users, Activity, Megaphone, CreditCard, Globe, User, ShieldCheck, ShoppingBag, Clock, Download, Smartphone, Monitor, Zap
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+    Activity,
+    CreditCard,
+    LayoutDashboard,
+    Layers,
+    LogOut,
+    Megaphone,
+    Menu,
+    MessageSquare,
+    Moon,
+    Package,
+    Search,
+    Settings,
+    ShieldCheck,
+    ShoppingBag,
+    ShoppingCart,
+    Store,
+    Sun,
+    User,
+    Users,
+    X,
+    Clock,
+    Zap,
+    Share2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -22,15 +40,18 @@ const DashboardLayout = () => {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [onboardingData, setOnboardingData] = useState({
         businessType: 'General Store',
-        address: ''
+        address: '',
     });
-    const [deferredPrompt, setDeferredPrompt] = useState(null);
-    const [showInstallBtn, setShowInstallBtn] = useState(false);
-    const [showSplash, setShowSplash] = useState(true);
 
     const { user, logout, updateUser } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const isDark = localStorage.getItem('theme') === 'dark';
+        setDarkMode(isDark);
+        document.documentElement.classList.toggle('dark', isDark);
+    }, []);
 
     useEffect(() => {
         if (user && user.role !== 'super_admin' && user.address === 'Incomplete') {
@@ -39,69 +60,14 @@ const DashboardLayout = () => {
     }, [user]);
 
     useEffect(() => {
-        // Check if already installed
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            setShowInstallBtn(false);
-            return;
-        }
-
-        const handler = (e) => {
-            console.log('beforeinstallprompt fired');
-            e.preventDefault();
-            setDeferredPrompt(e);
-            setShowInstallBtn(true);
-        };
-
-        window.addEventListener('beforeinstallprompt', handler);
-
-        // Hide splash after 2.5 seconds
-        const timer = setTimeout(() => setShowSplash(false), 2500);
-
-        return () => {
-            window.removeEventListener('beforeinstallprompt', handler);
-            clearTimeout(timer);
-        };
-    }, []);
-
-    const handleInstall = async () => {
-        if (!deferredPrompt) {
-            toast.info("To install, use your browser's menu (e.g., 'Add to Home Screen')");
-            return;
-        }
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            setShowInstallBtn(false);
-            toast.success("StockSaathi installed successfully!");
-        }
-        setDeferredPrompt(null);
-    };
-
-    // Polling for approval/payment status update
-    useEffect(() => {
-        let interval;
-        if (user?.role === 'shop_owner' && (user?.approvalStatus === 'Pending' || !user?.isPaymentDone)) {
-            interval = setInterval(async () => {
-                try {
-                    const res = await api.get('/auth/profile');
-                    if (res.data.success) {
-                        const newUser = res.data.data;
-                        // If status changed, update the local user context
-                        if (newUser.approvalStatus !== user.approvalStatus || newUser.isPaymentDone !== user.isPaymentDone) {
-                            updateUser(newUser);
-                        }
-                    }
-                } catch (error) {
-                    console.error("Status polling failed:", error);
-                }
-            }, 5000); // Check every 5 seconds for faster real-time feel
-        }
-        return () => clearInterval(interval);
-    }, [user, updateUser]);
+        setIsMobileMenuOpen(false);
+    }, [location.pathname]);
 
     const toggleDarkMode = () => {
-        setDarkMode(!darkMode);
-        document.documentElement.classList.toggle('dark');
+        const next = !darkMode;
+        setDarkMode(next);
+        document.documentElement.classList.toggle('dark', next);
+        localStorage.setItem('theme', next ? 'dark' : 'light');
     };
 
     const handleOnboardingSubmit = async (e) => {
@@ -111,41 +77,89 @@ const DashboardLayout = () => {
             if (res.data.success) {
                 updateUser(res.data.data);
                 setShowOnboarding(false);
-                toast.success("Shop profile completed! Welcome to StockSaathi.");
+                toast.success('Profile completed successfully');
             }
-        } catch (error) {
-            toast.error("Failed to update profile");
+        } catch {
+            toast.error('Unable to save profile');
         }
     };
 
     const allNavItems = [
-        { name: 'Overview', icon: <LayoutDashboard size={20} />, path: '/dashboard', roles: ['super_admin', 'shop_owner', 'manager', 'cashier'] },
-        { name: 'POS Billing', icon: <ShoppingCart size={20} />, path: '/dashboard/sales', roles: ['shop_owner', 'manager', 'cashier'], priority: true },
-        { name: 'Shift', icon: <Clock size={20} />, path: '/dashboard/shifts', roles: ['shop_owner', 'manager', 'cashier'] },
-        { name: 'Inventory', icon: <Package size={20} />, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'] },
-        { name: 'StockSaathi', icon: <Globe size={20} />, path: '/dashboard/my-shop', roles: ['shop_owner', 'manager'], priority: true },
-        { name: 'Categories', icon: <Layers size={20} />, path: '/dashboard/categories', roles: ['shop_owner', 'manager'] },
-        { name: 'Staff Management', icon: <Users size={20} />, path: '/dashboard/staff', roles: ['shop_owner'] },
-        { name: 'Shop Directory', icon: <Store size={20} />, path: '/dashboard/shops', roles: ['super_admin'] },
-        { name: 'Global Stock', icon: <Package size={20} />, path: '/dashboard/admin/inventory', roles: ['super_admin'] },
-        { name: 'Network Sales', icon: <ShoppingCart size={20} />, path: '/dashboard/admin/sales', roles: ['super_admin'] },
-        { name: 'Shop Finder', icon: <Search size={20} />, path: '/dashboard/admin/shop-finder', roles: ['super_admin'] },
-        { name: 'Order Finder', icon: <ShoppingBag size={20} />, path: '/dashboard/admin/order-finder', roles: ['super_admin'] },
-        { name: 'System Logs', icon: <Activity size={20} />, path: '/dashboard/activity', roles: ['super_admin'] },
-        { name: 'Broadcasts', icon: <Megaphone size={20} />, path: '/dashboard/broadcast', roles: ['super_admin'] },
-        { name: 'Shop Approvals', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/approvals', roles: ['super_admin'], priority: true },
-        { name: 'System Settings', icon: <Settings size={20} />, path: '/dashboard/admin/settings', roles: ['super_admin'] },
-        { name: 'Business Insights', icon: <BarChart3 size={20} />, path: '/dashboard/reports', roles: ['super_admin', 'shop_owner', 'manager'] },
-        { name: 'Customers', icon: <Users size={20} />, path: '/dashboard/customers', roles: ['shop_owner', 'manager'] },
-        { name: 'Plan & Pricing', icon: <Zap size={20} />, path: '/dashboard/pricing', roles: ['shop_owner'] },
-        { name: 'Subscription Audit', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/subscriptions', roles: ['super_admin'], priority: true },
-        { name: 'Pricing Config', icon: <Settings size={20} />, path: '/dashboard/admin/pricing', roles: ['super_admin'] },
-        { name: 'Account', icon: <User size={20} />, path: '/dashboard/account', roles: ['shop_owner', 'manager', 'cashier'] },
-        { name: 'Payments', icon: <CreditCard size={20} />, path: '/dashboard/payment-settings', roles: ['shop_owner'] },
+        { name: 'Overview', icon: LayoutDashboard, path: '/dashboard', roles: ['super_admin', 'shop_owner', 'manager', 'cashier'], priority: true, description: 'Role summary and quick actions', group: 'core' },
+        { name: 'Sales', icon: ShoppingCart, path: '/dashboard/sales', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: 'POS transactions and returns', group: 'operations' },
+        { name: 'Shifts', icon: Clock, path: '/dashboard/shifts', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: 'Open/close and shift logs', group: 'operations' },
+        { name: 'Inventory', icon: Package, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'], priority: true, description: 'Stock levels and adjustments', group: 'operations' },
+        { name: 'Categories', icon: Layers, path: '/dashboard/categories', roles: ['shop_owner', 'manager'], description: 'Catalog grouping', group: 'operations' },
+        { name: 'Staff', icon: Users, path: '/dashboard/staff', roles: ['shop_owner'], description: 'Team access and roles', group: 'management' },
+        { name: 'Pricing', icon: Zap, path: '/dashboard/pricing', roles: ['shop_owner'], description: 'Plan and billing controls', group: 'management' },
+        { name: 'Payments', icon: CreditCard, path: '/dashboard/payment-settings', roles: ['shop_owner'], description: 'Gateway and UPI settings', group: 'management' },
+        { name: 'Share Shop', icon: Share2, path: '/dashboard/share', roles: ['shop_owner'], description: 'Promote your shop link', group: 'management' },
+        { name: 'Account', icon: User, path: '/dashboard/account', roles: ['shop_owner', 'manager', 'cashier'], description: 'Profile and security', group: 'management' },
+
+        { name: 'Shops', icon: Store, path: '/dashboard/shops', roles: ['super_admin'], priority: true, description: 'All registered shops', group: 'admin-core' },
+        { name: 'Approvals', icon: ShieldCheck, path: '/dashboard/admin/approvals', roles: ['super_admin'], priority: true, description: 'Shop verification queue', group: 'admin-core' },
+        { name: 'Subscriptions', icon: CreditCard, path: '/dashboard/admin/subscriptions', roles: ['super_admin'], description: 'Manage shop subscriptions', group: 'admin-core' },
+        { name: 'Admin Sales', icon: ShoppingCart, path: '/dashboard/admin/sales', roles: ['super_admin'], priority: true, description: 'Platform-wide transaction audit', group: 'admin-ops' },
+        { name: 'Admin Inventory', icon: Package, path: '/dashboard/admin/inventory', roles: ['super_admin'], priority: true, description: 'Platform-wide inventory view', group: 'admin-ops' },
+        { name: 'Shop Finder', icon: Search, path: '/dashboard/admin/shop-finder', roles: ['super_admin'], description: 'Lookup by shop ID', group: 'admin-tools' },
+        { name: 'Order Finder', icon: Search, path: '/dashboard/admin/order-finder', roles: ['super_admin'], description: 'Lookup by order or transaction ID', group: 'admin-tools' },
+        { name: 'Broadcast', icon: Megaphone, path: '/dashboard/broadcast', roles: ['super_admin'], description: 'Send announcements to shops', group: 'admin-comms' },
+        { name: 'Queries', icon: MessageSquare, path: '/dashboard/admin/queries', roles: ['super_admin'], description: 'Customer support inquiries', group: 'admin-comms' },
+        { name: 'Activity', icon: Activity, path: '/dashboard/activity', roles: ['super_admin'], description: 'Platform activity logs', group: 'admin-comms' },
+        { name: 'Pricing Config', icon: Zap, path: '/dashboard/admin/pricing', roles: ['super_admin'], description: 'Manage plans and pricing', group: 'admin-system' },
+        { name: 'Settings', icon: Settings, path: '/dashboard/admin/settings', roles: ['super_admin'], description: 'Global platform configuration', group: 'admin-system' },
     ];
 
-    const navItems = allNavItems.filter(item => item.roles.includes(user?.role));
-    const mobileBottomItems = navItems.filter(item => item.priority || item.name === 'Overview').slice(0, 4);
+    const navItems = useMemo(
+        () => allNavItems.filter((item) => item.roles.includes(user?.role)),
+        [user?.role]
+    );
+
+    const groupedNavItems = useMemo(() => {
+        if (user?.role !== 'super_admin') {
+            return [{ key: 'workspace', label: 'Workspace', items: navItems }];
+        }
+
+        const sections = [
+            { key: 'admin-core', label: 'Core Admin' },
+            { key: 'admin-ops', label: 'Operations' },
+            { key: 'admin-tools', label: 'Lookup Tools' },
+            { key: 'admin-comms', label: 'Communication' },
+            { key: 'admin-system', label: 'System' },
+        ];
+
+        return sections
+            .map((section) => ({
+                ...section,
+                items: navItems.filter((item) => item.group === section.key || item.path === '/dashboard'),
+            }))
+            .filter((section) => section.items.length > 0)
+            .map((section) => ({
+                ...section,
+                items:
+                    section.key === 'admin-core'
+                        ? [
+                              ...section.items.filter((item) => item.path === '/dashboard'),
+                              ...section.items.filter((item) => item.path !== '/dashboard'),
+                          ]
+                        : section.items.filter((item) => item.path !== '/dashboard'),
+            }))
+            .filter((section) => section.items.length > 0);
+    }, [navItems, user?.role]);
+
+    const mobileBottomItems = useMemo(() => {
+        const preferred = navItems.filter((item) => item.priority);
+        const dashboardItem = navItems.find((item) => item.path === '/dashboard');
+        const merged = dashboardItem
+            ? [dashboardItem, ...preferred.filter((item) => item.path !== '/dashboard')]
+            : preferred;
+        return merged.slice(0, 4);
+    }, [navItems]);
+
+    const currentNavItem = navItems.find((item) => {
+        if (item.path === '/dashboard') return location.pathname === '/dashboard';
+        return location.pathname.startsWith(item.path);
+    });
 
     const handleLogout = () => {
         logout();
@@ -153,269 +167,257 @@ const DashboardLayout = () => {
     };
 
     const businessTypes = [
-        'Medical Store', 'Hardware Store', 'Grocery Store', 
-        'Electronics Store', 'Clothing Store', 'General Store', 'Custom Store'
+        'Medical Store',
+        'Hardware Store',
+        'Grocery Store',
+        'Electronics Store',
+        'Clothing Store',
+        'General Store',
+        'Custom Store',
     ];
 
-    return (
-        <div className="flex h-screen bg-slate-50 dark:bg-[#020617] overflow-hidden font-jakarta">
-            <AnimatePresence>
-                {showSplash && (
-                    <motion.div 
-                        initial={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] bg-white dark:bg-slate-950 flex flex-col items-center justify-center"
-                    >
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ duration: 0.5, ease: "easeOut" }}
-                            className="flex flex-col items-center"
-                        >
-                            <div className="relative">
-                                <motion.div 
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                                    className="absolute -inset-4 border border-dashed border-indigo-500/30 rounded-full"
-                                />
-                                <img src="/favicon.png" alt="StockSaathi" className="w-32 h-32 md:w-48 md:h-48 object-contain rounded-3xl" />
-                            </div>
-                            <div className="mt-12 text-center">
-                                <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">StockSaathi</h1>
-                                <p className="text-xs font-black text-indigo-500 uppercase tracking-[0.4em] mt-2">Smart Inventory Ecosystem</p>
-                                <div className="mt-8 flex gap-2 justify-center">
-                                    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce"></div>
-                                    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-            {/* Desktop Glass Sidebar */}
-            <motion.aside
-                initial={false}
-                animate={{ width: isSidebarOpen ? 280 : 88 }}
-                className="hidden lg:flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 transition-all duration-500 z-30"
+    const roleLabel = user?.role?.replace('_', ' ') || 'user';
+
+    const renderNavLink = (item, compact = false) => {
+        const Icon = item.icon;
+        const isActive =
+            item.path === '/dashboard'
+                ? location.pathname === '/dashboard'
+                : location.pathname.startsWith(item.path);
+
+        return (
+            <Link
+                key={item.path}
+                to={item.path}
+                title={compact ? item.name : undefined}
+                className={[
+                    'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+                    isActive
+                        ? 'bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.35)]'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
+                    compact ? 'justify-center px-2' : '',
+                ].join(' ')}
             >
-                <div className="p-6 mb-2">
-                    <div className="flex items-center justify-center gap-4 px-2">
-                        <img src="/favicon.png" alt="StockSaathi" className="w-12 h-12 object-contain rounded-xl shadow-lg shrink-0" />
-                        {isSidebarOpen && (
-                            <motion.div 
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="min-w-0"
+                <Icon size={18} className="shrink-0" />
+                {!compact && (
+                    <div className="min-w-0">
+                        <span className="block truncate">{item.name}</span>
+                        {item.description && (
+                            <span
+                                className={[
+                                    'block truncate text-[11px]',
+                                    isActive ? 'text-indigo-100/90' : 'text-slate-400 dark:text-slate-500',
+                                ].join(' ')}
                             >
-                                <h2 className="text-[15px] font-black tracking-tight leading-tight uppercase truncate text-slate-900 dark:text-white">
-                                    {user?.shopName || 'StockSaathi'}
-                                </h2>
-                                <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-0.5">
-                                    {user?.role}
-                                </p>
-                            </motion.div>
+                                {item.description}
+                            </span>
                         )}
                     </div>
+                )}
+            </Link>
+        );
+    };
+
+    return (
+        <div className="flex h-screen bg-slate-50 text-slate-900 dark:bg-[#020617] dark:text-white">
+            <aside
+                className={[
+                    'hidden shrink-0 border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-900 lg:flex lg:flex-col',
+                    isSidebarOpen ? 'w-64' : 'w-24',
+                ].join(' ')}
+            >
+                <div className="border-b border-slate-200 p-4 dark:border-slate-800">
+                    <Link to="/" className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white">
+                            <ShoppingBag size={20} />
+                        </span>
+                        {isSidebarOpen && (
+                            <span className="font-outfit text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                                Stock<span className="text-indigo-600">Saathi</span>
+                            </span>
+                        )}
+                    </Link>
                 </div>
 
-                <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.name}
-                            to={item.path}
-                            className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group ${
-                                (location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path)))
-                                    ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-indigo-500/5 border border-indigo-100 dark:border-indigo-500/20'
-                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-indigo-600'
-                            }`}
-                        >
-                            <div className={`shrink-0 transition-transform duration-300 group-hover:scale-110 ${
-                                (location.pathname === item.path) ? 'text-indigo-600 dark:text-indigo-400' : ''
-                            }`}>
-                                {item.icon}
-                            </div>
+                <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+                    {groupedNavItems.map((section) => (
+                        <div key={section.key}>
                             {isSidebarOpen && (
-                                <motion.span 
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    className="truncate font-bold text-sm tracking-tight"
-                                >
-                                    {item.name}
-                                </motion.span>
+                                <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
+                                    {section.label}
+                                </p>
                             )}
-                        </Link>
+                            <div className="space-y-1">
+                                {section.items.map((item) => renderNavLink(item, !isSidebarOpen))}
+                            </div>
+                        </div>
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-slate-100 dark:border-slate-800/50 space-y-3">
-                    {!window.matchMedia('(display-mode: standalone)').matches && (
-                        <button 
-                            onClick={handleInstall}
-                            className={`flex items-center gap-4 px-5 py-4 w-full rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${
-                                showInstallBtn 
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:scale-105' 
-                                : 'bg-slate-50 dark:bg-slate-900 text-slate-400 border border-slate-100 dark:border-slate-800'
-                            }`}
-                        >
-                            <Download size={18} className="shrink-0" />
-                            {isSidebarOpen && <span>{showInstallBtn ? 'Install App' : 'App Guide'}</span>}
-                        </button>
-                    )}
+                <div className="border-t border-slate-200 p-3 dark:border-slate-800">
+                    <div className={['mb-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800/70', isSidebarOpen ? '' : 'justify-center'].join(' ')}>
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+                            {user?.ownerName?.charAt(0)?.toUpperCase() || 'U'}
+                        </span>
+                        {isSidebarOpen && (
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{user?.ownerName || 'User'}</p>
+                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{roleLabel}</p>
+                            </div>
+                        )}
+                    </div>
+
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-4 px-5 py-4 w-full rounded-2xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all group"
+                        className={[
+                            'mb-2 inline-flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10',
+                            isSidebarOpen ? '' : 'justify-center',
+                        ].join(' ')}
                     >
-                        <LogOut size={20} className="shrink-0 transition-transform group-hover:-translate-x-1" />
-                        {isSidebarOpen && (
-                            <motion.span 
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="font-bold text-sm uppercase tracking-widest"
-                            >
-                                Logout
-                            </motion.span>
-                        )}
+                        <LogOut size={17} />
+                        {isSidebarOpen && 'Logout'}
                     </button>
-                </div>
 
-                <div className="p-4 border-t border-slate-100 dark:border-slate-800/50">
                     <button
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="flex items-center justify-center w-full py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all group"
+                        onClick={() => setIsSidebarOpen((prev) => !prev)}
+                        className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-200 text-sm text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
-                        {isSidebarOpen ? <ChevronLeft size={24} /> : <ChevronRight size={24} />}
+                        {isSidebarOpen ? 'Collapse' : 'Expand'}
                     </button>
                 </div>
-            </motion.aside>
+            </aside>
 
-            {/* Main Workspace */}
-            <div className="flex-1 flex flex-col min-w-0 relative h-screen overflow-hidden">
-                {/* Modern Header */}
-                <header className="h-20 bg-white/50 dark:bg-slate-950/50 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 flex items-center justify-between px-6 lg:px-10 z-20">
-                    <div className="flex items-center gap-6">
-                        <button 
-                            onClick={() => setIsMobileMenuOpen(true)}
-                            className="lg:hidden p-3 text-slate-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm"
-                        >
-                            <Menu size={20} />
-                        </button>
-                        <div className="hidden md:flex items-center gap-3 bg-slate-100/50 dark:bg-slate-900/50 px-5 py-2.5 rounded-2xl border border-transparent focus-within:border-indigo-500/50 focus-within:bg-white dark:focus-within:bg-slate-900 transition-all w-80 lg:w-[400px]">
-                            <Search size={18} className="text-slate-400" />
-                            <input 
-                                type="text" 
-                                placeholder="Search inventory, sales, staff..." 
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
+                    <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <button
+                                onClick={() => setIsMobileMenuOpen(true)}
+                                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden"
+                            >
+                                <Menu size={18} />
+                            </button>
+
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{currentNavItem?.name || 'Dashboard'}</p>
+                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.shopName || 'Business workspace'}</p>
+                            </div>
+                        </div>
+
+                        <div className="hidden min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 xl:flex">
+                            <Search size={16} className="text-slate-400" />
+                            <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-transparent border-none focus:ring-0 text-sm w-full font-medium"
+                                placeholder="Search in dashboard"
+                                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
                             />
+                        </div>
+
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <button
+                                onClick={toggleDarkMode}
+                                className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                            >
+                                {darkMode ? <Sun size={17} /> : <Moon size={17} />}
+                            </button>
+
+                            <NotificationDropdown />
+
+                            <span className="hidden h-8 w-px bg-slate-200 dark:bg-slate-700 sm:block" />
+
+                            <div className="hidden items-center gap-2 sm:flex">
+                                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+                                    {user?.ownerName?.charAt(0)?.toUpperCase() || 'U'}
+                                </span>
+                                <div className="hidden 2xl:block">
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{user?.ownerName || 'User'}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{roleLabel}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 md:gap-5">
-                        <div className="flex items-center gap-2">
-                            <button 
-                                onClick={toggleDarkMode}
-                                className="p-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-2xl transition-all"
-                            >
-                                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-                            </button>
-                            <NotificationDropdown />
-                        </div>
-
-                        <div className="h-10 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
-
-                        <div className="flex items-center gap-4 group cursor-pointer">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-sm font-black tracking-tight leading-none truncate max-w-[120px] uppercase">{user?.ownerName}</p>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{user?.role}</p>
-                            </div>
-                            <div className="w-11 h-11 bg-gradient-to-tr from-indigo-600 to-indigo-400 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-all">
-                                {user?.ownerName?.charAt(0) || <User size={20} />}
-                            </div>
+                    <div className="border-t border-slate-200 px-4 py-2 dark:border-slate-800 xl:hidden">
+                        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                            <Search size={16} className="text-slate-400" />
+                            <input
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search in dashboard"
+                                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                            />
                         </div>
                     </div>
                 </header>
 
-                {/* Content Scroller */}
-                <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 pb-32 lg:pb-10">
-                    <div className="max-w-[1600px] mx-auto">
-                        {user?.role === 'shop_owner' && user?.approvalStatus === 'Rejected' ? (
-                            <div className="h-[70vh] flex flex-col items-center justify-center text-center p-6">
-                                <div className="w-24 h-24 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl shadow-rose-500/20">
-                                    <X size={48} />
-                                </div>
-                                <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4 text-rose-600">Application Rejected</h2>
-                                <div className="max-w-xl mx-auto p-8 bg-rose-50/50 dark:bg-rose-500/5 rounded-[2.5rem] border-2 border-rose-100 dark:border-rose-500/20 mb-8">
-                                    <p className="text-[10px] font-black uppercase text-rose-400 tracking-widest mb-2">Reason for Rejection</p>
-                                    <p className="text-xl font-bold text-slate-800 dark:text-white leading-relaxed">
-                                        "{user?.rejectionReason || 'Details provided were insufficient for verification.'}"
-                                    </p>
-                                </div>
-                                <p className="text-slate-500 font-medium">Please contact support or re-register with valid documents.</p>
-                                <button 
-                                    onClick={handleLogout}
-                                    className="mt-8 px-10 py-5 bg-rose-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-xl shadow-rose-500/20"
-                                >
-                                    Logout & Re-apply
-                                </button>
-                            </div>
-                        ) : user?.role === 'shop_owner' && !user?.isPaymentDone ? (
-                            <RegistrationPayment user={user} onPaymentSuccess={() => {
-                                window.location.reload();
-                            }} />
-                        ) : user?.role === 'shop_owner' && user?.approvalStatus === 'Pending' ? (
-                            <div className="h-[70vh] flex flex-col items-center justify-center text-center p-6">
-                                <div className="w-24 h-24 bg-amber-50 dark:bg-amber-500/10 text-amber-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl shadow-amber-500/20 animate-pulse">
-                                    <Clock size={48} />
-                                </div>
-                                <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4">Application Under Review</h2>
-                                <p className="text-slate-500 text-lg max-w-lg mx-auto font-medium leading-relaxed">
-                                    Payment received! Your shop details are now being audited by our administrative team. 
-                                    Please wait while we verify your business information.
-                                </p>
-                                <div className="mt-10 p-6 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
-                                        <ShieldCheck size={20} />
+                <main className="flex-1 overflow-x-auto overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-24 lg:pb-6">
+                    <div className="w-full min-w-0">
+                        <AnimatePresence mode="wait">
+                            {user?.role === 'shop_owner' && user?.approvalStatus === 'Rejected' ? (
+                                <motion.div key="rejected" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex min-h-[70vh] flex-col items-center justify-center rounded-3xl border border-rose-200 bg-white p-8 text-center dark:border-rose-500/20 dark:bg-slate-900">
+                                    <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300">
+                                        <X size={24} />
                                     </div>
-                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Expected response time: 24-48 Hours</p>
-                                </div>
-                            </div>
-                        ) : (
-                            <Outlet context={{ searchQuery }} />
-                        )}
+                                    <h2 className="text-2xl font-bold text-rose-600">Approval rejected</h2>
+                                    <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-300">
+                                        {user?.rejectionReason || 'Your account approval was rejected. Please review details and re-register.'}
+                                    </p>
+                                    <button onClick={handleLogout} className="mt-5 inline-flex h-11 items-center justify-center rounded-lg bg-rose-600 px-5 text-sm font-semibold text-white hover:bg-rose-700">
+                                        Logout
+                                    </button>
+                                </motion.div>
+                            ) : user?.role === 'shop_owner' && !user?.isPaymentDone ? (
+                                <RegistrationPayment user={user} onPaymentSuccess={() => window.location.reload()} />
+                            ) : user?.role === 'shop_owner' && user?.approvalStatus === 'Pending' ? (
+                                <motion.div key="pending" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex min-h-[70vh] flex-col items-center justify-center rounded-3xl border border-amber-200 bg-white p-8 text-center dark:border-amber-500/20 dark:bg-slate-900">
+                                    <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+                                        <Clock size={24} />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Approval in progress</h2>
+                                    <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-300">
+                                        Your profile is under review by admin. You will get full dashboard access after approval.
+                                    </p>
+                                </motion.div>
+                            ) : (
+                                <motion.div key={location.pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                                    <Outlet context={{ searchQuery }} />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </main>
 
-                {/* Mobile Bottom Navigation (Only for Mobile/Tablet) */}
-                <nav className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/20 dark:border-white/5 rounded-[2.5rem] shadow-2xl flex items-center justify-around px-4 z-40">
-                    {mobileBottomItems.map((item) => {
-                        const isActive = location.pathname === item.path;
-                        return (
-                            <Link
-                                key={item.name}
-                                to={item.path}
-                                className={`flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${
-                                    isActive ? 'text-indigo-600 dark:text-indigo-400 scale-110 font-black' : 'text-slate-400'
-                                }`}
-                            >
-                                {item.icon}
-                                <span className="text-[8px] uppercase tracking-tighter">{item.name.split(' ')[0]}</span>
-                                {isActive && <motion.div layoutId="bottomNav" className="w-1 h-1 bg-indigo-600 dark:bg-indigo-400 rounded-full mt-0.5" />}
-                            </Link>
-                        );
-                    })}
-                    <button 
-                        onClick={handleLogout}
-                        className="flex flex-col items-center gap-1 p-3 text-rose-500"
-                    >
-                        <LogOut size={20} />
-                        <span className="text-[8px] uppercase tracking-tighter">Exit</span>
-                    </button>
-                </nav>
+                {mobileBottomItems.length > 0 && (
+                    <nav className="fixed bottom-4 left-4 right-4 z-40 rounded-2xl border border-slate-200 bg-white/95 px-2 py-2 shadow-xl backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/90 lg:hidden">
+                        <div className="grid grid-cols-4 gap-1">
+                            {mobileBottomItems.map((item) => {
+                                const Icon = item.icon;
+                                const isActive =
+                                    item.path === '/dashboard'
+                                        ? location.pathname === '/dashboard'
+                                        : location.pathname.startsWith(item.path);
+                                return (
+                                    <Link
+                                        key={item.path}
+                                        to={item.path}
+                                        className={[
+                                            'flex flex-col items-center rounded-xl px-2 py-2 text-[11px] font-medium',
+                                            isActive
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'text-slate-600 dark:text-slate-300',
+                                        ].join(' ')}
+                                    >
+                                        <Icon size={16} />
+                                        <span className="mt-1 truncate">{item.name.split(' ')[0]}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </nav>
+                )}
             </div>
 
-            {/* Fullscreen Mobile Menu Drawer */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
                     <>
@@ -423,56 +425,51 @@ const DashboardLayout = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[120] bg-slate-950/60 lg:hidden"
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[60] lg:hidden"
                         />
+
                         <motion.aside
                             initial={{ x: '-100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed inset-y-0 left-0 w-[85%] max-w-sm bg-white dark:bg-slate-950 z-[70] lg:hidden flex flex-col"
+                            transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+                            className="fixed inset-y-0 left-0 z-[130] flex w-[86%] max-w-sm flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:hidden"
                         >
-                            <div className="p-8 flex justify-between items-center">
+                            <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-800">
                                 <div className="flex items-center gap-3">
-                                    <img src="/favicon.png" alt="StockSaathi" className="w-10 h-10 object-contain rounded-xl shadow-lg" />
-                                    <span className="text-xl font-black uppercase tracking-tighter">StockSaathi</span>
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white">
+                                        <ShoppingBag size={18} />
+                                    </span>
+                                    <span className="font-outfit text-xl font-extrabold text-slate-900 dark:text-white">StockSaathi</span>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="p-2 bg-slate-100 dark:bg-slate-900 rounded-xl"
+                                    className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 dark:border-slate-700"
                                 >
-                                    <X size={20} />
+                                    <X size={16} />
                                 </button>
                             </div>
-                            
-                            <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-                                {navItems.map((item) => {
-                                    const isActive = location.pathname === item.path;
-                                    return (
-                                        <Link
-                                            key={item.name}
-                                            to={item.path}
-                                            onClick={() => setIsMobileMenuOpen(false)}
-                                            className={`flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all ${
-                                                isActive 
-                                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' 
-                                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                            }`}
-                                        >
-                                            {item.icon}
-                                            <span className="text-sm tracking-tight">{item.name}</span>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
 
-                            <div className="p-6 border-t border-slate-100 dark:border-slate-900">
-                                <button 
+                            <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+                                {groupedNavItems.map((section) => (
+                                    <div key={section.key}>
+                                        <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
+                                            {section.label}
+                                        </p>
+                                        <div className="space-y-1">
+                                            {section.items.map((item) => renderNavLink(item))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </nav>
+
+                            <div className="border-t border-slate-200 p-3 dark:border-slate-800">
+                                <button
                                     onClick={handleLogout}
-                                    className="flex items-center gap-3 px-6 py-4 rounded-2xl text-rose-500 bg-rose-50 dark:bg-rose-500/10 font-black w-full uppercase text-xs tracking-widest shadow-lg shadow-rose-500/10"
+                                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-rose-600 text-sm font-semibold text-white"
                                 >
-                                    <LogOut size={20} /> Logout Account
+                                    <LogOut size={16} /> Logout
                                 </button>
                             </div>
                         </motion.aside>
@@ -480,57 +477,52 @@ const DashboardLayout = () => {
                 )}
             </AnimatePresence>
 
-            {/* Onboarding Premium Modal */}
             <AnimatePresence>
                 {showOnboarding && (
-                    <div className="modal-overlay">
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0, y: 40 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            className="modal-content max-w-md"
+                    <div className="fixed inset-0 z-[150] grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 14 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:p-8"
                         >
-                            <div className="relative p-10">
-                                {/* Decor */}
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                            <h2 className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">Complete your profile</h2>
+                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Add business type and address to continue.</p>
 
-                                <div className="text-center mb-8">
-                                    <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-white mx-auto mb-6 shadow-2xl shadow-indigo-500/40 animate-float">
-                                        <Store size={36} />
-                                    </div>
-                                    <h2 className="text-3xl font-black mb-2 uppercase tracking-tight">Final Setup</h2>
-                                    <p className="text-slate-500 font-medium">Let\'s get your store ready for business, {user?.ownerName}.</p>
+                            <form onSubmit={handleOnboardingSubmit} className="mt-5 space-y-4">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Business type</label>
+                                    <select
+                                        value={onboardingData.businessType}
+                                        onChange={(e) => setOnboardingData({ ...onboardingData, businessType: e.target.value })}
+                                        className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                    >
+                                        {businessTypes.map((type) => (
+                                            <option key={type} value={type}>
+                                                {type}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
-                                <form onSubmit={handleOnboardingSubmit} className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Business Niche</label>
-                                        <select 
-                                            required
-                                            className="input-field appearance-none cursor-pointer"
-                                            value={onboardingData.businessType}
-                                            onChange={(e) => setOnboardingData({...onboardingData, businessType: e.target.value})}
-                                        >
-                                            {businessTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Official Address</label>
-                                        <div className="relative">
-                                            <MapPin className="absolute left-4 top-4 text-indigo-600" size={18} />
-                                            <textarea 
-                                                required
-                                                placeholder="Street, City, State..."
-                                                className="input-field pl-12 pt-4 h-28 resize-none"
-                                                value={onboardingData.address}
-                                                onChange={(e) => setOnboardingData({...onboardingData, address: e.target.value})}
-                                            />
-                                        </div>
-                                    </div>
-                                    <button type="submit" className="btn btn-primary w-full py-5 text-lg font-black uppercase tracking-[0.2em] rounded-[1.5rem]">
-                                        Open StockSaathi <ArrowRight className="ml-2" size={20} />
-                                    </button>
-                                </form>
-                            </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Address</label>
+                                    <textarea
+                                        required
+                                        value={onboardingData.address}
+                                        onChange={(e) => setOnboardingData({ ...onboardingData, address: e.target.value })}
+                                        rows={4}
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        placeholder="Enter your business address"
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-700"
+                                >
+                                    Save and continue
+                                </button>
+                            </form>
                         </motion.div>
                     </div>
                 )}

@@ -101,10 +101,11 @@ const NotificationDropdown = () => {
                     <>
                         <div className="fixed inset-0 z-40 lg:bg-transparent bg-slate-950/20 backdrop-blur-sm lg:backdrop-blur-0" onClick={() => setIsOpen(false)}></div>
                         <motion.div
-                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                            className="fixed md:absolute right-4 md:right-0 left-4 md:left-auto top-24 md:top-auto mt-0 md:mt-3 w-auto md:w-96 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden"
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 400 }}
+                            className="fixed md:absolute right-4 md:right-0 left-4 md:left-auto top-24 md:top-auto mt-0 md:mt-3 w-auto md:w-[28rem] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_32px_120px_rgba(0,0,0,0.25)] border border-white/20 dark:border-slate-800 z-50 overflow-hidden"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <div>

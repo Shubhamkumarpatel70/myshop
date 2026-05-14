@@ -1,22 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    ShieldCheck, Clock, Check, X, 
-    ExternalLink, Search, Mail, Phone,
-    Store, Zap, Crown, Info, Edit2, Trash2, Ban, RefreshCcw, DollarSign, CreditCard
-} from 'lucide-react';
+import { Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
+
+const formatDate = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    });
+};
+
+const planBadgeClass = (plan) => {
+    if (plan === 'Enterprise' || plan === 'Elite') return 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300';
+    if (plan === 'Professional') return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300';
+    return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
+};
 
 const AdminSubscriptions = () => {
     const [subscriptions, setSubscriptions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
-    const [modalType, setModalType] = useState(null); // 'cancel', 'refund', 'payment', 'edit'
+    const [modalType, setModalType] = useState(null);
     const [utrNumber, setUtrNumber] = useState('');
     const [rejectReason, setRejectReason] = useState('');
+    const [editData, setEditData] = useState({ plan: '', expiresAt: '' });
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -26,9 +37,9 @@ const AdminSubscriptions = () => {
     const fetchAllSubscriptions = async () => {
         try {
             const res = await api.get('/subscriptions/admin/all');
-            setSubscriptions(res.data.data);
-        } catch (error) {
-            toast.error("Failed to load subscriptions");
+            setSubscriptions(res.data.data || []);
+        } catch {
+            toast.error('Failed to load subscription audit data');
         } finally {
             setLoading(false);
         }
@@ -37,17 +48,14 @@ const AdminSubscriptions = () => {
     const handleVerifyPayment = async (userId, status) => {
         setSubmitting(true);
         try {
-            const res = await api.post('/subscriptions/admin/verify', {
-                userId,
-                status
-            });
+            const res = await api.post('/subscriptions/admin/verify', { userId, status });
             if (res.data.success) {
-                toast.success(`Payment ${status} successfully`);
+                toast.success(`Payment ${status.toLowerCase()}`);
                 setModalType(null);
                 fetchAllSubscriptions();
             }
-        } catch (error) {
-            toast.error("Verification failed");
+        } catch {
+            toast.error('Failed to verify payment');
         } finally {
             setSubmitting(false);
         }
@@ -59,343 +67,429 @@ const AdminSubscriptions = () => {
             const res = await api.post('/subscriptions/admin/process-cancel', {
                 userId,
                 status,
-                rejectReason: status === 'Rejected' ? rejectReason : ''
+                rejectReason: status === 'Rejected' ? rejectReason : '',
             });
             if (res.data.success) {
-                toast.success(`Request ${status} successfully`);
+                toast.success(`Cancellation ${status.toLowerCase()}`);
                 setModalType(null);
+                setRejectReason('');
                 fetchAllSubscriptions();
             }
-        } catch (error) {
-            toast.error("Action failed");
+        } catch {
+            toast.error('Failed to process cancellation');
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleRefund = async () => {
-        if (!utrNumber) return toast.error("Please enter UTR number");
+        if (!utrNumber.trim()) return toast.error('Refund UTR is required');
+
         setSubmitting(true);
         try {
             const res = await api.post('/subscriptions/admin/refund', {
                 userId: selectedUser._id,
-                utr: utrNumber
+                utr: utrNumber.trim(),
             });
             if (res.data.success) {
-                toast.success("Refund processed and plan terminated");
+                toast.success('Refund marked successfully');
                 setModalType(null);
+                setUtrNumber('');
                 fetchAllSubscriptions();
             }
-        } catch (error) {
-            toast.error("Refund failed");
+        } catch {
+            toast.error('Failed to process refund');
         } finally {
             setSubmitting(false);
         }
     };
 
-    const filteredSubs = subscriptions.filter(s => 
-        s.shopName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        s.ownerName.toLowerCase().includes(searchTerm.toLowerCase())
+    const handleUpdateSub = async () => {
+        setSubmitting(true);
+        try {
+            const res = await api.put('/subscriptions/admin/update', {
+                userId: selectedUser._id,
+                ...editData,
+            });
+            if (res.data.success) {
+                toast.success('Subscription updated');
+                setModalType(null);
+                fetchAllSubscriptions();
+            }
+        } catch {
+            toast.error('Failed to update subscription');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleTerminate = async () => {
+        setSubmitting(true);
+        try {
+            const res = await api.post('/subscriptions/admin/terminate', { userId: selectedUser._id });
+            if (res.data.success) {
+                toast.success('Subscription terminated');
+                setModalType(null);
+                fetchAllSubscriptions();
+            }
+        } catch {
+            toast.error('Failed to terminate subscription');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleToggleSuspension = async (userId) => {
+        try {
+            const res = await api.post('/subscriptions/admin/toggle-suspension', { userId });
+            if (res.data.success) {
+                toast.success(res.data.message);
+                fetchAllSubscriptions();
+            }
+        } catch {
+            toast.error('Failed to change suspension status');
+        }
+    };
+
+    const filteredSubs = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return subscriptions;
+
+        return subscriptions.filter((sub) =>
+            [sub.shopName, sub.ownerName, sub.email, sub.phone]
+                .filter(Boolean)
+                .some((v) => String(v).toLowerCase().includes(term))
+        );
+    }, [subscriptions, searchTerm]);
+
+    const metrics = useMemo(
+        () => ({
+            pendingPayments: subscriptions.filter((s) => s.pendingSubscription?.status === 'Pending').length,
+            cancelRequests: subscriptions.filter((s) => s.cancellationRequest?.status === 'Pending').length,
+            refundDue: subscriptions.filter(
+                (s) => s.cancellationRequest?.status === 'Approved' && !s.cancellationRequest?.refundUtr
+            ).length,
+            paidLicenses: subscriptions.filter((s) => s.subscriptionPlan !== 'Free').length,
+        }),
+        [subscriptions]
     );
 
-    const getPlanIcon = (name) => {
-        if (name === 'Free') return <Zap size={18} className="text-slate-400" />;
-        if (name === 'Professional') return <ShieldCheck size={18} className="text-indigo-600" />;
-        return <Crown size={18} className="text-amber-600" />;
-    };
-
-    const formatDate = (date) => {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        });
-    };
-
     return (
-        <div className="space-y-10 pb-20">
-            {/* Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-indigo-600 font-black uppercase text-[10px] tracking-[0.3em]">
-                        <RefreshCcw size={14} className="animate-spin-slow" /> Unified Lifecycle Audit
-                    </div>
-                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase">
-                        Subscription <span className="text-indigo-600">Audit</span>
-                    </h1>
-                    <p className="text-slate-500 font-medium max-w-2xl text-lg">
-                        Manage payments, active licenses, and merchant refund workflows.
-                    </p>
+        <div className="space-y-6 pb-10">
+            <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">Administration</p>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">Subscription Audit</h1>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Manage shop subscriptions, manual payments, and refund workflows.
+                </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                    <p className="text-xs text-slate-500">Pending Payments</p>
+                    <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{metrics.pendingPayments}</p>
                 </div>
-                
-                <div className="relative w-full lg:w-80 group">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
-                    <input 
-                        type="text" 
-                        placeholder="Search by shop or owner..." 
-                        className="input-field pl-14 h-14 rounded-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                    <p className="text-xs text-slate-500">Cancellation Requests</p>
+                    <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{metrics.cancelRequests}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                    <p className="text-xs text-slate-500">Refund Due</p>
+                    <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{metrics.refundDue}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                    <p className="text-xs text-slate-500">Active Subscriptions</p>
+                    <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{metrics.paidLicenses}</p>
+                </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+                <div className="relative">
+                    <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                        type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search shop, owner, email, phone"
+                        className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                     />
                 </div>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
-                    <p className="text-[10px] font-black uppercase text-indigo-500 tracking-widest mb-1">New Payments</p>
-                    <p className="text-3xl font-black text-indigo-600">{subscriptions.filter(s => s.pendingSubscription?.status === 'Pending').length}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 border-rose-100 dark:border-rose-900/30">
-                    <p className="text-[10px] font-black uppercase text-rose-500 tracking-widest mb-1">Cancellations</p>
-                    <p className="text-3xl font-black text-rose-600">{subscriptions.filter(s => s.cancellationRequest?.status === 'Pending').length}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 border-emerald-100 dark:border-emerald-900/30">
-                    <p className="text-[10px] font-black uppercase text-emerald-500 tracking-widest mb-1">Refunds Due</p>
-                    <p className="text-3xl font-black text-emerald-600">{subscriptions.filter(s => s.cancellationRequest?.status === 'Approved' && !s.cancellationRequest.refundUtr).length}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Total Licenses</p>
-                    <p className="text-3xl font-black">{subscriptions.filter(s => s.subscriptionPlan !== 'Free').length}</p>
-                </div>
-            </div>
-
-            {/* Main Table/List */}
-            <div className="bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-xl">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
-                                <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Shop & Owner</th>
-                                <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Plan & Expiry</th>
-                                <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Status / Requests</th>
-                                <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Actions</th>
+                    <table className="min-w-[1180px] w-full text-left">
+                        <thead className="bg-slate-50 dark:bg-slate-800/50">
+                            <tr>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop Details</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Plan</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Payment</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Cancellation</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Expires</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                            {loading ? (
-                                [1, 2, 3].map(i => (
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                            {loading &&
+                                [1, 2, 3].map((i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td colSpan="4" className="px-8 py-10"><div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-full w-full"></div></td>
+                                        <td colSpan={7} className="px-4 py-6">
+                                            <div className="h-6 rounded bg-slate-100 dark:bg-slate-800" />
+                                        </td>
                                     </tr>
-                                ))
-                            ) : filteredSubs.map((sub) => (
-                                <tr key={sub._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600 font-black uppercase shrink-0">
-                                                {sub.shopName.charAt(0)}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="font-black text-slate-900 dark:text-white uppercase tracking-tight truncate">{sub.shopName}</p>
-                                                <div className="flex items-center gap-3 mt-1">
-                                                    <a href={`tel:${sub.phone}`} className="text-slate-400 hover:text-indigo-600 transition-colors"><Phone size={12} /></a>
-                                                    <a href={`mailto:${sub.email}`} className="text-slate-400 hover:text-indigo-600 transition-colors"><Mail size={12} /></a>
-                                                    <span className="text-[10px] font-bold text-slate-400 truncate">{sub.ownerName}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
-                                                {getPlanIcon(sub.subscriptionPlan)}
-                                                <span className="font-black uppercase text-xs tracking-tight">{sub.subscriptionPlan}</span>
-                                            </div>
-                                            <p className="text-[10px] font-bold text-slate-400">Expires: {formatDate(sub.planExpiresAt)}</p>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex flex-col gap-2">
-                                            {/* Payment Requests */}
-                                            {sub.pendingSubscription?.status === 'Pending' && (
-                                                <div className="flex items-center gap-2">
-                                                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">Payment Proof</span>
-                                                    <button 
-                                                        onClick={() => { setSelectedUser(sub); setModalType('payment'); }}
-                                                        className="text-[9px] font-black text-indigo-600 uppercase hover:underline"
-                                                    >
-                                                        Review & Activate
-                                                    </button>
-                                                </div>
-                                            )}
+                                ))}
 
-                                            {/* Cancellation Requests */}
-                                            {sub.cancellationRequest?.status === 'Pending' && (
-                                                <div className="flex items-center gap-2">
-                                                    <span className="px-3 py-1 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">Cancel Request</span>
-                                                    <button 
-                                                        onClick={() => { setSelectedUser(sub); setModalType('cancel'); }}
-                                                        className="text-[9px] font-black text-rose-600 uppercase hover:underline"
+                            {!loading &&
+                                filteredSubs.map((sub) => (
+                                    <tr key={sub._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                        <td className="px-4 py-4">
+                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{sub.shopName}</p>
+                                            <p className="text-xs text-slate-500">{sub.ownerName} • {sub.phone}</p>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${planBadgeClass(sub.subscriptionPlan)}`}>
+                                                {sub.subscriptionPlan || 'Free'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">
+                                            {sub.pendingSubscription?.status || 'None'}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">
+                                            {sub.cancellationRequest?.status || 'None'}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">{formatDate(sub.planExpiresAt)}</td>
+                                        <td className="px-4 py-4 text-sm text-slate-600 dark:text-slate-300">{sub.isSuspended ? 'Suspended' : 'Active'}</td>
+                                        <td className="px-4 py-4">
+                                            <div className="flex flex-wrap gap-2">
+                                                {sub.pendingSubscription?.status === 'Pending' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedUser(sub);
+                                                            setModalType('payment');
+                                                        }}
+                                                        className="inline-flex rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
                                                     >
-                                                        Process
+                                                        Verify
                                                     </button>
-                                                </div>
-                                            )}
+                                                )}
 
-                                            {/* Refund Needed */}
-                                            {sub.cancellationRequest?.status === 'Approved' && !sub.cancellationRequest.refundUtr && (
-                                                <button 
-                                                    onClick={() => { setSelectedUser(sub); setModalType('refund'); }}
-                                                    className="px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 w-fit hover:bg-emerald-100 transition-all"
+                                                {sub.cancellationRequest?.status === 'Pending' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedUser(sub);
+                                                            setModalType('cancel');
+                                                        }}
+                                                        className="inline-flex rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+                                                    >
+                                                        Review Cancel
+                                                    </button>
+                                                )}
+
+                                                {sub.cancellationRequest?.status === 'Approved' && !sub.cancellationRequest?.refundUtr && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedUser(sub);
+                                                            setModalType('refund');
+                                                        }}
+                                                        className="inline-flex rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                                                    >
+                                                        Refund
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedUser(sub);
+                                                        setEditData({
+                                                            plan: sub.subscriptionPlan,
+                                                            expiresAt: sub.planExpiresAt?.split('T')[0] || '',
+                                                        });
+                                                        setModalType('edit');
+                                                    }}
+                                                    className="inline-flex rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                                                 >
-                                                    <DollarSign size={10} /> Needs Refund
+                                                    Edit
                                                 </button>
-                                            )}
 
-                                            {!sub.pendingSubscription?.status && sub.cancellationRequest?.status === 'None' && (
-                                                <span className="text-[10px] font-bold text-slate-300">Clean Lifecycle</span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-indigo-600 transition-all" title="Edit Profile">
-                                                <Edit2 size={14} />
-                                            </button>
-                                            <button className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-rose-600 transition-all" title="Terminate">
-                                                <Trash2 size={14} />
-                                            </button>
-                                            <button className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-rose-600 transition-all" title="Suspend">
-                                                <Ban size={14} />
-                                            </button>
-                                        </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedUser(sub);
+                                                        setModalType('terminate');
+                                                    }}
+                                                    className="inline-flex rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700"
+                                                >
+                                                    Terminate
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleToggleSuspension(sub._id)}
+                                                    className="inline-flex rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                                >
+                                                    {sub.isSuspended ? 'Unsuspend' : 'Suspend'}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+
+                            {!loading && filteredSubs.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
+                                        No subscription records found.
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {/* Payment Verification Modal */}
-            <Modal
-                isOpen={modalType === 'payment'}
-                onClose={() => setModalType(null)}
-                title="Verify Purchase Payment"
-                className="max-w-2xl"
-            >
+            <Modal isOpen={modalType === 'payment'} onClose={() => setModalType(null)} title="Verify Payment" className="max-w-3xl">
                 {selectedUser && (
-                    <div className="space-y-6 py-4">
-                        <div className="flex justify-between items-center p-6 bg-indigo-50 dark:bg-indigo-500/5 rounded-3xl border border-indigo-100 dark:border-indigo-500/20">
-                            <div>
-                                <p className="text-[10px] font-black uppercase text-indigo-600 tracking-widest mb-1">Purchasing Plan</p>
-                                <h3 className="text-2xl font-black uppercase tracking-tight">{selectedUser.pendingSubscription.plan}</h3>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Requested On</p>
-                                <p className="font-bold text-slate-700">{formatDate(selectedUser.pendingSubscription.requestedAt)}</p>
-                            </div>
-                        </div>
-                        
-                        <div className="aspect-video w-full rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-                            <img 
-                                src={selectedUser.pendingSubscription.screenshot} 
-                                alt="Payment Proof" 
-                                className="w-full h-full object-contain"
-                            />
+                    <div className="space-y-4 py-3">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/40">
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedUser.shopName}</p>
+                            <p className="text-xs text-slate-500">Requested plan: {selectedUser.pendingSubscription?.plan || 'N/A'}</p>
                         </div>
 
-                        <div className="flex gap-4">
-                            <button 
+                        {selectedUser.pendingSubscription?.screenshot && (
+                            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                                <img
+                                    src={selectedUser.pendingSubscription.screenshot}
+                                    alt="Payment screenshot"
+                                    className="h-64 w-full object-contain bg-slate-100 dark:bg-slate-900"
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                            <button
                                 onClick={() => handleVerifyPayment(selectedUser._id, 'Rejected')}
                                 disabled={submitting}
-                                className="flex-1 h-16 bg-slate-100 dark:bg-slate-800 text-rose-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-rose-50 transition-all disabled:opacity-50"
+                                className="inline-flex h-10 flex-1 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-rose-600 hover:bg-rose-50 dark:border-slate-700 dark:hover:bg-rose-500/10"
                             >
                                 Reject
                             </button>
-                            <button 
+                            <button
                                 onClick={() => handleVerifyPayment(selectedUser._id, 'Approved')}
                                 disabled={submitting}
-                                className="flex-[2] h-16 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-700 shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3"
+                                className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-700"
                             >
-                                {submitting ? 'Activating...' : 'Approve & Activate'} <Check size={20} />
+                                Approve
                             </button>
                         </div>
                     </div>
                 )}
             </Modal>
 
-            {/* Cancellation Modal */}
-            <Modal
-                isOpen={modalType === 'cancel'}
-                onClose={() => setModalType(null)}
-                title="Process Cancellation"
-                className="max-w-xl"
-            >
+            <Modal isOpen={modalType === 'cancel'} onClose={() => setModalType(null)} title="Cancellation Request" className="max-w-xl">
                 {selectedUser && (
-                    <div className="space-y-6 py-4">
-                        <div className="p-6 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 space-y-4">
-                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Merchant Reason</p>
-                            <p className="text-lg font-bold text-slate-800 dark:text-white leading-relaxed italic">
-                                "{selectedUser.cancellationRequest.reason}"
+                    <div className="space-y-4 py-3">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/40">
+                            <p className="text-xs text-slate-500">Merchant Reason</p>
+                            <p className="mt-1 text-sm text-slate-800 dark:text-slate-200">
+                                {selectedUser.cancellationRequest?.reason || 'No reason provided'}
                             </p>
                         </div>
 
-                        <div className="space-y-4">
-                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Rejection Reason (If rejecting)</p>
-                            <textarea 
-                                placeholder="Explain why the cancellation is being rejected..."
-                                className="input-field h-28 pt-4 resize-none"
+                        <div>
+                            <label className="mb-1 block text-xs font-semibold text-slate-500">Rejection Reason (required if rejecting)</label>
+                            <textarea
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
+                                rows={4}
+                                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                placeholder="Explain why this cancellation is rejected"
                             />
                         </div>
 
-                        <div className="flex gap-4">
-                            <button 
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                            <button
                                 onClick={() => handleProcessCancellation(selectedUser._id, 'Rejected')}
-                                disabled={submitting || !rejectReason}
-                                className="flex-1 h-16 bg-slate-100 dark:bg-slate-800 text-rose-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-rose-50 transition-all disabled:opacity-50"
+                                disabled={submitting || !rejectReason.trim()}
+                                className="inline-flex h-10 flex-1 items-center justify-center rounded-lg border border-slate-300 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-rose-500/10"
                             >
                                 Reject Request
                             </button>
-                            <button 
+                            <button
                                 onClick={() => handleProcessCancellation(selectedUser._id, 'Approved')}
                                 disabled={submitting}
-                                className="flex-[2] h-16 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-700 shadow-xl shadow-emerald-500/20"
+                                className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700"
                             >
-                                {submitting ? 'Processing...' : 'Approve & Refund'}
+                                Approve Request
                             </button>
                         </div>
                     </div>
                 )}
             </Modal>
 
-            {/* Refund Modal */}
-            <Modal
-                isOpen={modalType === 'refund'}
-                onClose={() => setModalType(null)}
-                title="Complete Refund Process"
-                className="max-w-md"
-            >
-                <div className="space-y-6 py-4">
-                    <div className="text-center space-y-2">
-                        <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <CreditCard size={32} />
-                        </div>
-                        <h3 className="text-xl font-black uppercase tracking-tight">Manual Payment Issued?</h3>
-                        <p className="text-slate-500 text-sm font-medium">Record the transaction ID to notify the owner and terminate the license.</p>
+            <Modal isOpen={modalType === 'refund'} onClose={() => setModalType(null)} title="Refund UTR" className="max-w-md">
+                <div className="space-y-3 py-3">
+                    <input
+                        type="text"
+                        value={utrNumber}
+                        onChange={(e) => setUtrNumber(e.target.value)}
+                        placeholder="Enter refund UTR number"
+                        className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    />
+
+                    <button
+                        onClick={handleRefund}
+                        disabled={submitting || !utrNumber.trim()}
+                        className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                        Save Refund UTR
+                    </button>
+                </div>
+            </Modal>
+
+            <Modal isOpen={modalType === 'edit'} onClose={() => setModalType(null)} title="Edit Subscription" className="max-w-md">
+                <div className="space-y-3 py-3">
+                    <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-500">Plan</label>
+                        <select
+                            value={editData.plan}
+                            onChange={(e) => setEditData((prev) => ({ ...prev, plan: e.target.value }))}
+                            className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                        >
+                            <option value="Free">Free</option>
+                            <option value="Professional">Professional</option>
+                            <option value="Enterprise">Enterprise</option>
+                        </select>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">UTR / Bank Transaction ID</label>
-                        <input 
-                            type="text"
-                            placeholder="e.g. 123456789012"
-                            className="input-field h-16 text-center font-black text-xl tracking-widest"
-                            value={utrNumber}
-                            onChange={(e) => setUtrNumber(e.target.value)}
+                    <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-500">Expiry Date</label>
+                        <input
+                            type="date"
+                            value={editData.expiresAt}
+                            onChange={(e) => setEditData((prev) => ({ ...prev, expiresAt: e.target.value }))}
+                            className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                         />
                     </div>
 
-                    <button 
-                        onClick={handleRefund}
-                        disabled={submitting || !utrNumber}
-                        className="w-full h-16 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl disabled:opacity-50"
+                    <button
+                        onClick={handleUpdateSub}
+                        disabled={submitting}
+                        className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
                     >
-                        {submitting ? 'Updating...' : 'Finish & Terminate Plan'}
+                        Save Changes
+                    </button>
+                </div>
+            </Modal>
+
+            <Modal isOpen={modalType === 'terminate'} onClose={() => setModalType(null)} title="Terminate Subscription" className="max-w-md">
+                <div className="space-y-3 py-3">
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                        This will reset the merchant to free tier immediately.
+                    </p>
+                    <button
+                        onClick={handleTerminate}
+                        disabled={submitting}
+                        className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-rose-600 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                    >
+                        Confirm Termination
                     </button>
                 </div>
             </Modal>

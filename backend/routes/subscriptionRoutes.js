@@ -10,7 +10,10 @@ const {
     requestCancellation,
     processCancellation,
     updateRefundUtr,
-    getSubscriptions
+    getSubscriptions,
+    updateSubscription,
+    terminateSubscription,
+    toggleSuspension
 } = require('../controllers/subscriptionController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
@@ -29,5 +32,8 @@ router.post('/admin/plans', protect, adminOnly, upsertPlan);
 router.get('/admin/all', protect, adminOnly, getSubscriptions);
 router.post('/admin/process-cancel', protect, adminOnly, processCancellation);
 router.post('/admin/refund', protect, adminOnly, updateRefundUtr);
+router.put('/admin/update', protect, adminOnly, updateSubscription);
+router.post('/admin/terminate', protect, adminOnly, terminateSubscription);
+router.post('/admin/toggle-suspension', protect, adminOnly, toggleSuspension);
 
 module.exports = router;

@@ -188,6 +188,56 @@ exports.updateRefundUtr = async (req, res) => {
     }
 };
 
+// @desc    Admin: Update Subscription (Manual)
+exports.updateSubscription = async (req, res) => {
+    try {
+        const { userId, plan, expiresAt } = req.body;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        if (plan) user.subscriptionPlan = plan;
+        if (expiresAt) user.planExpiresAt = new Date(expiresAt);
+
+        await user.save();
+        res.json({ success: true, message: 'Subscription updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Admin: Terminate Subscription
+exports.terminateSubscription = async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.subscriptionPlan = 'Free';
+        user.planExpiresAt = null;
+        user.planActivatedAt = null;
+
+        await user.save();
+        res.json({ success: true, message: 'Subscription terminated. User reset to Free plan.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Admin: Toggle User Suspension
+exports.toggleSuspension = async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.isSuspended = !user.isSuspended;
+        await user.save();
+        res.json({ success: true, message: `Account ${user.isSuspended ? 'suspended' : 'unsuspended'} successfully` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // @desc    Admin: Get All Subscriptions
 exports.getSubscriptions = async (req, res) => {
     try {

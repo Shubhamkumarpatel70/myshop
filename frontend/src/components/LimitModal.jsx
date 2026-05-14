@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, X, ArrowRight, ShieldCheck, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,18 @@ const LimitModal = ({ isOpen, onClose, limitType, isTrialUsed }) => {
     const navigate = useNavigate();
     const { updateUser } = useAuth();
     const [loading, setLoading] = React.useState(false);
+
+    // Prevent body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -30,60 +42,70 @@ const LimitModal = ({ isOpen, onClose, limitType, isTrialUsed }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                onClick={onClose}
-                className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-            />
-            <motion.div 
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                className="relative w-full max-w-lg bg-white dark:bg-slate-950 rounded-[3rem] shadow-2xl overflow-hidden p-10 text-center"
-            >
-                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-indigo-600">
-                    <Zap size={40} className="animate-pulse" />
-                </div>
-                
-                <h2 className="text-3xl font-black tracking-tighter uppercase mb-4">
-                    {limitType === 'product' ? 'Product Limit Reached' : 'Staff Limit Reached'}
-                </h2>
-                
-                <p className="text-slate-500 font-medium mb-10 leading-relaxed">
-                    Your current plan has reached its maximum capacity. To continue expanding your business, you can upgrade or activate your free trial.
-                </p>
-
-                <div className="space-y-4">
-                    {!isTrialUsed ? (
-                        <button 
-                            onClick={handleActivateTrial}
-                            disabled={loading}
-                            className="w-full h-16 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 group"
-                        >
-                            {loading ? 'Activating...' : 'Activate 7-Day Free Trial'} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                        </button>
-                    ) : (
-                        <button 
-                            onClick={() => {
-                                navigate('/dashboard/pricing');
-                                onClose();
-                            }}
-                            className="w-full h-16 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 group"
-                        >
-                            Explore Growth Plans <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                        </button>
-                    )}
+        <AnimatePresence>
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="absolute inset-0 bg-slate-950/40 backdrop-blur-[4px]"
+                />
+                <motion.div 
+                    initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 400 }}
+                    className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-[0_32px_120px_rgba(0,0,0,0.25)] overflow-hidden border border-slate-200 dark:border-slate-800"
+                >
+                    {/* Decorative Top Border */}
+                    <div className="h-2 w-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 shrink-0" />
                     
-                    <button 
-                        onClick={onClose}
-                        className="w-full h-14 bg-slate-50 dark:bg-slate-900 text-slate-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:text-slate-600 transition-colors"
-                    >
-                        Maybe Later
-                    </button>
-                </div>
-            </motion.div>
-        </div>
+                    <div className="p-8 md:p-12 text-center">
+                        <div className="w-24 h-24 bg-amber-50 dark:bg-amber-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-amber-600 ring-8 ring-amber-500/5">
+                            <Zap size={48} className="animate-pulse" />
+                        </div>
+                        
+                        <h2 className="text-3xl font-black tracking-tighter uppercase mb-4 text-slate-900 dark:text-white leading-tight">
+                            {limitType === 'product' ? 'Product Node Limit Reached' : 'Staff Session Limit Reached'}
+                        </h2>
+                        
+                        <p className="text-slate-500 dark:text-slate-400 font-medium mb-10 leading-relaxed max-w-sm mx-auto">
+                            Your current merchant node has reached its data capacity. Upgrade your license to unlock unlimited operational scalability.
+                        </p>
+
+                        <div className="space-y-4 max-w-sm mx-auto">
+                            {!isTrialUsed ? (
+                                <button 
+                                    onClick={handleActivateTrial}
+                                    disabled={loading}
+                                    className="w-full h-18 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 group disabled:opacity-50"
+                                >
+                                    {loading ? 'Activating...' : 'Activate 7-Day Trial'} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={() => {
+                                        navigate('/dashboard/pricing');
+                                        onClose();
+                                    }}
+                                    className="w-full h-18 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 group"
+                                >
+                                    Scale Infrastructure <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                </button>
+                            )}
+                            
+                            <button 
+                                onClick={onClose}
+                                className="w-full h-14 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                            >
+                                Stay on current tier
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
     );
 };
 

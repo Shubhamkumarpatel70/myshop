@@ -1,106 +1,141 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, MessageSquare, Send, HelpCircle } from 'lucide-react';
+import { Mail, MapPin, Phone, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Contact = () => {
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        toast.success("Message sent! We'll get back to you soon.");
-        e.target.reset();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        
+        try {
+            const res = await api.post('/queries', data);
+            if (res.data.success) {
+                toast.success('Message sent. Our team will contact you soon.');
+                e.target.reset();
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to send message');
+        }
     };
 
     return (
-        <div className="pt-20 pb-32">
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-20">
-                    <h1 className="text-4xl md:text-6xl font-extrabold mb-6">Get in Touch</h1>
-                    <p className="text-xl text-secondary-500 max-w-2xl mx-auto">
-                        Have questions about StockSaathi? Our team is here to help you scale your business.
-                    </p>
+        <main className="overflow-x-hidden bg-slate-50 pb-20 pt-32 text-slate-900 dark:bg-[#020617] dark:text-white">
+            <section className="relative mx-auto max-w-7xl px-4 sm:px-6">
+                <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+                    <div className="absolute -left-24 top-0 h-64 w-64 rounded-full bg-indigo-500/12 blur-3xl" />
+                    <div className="absolute -right-24 top-20 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                    {/* Contact Info */}
-                    <div className="space-y-8">
-                        <div className="flex gap-6">
-                            <div className="w-14 h-14 bg-primary-50 dark:bg-primary-900/20 rounded-2xl flex items-center justify-center text-primary-600 flex-shrink-0">
-                                <Mail size={28} />
-                            </div>
-                            <div>
-                                <h4 className="text-lg font-bold">Email Us</h4>
-                                <p className="text-secondary-500">support@myshop.com</p>
-                                <p className="text-secondary-500">sales@myshop.com</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-6">
-                            <div className="w-14 h-14 bg-accent-50 dark:bg-accent-900/20 rounded-2xl flex items-center justify-center text-accent-600 flex-shrink-0">
-                                <Phone size={28} />
-                            </div>
-                            <div>
-                                <h4 className="text-lg font-bold">Call Us</h4>
-                                <p className="text-secondary-500">+1 (234) 567-890</p>
-                                <p className="text-secondary-500">Mon-Fri, 9am - 6pm</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-6">
-                            <div className="w-14 h-14 bg-primary-50 dark:bg-primary-900/20 rounded-2xl flex items-center justify-center text-primary-600 flex-shrink-0">
-                                <MapPin size={28} />
-                            </div>
-                            <div>
-                                <h4 className="text-lg font-bold">Visit Us</h4>
-                                <p className="text-secondary-500">123 Business Avenue, Suite 100</p>
-                                <p className="text-secondary-500">Tech City, 54321</p>
-                            </div>
-                        </div>
+                <div className="mx-auto max-w-3xl text-center">
+                    <motion.p
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="inline-flex rounded-full border border-indigo-100 bg-white px-4 py-2 text-xs font-semibold text-indigo-700 shadow-sm dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200"
+                    >
+                        Contact Us
+                    </motion.p>
+                    <motion.h1
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="mt-5 font-outfit text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl"
+                    >
+                        Reach our support and sales team
+                    </motion.h1>
+                    <motion.p
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300"
+                    >
+                        Tell us about your requirement, and we will help you with onboarding, pricing, or product setup.
+                    </motion.p>
+                </div>
 
-                        <div className="card mt-12 bg-secondary-900 text-white border-none">
-                            <div className="flex gap-4 mb-4">
-                                <HelpCircle className="text-primary-400" />
-                                <h4 className="font-bold">Need instant help?</h4>
+                <div className="mt-14 grid gap-6 lg:grid-cols-12">
+                    <div className="space-y-4 lg:col-span-5">
+                        {[
+                            { icon: <Mail className="h-5 w-5 text-indigo-600" />, title: 'Email', value: 'support@stocksaathi.com' },
+                            { icon: <Phone className="h-5 w-5 text-indigo-600" />, title: 'Phone', value: '+91 90000 00000' },
+                            { icon: <MapPin className="h-5 w-5 text-indigo-600" />, title: 'Address', value: 'Mumbai, India' },
+                        ].map((item) => (
+                            <div key={item.title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
+                                <div className="mb-3 inline-flex rounded-xl bg-indigo-50 p-2.5 dark:bg-indigo-500/15">{item.icon}</div>
+                                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400">{item.title}</h3>
+                                <p className="mt-1 text-base font-semibold text-slate-900 dark:text-white">{item.value}</p>
                             </div>
-                            <p className="text-secondary-400 text-sm mb-6">
-                                Check our documentation for quick answers to common questions.
-                            </p>
-                            <button className="text-sm font-bold text-primary-400 hover:underline">
-                                Browse Help Center →
-                            </button>
-                        </div>
+                        ))}
                     </div>
 
-                    {/* Contact Form */}
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="lg:col-span-2 card shadow-2xl"
+                    <motion.div
+                        initial={{ opacity: 0, y: 14 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="lg:col-span-7"
                     >
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <form
+                            onSubmit={handleSubmit}
+                            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 sm:p-8"
+                        >
+                            <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block text-sm font-bold mb-2 uppercase tracking-wide">Full Name</label>
-                                    <input type="text" required className="input-field" placeholder="John Doe" />
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Name</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        required
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        placeholder="Your name"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold mb-2 uppercase tracking-wide">Email Address</label>
-                                    <input type="email" required className="input-field" placeholder="john@example.com" />
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        required
+                                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                        placeholder="you@company.com"
+                                    />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold mb-2 uppercase tracking-wide">Subject</label>
-                                <input type="text" required className="input-field" placeholder="How can we help?" />
+
+                            <div className="mt-4">
+                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Subject</label>
+                                <input
+                                    type="text"
+                                    name="subject"
+                                    required
+                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                    placeholder="What can we help with?"
+                                />
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold mb-2 uppercase tracking-wide">Message</label>
-                                <textarea required className="input-field h-40 pt-4" placeholder="Tell us more about your business needs..."></textarea>
+
+                            <div className="mt-4">
+                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Message</label>
+                                <textarea
+                                    name="message"
+                                    required
+                                    rows={6}
+                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                    placeholder="Share your requirements..."
+                                />
                             </div>
-                            <button type="submit" className="btn btn-primary w-full py-4 text-lg font-bold">
-                                Send Message <Send size={20} />
+
+                            <button
+                                type="submit"
+                                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                            >
+                                Send Message
+                                <Send size={16} />
                             </button>
                         </form>
                     </motion.div>
                 </div>
             </section>
-        </div>
+        </main>
     );
 };
 

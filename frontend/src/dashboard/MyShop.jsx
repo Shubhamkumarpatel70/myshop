@@ -55,14 +55,14 @@ const MyShop = () => {
     return (
         <div className="space-y-8 pb-10">
             {/* Premium Header Card */}
-            <div className="relative overflow-hidden bg-white dark:bg-secondary-900 p-6 md:p-10 rounded-[2.5rem] shadow-2xl border border-secondary-100 dark:border-secondary-800">
+            <div className="relative overflow-hidden bg-white dark:bg-secondary-900 p-6 md:p-8 rounded-3xl shadow-xl border border-secondary-100 dark:border-secondary-800">
                 {/* Abstract Background Shapes */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
 
                 <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
                     <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left w-full lg:w-auto">
-                        <div className="w-24 h-24 md:w-28 md:h-28 bg-gradient-to-br from-primary-500 to-primary-700 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl shadow-primary-500/20 shrink-0">
+                        <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary-500/20 shrink-0">
                             <Globe size={48} className="animate-pulse-slow" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -86,21 +86,43 @@ const MyShop = () => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                        <button 
-                            onClick={handleShare}
-                            className="w-full sm:w-auto px-8 py-5 bg-black dark:bg-white text-white dark:text-black rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl hover:scale-105 transition-all group"
-                        >
-                            <Share2 size={18} className="group-hover:rotate-12 transition-transform" /> Share Store
-                        </button>
-                        <a 
-                            href={shopLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="w-full sm:w-auto px-8 py-5 bg-secondary-100 dark:bg-secondary-800 text-secondary-600 dark:text-secondary-300 rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-secondary-200 dark:hover:bg-secondary-700 transition-all"
-                        >
-                            <ExternalLink size={18} /> View Public
-                        </a>
+                    <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                        {/* QR Code Section */}
+                        <div className="bg-white dark:bg-secondary-800 p-3 rounded-2xl border border-secondary-100 dark:border-secondary-700 shadow-lg flex flex-col items-center justify-center group/qr">
+                            <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(shopLink)}`}
+                                alt="Shop QR Code"
+                                className="w-20 h-20 md:w-24 md:h-24"
+                            />
+                            <span className="text-[8px] font-black uppercase tracking-widest mt-2 text-secondary-400 group-hover/qr:text-primary-600 transition-colors">Scan to visit</span>
+                        </div>
+
+                        <div className="flex flex-col gap-3 flex-1 sm:flex-initial">
+                            <div className="grid grid-cols-2 gap-3">
+                                <button 
+                                    onClick={handleShare}
+                                    className="px-6 py-4 bg-black dark:bg-white text-white dark:text-black rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 shadow-xl hover:scale-105 transition-all group"
+                                >
+                                    <Share2 size={16} /> Share
+                                </button>
+                                <a 
+                                    href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-6 py-4 bg-emerald-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 shadow-xl hover:scale-105 transition-all"
+                                >
+                                    <MessageSquare size={16} /> WhatsApp
+                                </a>
+                            </div>
+                            <a 
+                                href={shopLink} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="w-full px-6 py-4 bg-secondary-100 dark:bg-secondary-800 text-secondary-600 dark:text-secondary-300 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-secondary-200 dark:hover:bg-secondary-700 transition-all border border-secondary-200 dark:border-secondary-700"
+                            >
+                                <ExternalLink size={16} /> Open Public Store
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -130,7 +152,7 @@ const MyShop = () => {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: idx * 0.05 }}
-                            className="bg-white dark:bg-secondary-900 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all border border-secondary-100 dark:border-secondary-800 group relative"
+                            className="bg-white dark:bg-secondary-900 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-secondary-100 dark:border-secondary-800 group relative"
                         >
                             {/* Product Image Holder */}
                             <div className="h-64 overflow-hidden relative bg-secondary-50 dark:bg-secondary-950">

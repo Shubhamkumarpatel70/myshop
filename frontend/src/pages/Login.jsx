@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, Lock, Mail, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const Login = () => {
-    const [loginMethod, setLoginMethod] = useState('password'); // 'password' or 'mpin'
+    const [loginMethod, setLoginMethod] = useState('password');
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [mpin, setMpin] = useState(['', '', '', '']);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -15,21 +15,15 @@ const Login = () => {
 
     const handleMpinChange = (index, value) => {
         if (value.length > 1) return;
-        const newMpin = [...mpin];
-        newMpin[index] = value;
-        setMpin(newMpin);
-
-        // Auto focus next
-        if (value && index < 3) {
-            const nextInput = document.getElementById(`mpin-${index + 1}`);
-            nextInput?.focus();
-        }
+        const next = [...mpin];
+        next[index] = value.replace(/\D/g, '');
+        setMpin(next);
+        if (value && index < 3) document.getElementById(`mpin-${index + 1}`)?.focus();
     };
 
     const handleKeyDown = (index, e) => {
         if (e.key === 'Backspace' && !mpin[index] && index > 0) {
-            const prevInput = document.getElementById(`mpin-${index - 1}`);
-            prevInput?.focus();
+            document.getElementById(`mpin-${index - 1}`)?.focus();
         }
     };
 
@@ -39,136 +33,130 @@ const Login = () => {
         try {
             const mpinValue = loginMethod === 'mpin' ? mpin.join('') : null;
             const result = await login(formData.email, formData.password, mpinValue);
-            
             if (result.success) {
-                toast.success('Welcome back!');
+                toast.success('Login successful');
                 navigate('/dashboard');
             } else {
                 toast.error(result.message || 'Invalid credentials');
             }
-        } catch (error) {
-            toast.error('An error occurred during login');
+        } catch {
+            toast.error('Unable to login right now');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-secondary-50 dark:bg-secondary-950 p-4">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-md"
-            >
-                <div className="text-center mb-10">
-                    <Link to="/" className="inline-flex items-center gap-3 mb-6">
-                        <img src="/favicon.png" alt="StockSaathi" className="w-10 h-10 object-contain" />
-                        <span className="text-3xl font-bold tracking-tight">Stock<span className="text-primary-600">Saathi</span></span>
+        <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-100/60 px-4 py-8 text-slate-900 sm:px-6">
+            <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-5xl items-center gap-8 rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8 lg:grid-cols-2 lg:p-10">
+                <section className="rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-sky-600 p-6 text-white sm:p-8">
+                    <Link to="/" className="inline-flex items-center gap-3 text-white">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+                            <ShoppingBag size={20} />
+                        </span>
+                        <span className="font-outfit text-xl font-extrabold tracking-tight">StockSaathi</span>
                     </Link>
-                    <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">Welcome Back</h1>
-                    <p className="text-secondary-500 dark:text-secondary-400 mt-2">Access your shop dashboard securely.</p>
-                </div>
+                    <h1 className="mt-8 font-outfit text-3xl font-bold leading-tight sm:text-4xl">Welcome back</h1>
+                    <p className="mt-3 text-sm leading-relaxed text-indigo-100 sm:text-base">
+                        Securely access your dashboard to manage billing, stock, and team operations.
+                    </p>
+                    <ul className="mt-8 space-y-2 text-sm text-indigo-100">
+                        <li>Role-based access for staff and owners</li>
+                        <li>Fast checkout and live stock sync</li>
+                        <li>Reports and daily business insights</li>
+                    </ul>
+                </section>
 
-                <div className="card shadow-2xl relative overflow-hidden">
-                    {/* Login Method Toggle */}
-                    <div className="flex bg-secondary-100 dark:bg-secondary-800 p-1 rounded-2xl mb-8">
-                        <button 
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                    <div className="mb-5 flex rounded-lg border border-slate-200 bg-slate-100 p-1">
+                        <button
+                            type="button"
                             onClick={() => setLoginMethod('password')}
-                            className={`flex-1 py-2.5 rounded-xl text-sm font-black transition-all ${loginMethod === 'password' ? 'bg-white dark:bg-secondary-900 shadow-sm text-primary-600' : 'text-secondary-500'}`}
+                            className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${loginMethod === 'password' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
                         >
                             Password
                         </button>
-                        <button 
+                        <button
+                            type="button"
                             onClick={() => setLoginMethod('mpin')}
-                            className={`flex-1 py-2.5 rounded-xl text-sm font-black transition-all ${loginMethod === 'mpin' ? 'bg-white dark:bg-secondary-900 shadow-sm text-primary-600' : 'text-secondary-500'}`}
+                            className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${loginMethod === 'mpin' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
                         >
-                            mPin
+                            mPIN
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <motion.form onSubmit={handleSubmit} className="space-y-4" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-secondary-500 mb-2">Email Address</label>
+                            <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
                             <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
+                                <Mail size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                 <input
                                     type="email"
                                     required
-                                    className="input-field pl-12 h-14"
-                                    placeholder="owner@example.com"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    placeholder="owner@shop.com"
+                                    className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-500"
                                 />
                             </div>
                         </div>
 
                         {loginMethod === 'password' ? (
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                            >
-                                <div className="flex justify-between mb-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-secondary-500">Security Password</label>
-                                    <a href="#" className="text-[10px] font-black uppercase tracking-widest text-primary-600 hover:underline">Reset?</a>
-                                </div>
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" />
+                                    <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                     <input
                                         type="password"
-                                        required={loginMethod === 'password'}
-                                        className="input-field pl-12 h-14"
-                                        placeholder="••••••••"
+                                        required
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        placeholder="Enter password"
+                                        className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-500"
                                     />
                                 </div>
-                            </motion.div>
+                            </div>
                         ) : (
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="space-y-4"
-                            >
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-secondary-500 text-center">Enter 4-Digit Security mPin</label>
-                                <div className="flex justify-center gap-4">
-                                    {mpin.map((digit, i) => (
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-slate-700">4-digit mPIN</label>
+                                <div className="flex justify-between gap-2 sm:gap-3">
+                                    {mpin.map((digit, index) => (
                                         <input
-                                            key={i}
-                                            id={`mpin-${i}`}
+                                            key={index}
+                                            id={`mpin-${index}`}
                                             type="text"
                                             maxLength="1"
                                             inputMode="numeric"
-                                            className="w-14 h-16 text-center text-2xl font-black bg-secondary-50 dark:bg-secondary-800 border-2 border-secondary-100 dark:border-secondary-700 rounded-2xl focus:border-primary-600 focus:ring-0 transition-all"
+                                            required
                                             value={digit}
-                                            onChange={(e) => handleMpinChange(i, e.target.value)}
-                                            onKeyDown={(e) => handleKeyDown(i, e) }
-                                            required={loginMethod === 'mpin'}
+                                            onChange={(e) => handleMpinChange(index, e.target.value)}
+                                            onKeyDown={(e) => handleKeyDown(index, e)}
+                                            className="h-12 w-full rounded-lg border border-slate-300 bg-white text-center text-xl font-bold text-slate-900 outline-none transition-colors focus:border-indigo-500"
                                         />
                                     ))}
                                 </div>
-                            </motion.div>
+                            </div>
                         )}
 
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="btn btn-primary w-full h-14 font-black uppercase tracking-widest shadow-xl shadow-primary-500/20"
+                            className="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
                         >
-                            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Access Dashboard <ArrowRight className="w-5 h-5 ml-2" /></>}
+                            {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Login'}
+                            {!isSubmitting && <ArrowRight size={16} />}
                         </button>
-                    </form>
+                    </motion.form>
 
-                    <div className="mt-8 text-center">
-                        <p className="text-sm text-secondary-500">
-                            Don't have an account?{' '}
-                            <Link to="/register" className="text-primary-600 font-bold hover:underline">
-                                Create a Shop
-                            </Link>
-                        </p>
-                    </div>
-                </div>
-            </motion.div>
-        </div>
+                    <p className="mt-4 text-center text-sm text-slate-500">
+                        New to StockSaathi?{' '}
+                        <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-700">
+                            Create account
+                        </Link>
+                    </p>
+                </section>
+            </div>
+        </main>
     );
 };
 

@@ -4,7 +4,7 @@ const DB_NAME = 'MyShopPOS';
 const SALES_STORE = 'offlineSales';
 const PRODUCTS_STORE = 'cachedProducts';
 
-const dbPromise = openDB(DB_NAME, 1, {
+const dbPromise = openDB(DB_NAME, 2, {
     upgrade(db) {
         if (!db.objectStoreNames.contains(SALES_STORE)) {
             db.createObjectStore(SALES_STORE, { keyPath: 'id', autoIncrement: true });
