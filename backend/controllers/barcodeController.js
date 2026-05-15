@@ -111,7 +111,8 @@ exports.getShopBarcodes = async (req, res) => {
                 used: shop.barcodeUsedCount,
                 limit: currentLimit,
                 isUnlimited: shop.hasBarcodeAddon || currentLimit === Infinity
-            }
+            },
+            booster: shop.pendingSubscription
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

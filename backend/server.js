@@ -64,8 +64,8 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-            "img-src": ["'self'", "data:", "blob:", "res.cloudinary.com", "*.cloudinary.com"],
-            "connect-src": ["'self'", "res.cloudinary.com", "*.cloudinary.com"],
+            "img-src": ["'self'", "data:", "blob:", "res.cloudinary.com", "*.cloudinary.com", "api.qrserver.com"],
+            "connect-src": ["'self'", "res.cloudinary.com", "*.cloudinary.com", "api.qrserver.com"],
         },
     },
 }));

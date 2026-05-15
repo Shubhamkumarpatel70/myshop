@@ -88,7 +88,7 @@ exports.getPendingRequests = async (req, res) => {
 
 exports.verifySubscription = async (req, res) => {
     try {
-        const { userId, status, months = 12 } = req.body;
+        const { userId, status, months = 12, reason = '' } = req.body;
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
@@ -113,8 +113,10 @@ exports.verifySubscription = async (req, res) => {
                 });
             }
             user.pendingSubscription.status = 'None';
+            user.pendingSubscription.rejectReason = '';
         } else {
             user.pendingSubscription.status = 'Rejected';
+            user.pendingSubscription.rejectReason = reason;
         }
 
         await user.save();

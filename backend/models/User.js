@@ -63,6 +63,7 @@ const userSchema = new mongoose.Schema({
         screenshot: { type: String },
         requestedAt: { type: Date },
         status: { type: String, enum: ['None', 'Pending', 'Rejected'], default: 'None' },
+        rejectReason: { type: String, default: '' },
         isAddon: { type: Boolean, default: false }
     },
     subscriptionHistory: [{

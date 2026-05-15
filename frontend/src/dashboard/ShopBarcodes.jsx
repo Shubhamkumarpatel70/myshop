@@ -18,6 +18,7 @@ const ShopBarcodes = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [booster, setBooster] = useState({ status: 'None', rejectReason: '' });
 
     // Booster Modal States
     const [isBoosterModalOpen, setIsBoosterModalOpen] = useState(false);
@@ -45,6 +46,7 @@ const ShopBarcodes = () => {
             const res = await api.get('/barcodes/shop');
             setBarcodes(res.data.data);
             if (res.data.usage) setUsage(res.data.usage);
+            if (res.data.booster) setBooster(res.data.booster);
         } catch (error) {
             toast.error("Network Link Failure");
         } finally {
@@ -276,12 +278,70 @@ const ShopBarcodes = () => {
                     {!usage.isUnlimited && usage.used >= usage.limit && (
                         <button
                             onClick={() => setIsBoosterModalOpen(true)}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
+                            disabled={booster.status === 'Pending'}
+                            className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white shadow-lg transition-all ${booster.status === 'Pending' ? 'bg-amber-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20'}`}
                         >
-                            <CreditCard size={18} /> Add Barcode Booster
+                            <CreditCard size={18} /> {booster.status === 'Pending' ? 'Booster Pending...' : 'Add Barcode Booster'}
                         </button>
                     )}
                 </div>
+
+            {/* Booster Protocol Status Section */}
+            {(booster.status === 'Pending' || booster.status === 'Rejected' || usage.isUnlimited) && (
+                <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="grid grid-cols-1 gap-4"
+                >
+                    {booster.status === 'Pending' && (
+                        <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-6 flex items-center gap-6 shadow-sm">
+                            <div className="w-12 h-12 bg-amber-200 dark:bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-700 dark:text-amber-400 shrink-0 animate-pulse">
+                                <Zap size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">Booster Synchronization In Progress</h4>
+                                <p className="text-sm font-bold text-amber-600 dark:text-amber-500/80 mt-1">
+                                    Our administrative team is verifying your identity signal. Unlimited access will be granted shortly.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {booster.status === 'Rejected' && (
+                        <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-2xl p-6 flex items-center gap-6 shadow-sm">
+                            <div className="w-12 h-12 bg-rose-200 dark:bg-rose-500/20 rounded-xl flex items-center justify-center text-rose-700 dark:text-rose-400 shrink-0">
+                                <AlertCircle size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-black uppercase tracking-widest text-rose-700 dark:text-rose-400">Booster Identity Rejected</h4>
+                                <p className="text-sm font-bold text-rose-600 dark:text-rose-500/80 mt-1">
+                                    Reason: <span className="italic font-black text-rose-700 dark:text-rose-300">"{booster.rejectReason || 'Invalid proof provided.'}"</span>
+                                </p>
+                                <button 
+                                    onClick={() => setIsBoosterModalOpen(true)}
+                                    className="mt-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-2 font-bold"
+                                >
+                                    Resubmit Payment Screenshot <Plus size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {usage.isUnlimited && (
+                        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-6 flex items-center gap-6 shadow-sm">
+                            <div className="w-12 h-12 bg-emerald-200 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-700 dark:text-emerald-400 shrink-0">
+                                <ShieldCheck size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">Unlimited Barcode Protocol Active</h4>
+                                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-500/80 mt-1 font-bold">
+                                    Identity generation limits have been removed. Use unlimited barcodes for your shop's inventory ecosystem.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </motion.div>
+            )}
             </div>
 
             {/* Quota Dashboard */}
