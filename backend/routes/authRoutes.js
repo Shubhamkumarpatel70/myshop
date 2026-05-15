@@ -24,8 +24,7 @@ router.post('/upload-kyc', kycUpload.single('image'), (req, res) => {
 
 router.post('/register', validateRegister, register);
 router.post('/login', [
-    body('email').isEmail().withMessage('Enter a valid email'),
-    body('password').notEmpty().withMessage('Password is required')
+    body('email').isEmail().withMessage('Enter a valid email')
 ], login);
 router.get('/check-lockout', checkLockout);
 router.post('/refresh', refresh);

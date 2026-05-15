@@ -378,87 +378,91 @@ const DashboardLayout = () => {
                         </button>
                     </div>
                 )}
-                <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80">
+                <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-2xl dark:border-slate-800/50 dark:bg-[#020617]/80">
                     <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
                         <div className="flex min-w-0 items-center gap-3">
                             <button
                                 onClick={() => setIsMobileMenuOpen(true)}
-                                className="grid h-10 w-10 place-items-center rounded-[1.25rem] border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden"
+                                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden"
                             >
                                 <Menu size={18} />
                             </button>
 
                             <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{currentNavItem?.name || 'Dashboard'}</p>
-                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.shopName || 'Business workspace'}</p>
+                                <h1 className="truncate text-sm font-black uppercase tracking-tight text-slate-900 dark:text-white">{currentNavItem?.name || 'Dashboard'}</h1>
+                                <div className="flex items-center gap-1.5 opacity-60">
+                                    <Store size={10} className="text-indigo-600" />
+                                    <p className="truncate text-[10px] font-bold uppercase tracking-widest">{user?.shopName || 'Workspace'}</p>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="hidden min-w-[220px] flex-1 items-center gap-2 rounded-[1.25rem] border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 xl:flex">
+                        {/* Desktop Search Integration */}
+                        <div className="hidden max-w-md flex-1 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-2.5 transition-all focus-within:border-indigo-500/30 focus-within:bg-white focus-within:shadow-lg focus-within:shadow-indigo-500/5 dark:border-white/5 dark:bg-white/5 xl:flex">
                             <Search size={16} className="text-slate-400" />
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search in dashboard"
-                                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                                placeholder="Universal Search..."
+                                className="w-full bg-transparent text-[11px] font-black uppercase tracking-widest outline-none placeholder:text-slate-400"
                             />
                         </div>
 
-                        <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                             <AnimatePresence>
                                 {!isOnline && (
                                     <motion.div 
                                         initial={{ opacity: 0, scale: 0.8 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.8 }}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-[1.25rem] border border-rose-100"
-                                        title="You are currently offline"
+                                        className="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 shadow-sm"
+                                        title="System Offline"
                                     >
-                                        <WifiOff size={14} />
-                                        <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest">Offline</span>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></div>
+                                        <span className="hidden xs:inline text-[9px] font-black uppercase tracking-widest">Offline</span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
-                            <button
-                                onClick={togglePrivacyMode}
-                                title={privacyMode ? 'Disable Privacy Mode' : 'Enable Privacy Mode'}
-                                className={`grid h-10 w-10 place-items-center rounded-[1.25rem] border transition-all ${privacyMode ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}
-                            >
-                                <ShieldCheck size={17} />
-                            </button>
+                            <div className="flex items-center gap-1 sm:gap-2 bg-slate-100/50 dark:bg-white/5 p-1 rounded-xl border border-slate-100 dark:border-white/5">
+                                <button
+                                    onClick={togglePrivacyMode}
+                                    title={privacyMode ? 'Disable Privacy' : 'Enable Privacy'}
+                                    className={`grid h-9 w-9 place-items-center rounded-lg transition-all ${privacyMode ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'text-slate-500 hover:bg-white dark:hover:bg-slate-800'}`}
+                                >
+                                    <ShieldCheck size={16} />
+                                </button>
 
-                            <button
-                                onClick={toggleDarkMode}
-                                className="grid h-10 w-10 place-items-center rounded-[1.25rem] border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                            >
-                                {darkMode ? <Sun size={17} /> : <Moon size={17} />}
-                            </button>
+                                <button
+                                    onClick={toggleDarkMode}
+                                    className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-white dark:hover:bg-slate-800 transition-all"
+                                >
+                                    {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+                                </button>
+                                
+                                <NotificationDropdown />
+                            </div>
 
-                            <NotificationDropdown />
-
-                            <span className="hidden h-8 w-px bg-slate-200 dark:bg-slate-700 sm:block" />
-
-                            <div className="hidden items-center gap-2 sm:flex">
-                                <span className="flex h-9 w-9 items-center justify-center rounded-[1.25rem] bg-indigo-600 text-sm font-bold text-white">
+                            <div className="hidden items-center gap-3 pl-2 sm:flex border-l border-slate-200 dark:border-slate-800 ml-1">
+                                <div className="text-right hidden md:block">
+                                    <p className="text-[11px] font-black uppercase tracking-tight text-slate-900 dark:text-white leading-none">{user?.ownerName || 'User'}</p>
+                                    <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest mt-1 leading-none opacity-80">{roleLabel}</p>
+                                </div>
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-[11px] font-black text-white shadow-lg shadow-indigo-500/20 ring-2 ring-white dark:ring-slate-950">
                                     {user?.ownerName?.charAt(0)?.toUpperCase() || 'U'}
                                 </span>
-                                <div className="hidden 2xl:block">
-                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{user?.ownerName || 'User'}</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">{roleLabel}</p>
-                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="border-t border-slate-200 px-4 py-2 dark:border-slate-800 xl:hidden">
-                        <div className="flex items-center gap-2 rounded-[1.25rem] border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                            <Search size={16} className="text-slate-400" />
+                    <div className="border-t border-slate-100 px-4 py-2 dark:border-slate-800 xl:hidden bg-slate-50/50 dark:bg-white/5">
+                        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 dark:border-slate-700 dark:bg-slate-900 shadow-sm">
+                            <Search size={14} className="text-slate-400" />
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search in dashboard"
-                                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                                placeholder="Search workspace..."
+                                className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest outline-none placeholder:text-slate-400"
                             />
                         </div>
                     </div>
@@ -502,7 +506,7 @@ const DashboardLayout = () => {
                 </main>
 
                 {mobileBottomItems.length > 0 && (
-                    <nav className="fixed bottom-4 left-4 right-4 z-40 rounded-[1.25rem] border border-slate-200 bg-white/95 px-2 py-2 shadow-xl backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/90 lg:hidden">
+                    <nav className="fixed bottom-5 left-5 right-5 z-40 rounded-2xl border border-white/20 bg-white/80 px-2 py-2 shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/80 lg:hidden ring-1 ring-black/5">
                         <div className="grid grid-cols-4 gap-1">
                             {mobileBottomItems.map((item) => {
                                 const Icon = item.icon;
@@ -515,14 +519,16 @@ const DashboardLayout = () => {
                                         key={item.path}
                                         to={item.path}
                                         className={[
-                                            'flex flex-col items-center rounded-[1.25rem] px-2 py-2 text-[11px] font-medium',
+                                            'flex flex-col items-center gap-1 rounded-xl px-2 py-2 transition-all duration-300',
                                             isActive
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'text-slate-600 dark:text-slate-300',
+                                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 scale-[1.02]'
+                                                : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5',
                                         ].join(' ')}
                                     >
-                                        <Icon size={16} />
-                                        <span className="mt-1 truncate">{item.name.split(' ')[0]}</span>
+                                        <Icon size={isActive ? 18 : 16} className={isActive ? 'animate-pulse-slow' : ''} />
+                                        <span className={`text-[9px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-60'}`}>
+                                            {item.name.split(' ')[0]}
+                                        </span>
                                     </Link>
                                 );
                             })}

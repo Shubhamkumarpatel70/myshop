@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const isProduction = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
 
@@ -28,9 +29,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        const isNetworkError = !error.response || error.code === 'ERR_NETWORK' || error.message.includes('Network Error');
+        const isNetworkError = !error.response || error.code === 'ERR_NETWORK' || error.message.includes('Network Error') || error.message.includes('ERR_INTERNET_DISCONNECTED');
         
         if (isNetworkError) {
+            // Only show toast if browser thinks it's online but request failed (flaky connection)
+            // or if it's a critical error. Use an ID to prevent stacking.
+            toast.error("Cloud connection lost. Working in offline mode.", { 
+                id: 'network-error',
+                duration: 4000
+            });
             error.message = "Network connection lost. Please check your internet.";
         }
         

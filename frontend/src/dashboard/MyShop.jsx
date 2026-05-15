@@ -28,7 +28,7 @@ const MyShop = () => {
             const res = await api.get('/products');
             setProducts(res.data.data);
         } catch (error) {
-            toast.error("Failed to load shop products");
+            if (navigator.onLine) toast.error("Failed to load shop products");
         } finally {
             setLoading(false);
         }
@@ -153,6 +153,11 @@ const MyShop = () => {
                                         src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shopLink)}&bgcolor=ffffff`}
                                         alt="Store QR"
                                         className="w-32 h-32 md:w-40 md:h-40"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://www.google.com/s2/favicons?sz=64&domain=qrserver.com"; // Small fallback or hide
+                                            e.target.parentElement.innerHTML = `<div class="w-32 h-32 md:w-40 md:h-40 flex flex-col items-center justify-center gap-2 text-slate-300"><div class="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-qr-code"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16h.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg></div><span class="text-[8px] font-black uppercase tracking-widest text-slate-400">Offline: QR Unavailable</span></div>`;
+                                        }}
                                     />
                                 </div>
                                 <div className="text-center space-y-2 relative">

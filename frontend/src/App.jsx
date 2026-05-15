@@ -95,7 +95,8 @@ const AppContent = () => {
                     });
                 }
             } catch (err) {
-                console.error("Maintenance check failed");
+                // Silent if offline to avoid spamming console/toasts
+                if (navigator.onLine) console.error("Maintenance check failed");
             }
         };
         
