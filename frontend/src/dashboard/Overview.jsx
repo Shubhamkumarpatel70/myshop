@@ -21,53 +21,65 @@ const Overview = () => {
     const [stats, setStats] = useState(null);
     const [salesData, setSalesData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [period, setPeriod] = useState('30D');
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            setLoading(true);
-            try {
-                if (user?.role === 'super_admin') {
-                    const res = await api.get('/reports/admin-stats');
-                    const d = res.data?.data || {};
-                    setStats({
-                        totalOwners: d.totalOwners || 0,
-                        totalProducts: d.totalProducts || 0,
-                        totalRevenue: d.totalRevenue || 0,
-                        todayRevenue: d.todayRevenue || 0,
-                        todayCount: d.todayCount || 0,
-                        activeShifts: d.activeShifts || 0,
-                        pendingPOs: d.pendingPOs || 0,
-                        lowStockProducts: d.lowStockShops || 0,
-                        todaySales: d.todayCount || 0,
-                        todayProducts: d.todayProducts || 0,
-                        recentTransactions: d.shops || [],
-                    });
-                    setSalesData([]);
-                } else {
-                    const [statsRes, analyticsRes] = await Promise.all([
-                        api.get('/reports/dashboard'),
-                        api.get(`/reports/sales?period=${period.replace('D', '')}`),
-                    ]);
+    const fetchDashboardData = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
+        else setIsRefreshing(true);
+        
+        try {
+            if (user?.role === 'super_admin') {
+                const res = await api.get('/reports/admin-stats');
+                const d = res.data?.data || {};
+                setStats({
+                    totalOwners: d.totalOwners || 0,
+                    totalProducts: d.totalProducts || 0,
+                    totalRevenue: d.totalRevenue || 0,
+                    totalProfit: d.totalRevenue * 0.15, // Estimation for admin profit if applicable
+                    todayRevenue: d.todayRevenue || 0,
+                    todayCount: d.todayCount || 0,
+                    activeShifts: d.activeShifts || 0,
+                    pendingPOs: d.pendingPOs || 0,
+                    lowStockProducts: d.lowStockShops || 0,
+                    todaySales: d.todayCount || 0,
+                    todayProducts: d.todayProducts || 0,
+                    recentTransactions: d.shops || [],
+                });
+                setSalesData([]);
+            } else {
+                const [statsRes, analyticsRes] = await Promise.all([
+                    api.get('/reports/dashboard'),
+                    api.get(`/reports/sales?period=${period.replace('D', '')}`),
+                ]);
 
-                    const base = statsRes.data?.data || {};
-                    const analytics = analyticsRes.data?.data || {};
+                const base = statsRes.data?.data || {};
+                const analytics = analyticsRes.data?.data || {};
 
-                    setStats({
-                        ...base,
-                        ...(analytics.stats || {}),
-                        insights: analytics.insights || null,
-                    });
-                    setSalesData(analytics.dailySales || []);
-                }
-            } catch (error) {
-                console.error('Failed to load dashboard data', error);
-            } finally {
-                setLoading(false);
+                setStats({
+                    ...base,
+                    ...(analytics.stats || {}),
+                    insights: analytics.insights || null,
+                });
+                setSalesData(analytics.dailySales || []);
             }
-        };
+        } catch (error) {
+            console.error('Failed to load dashboard data', error);
+        } finally {
+            setLoading(false);
+            setIsRefreshing(false);
+        }
+    };
 
+    useEffect(() => {
         fetchDashboardData();
+
+        // Real-time Polling: Refresh every 30 seconds
+        const interval = setInterval(() => {
+            fetchDashboardData(true);
+        }, 30000);
+
+        return () => clearInterval(interval);
     }, [user?.role, period]);
 
     const roleConfig = {
@@ -215,9 +227,11 @@ const Overview = () => {
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-full">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Live</span>
+                    <div className={`flex items-center gap-2 px-3 py-1.5 ${isRefreshing ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'} dark:bg-opacity-10 rounded-full transition-colors duration-500`}>
+                        <div className={`w-2 h-2 ${isRefreshing ? 'bg-indigo-500' : 'bg-emerald-500'} rounded-full animate-pulse`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                            {isRefreshing ? 'Updating...' : 'Live'}
+                        </span>
                     </div>
                 </div>
 

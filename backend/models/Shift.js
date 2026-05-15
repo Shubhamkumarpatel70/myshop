@@ -40,6 +40,18 @@ const shiftSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    totalCashSales: {
+        type: Number,
+        default: 0
+    },
+    totalUpiSales: {
+        type: Number,
+        default: 0
+    },
+    totalCardSales: {
+        type: Number,
+        default: 0
+    },
     totalTransactions: {
         type: Number,
         default: 0

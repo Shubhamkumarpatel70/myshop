@@ -33,28 +33,27 @@ exports.closeShift = async (req, res) => {
             return res.status(404).json({ success: false, message: 'No open shift found' });
         }
 
-        // Calculate expected cash based on sales during shift
+        // Calculate expected totals based on sales during shift
         const sales = await Sale.find({
-            processedBy: req.user._id,
-            createdAt: { $gte: shift.startTime },
-            paymentMethod: 'Cash'
-        });
-
-        const totalCashSales = sales.reduce((acc, curr) => acc + curr.totalAmount, 0);
-        const expectedCash = shift.openingCash + totalCashSales;
-
-        // Overall stats
-        const allSales = await Sale.find({
             processedBy: req.user._id,
             createdAt: { $gte: shift.startTime }
         });
+        
+        const cashSales = sales.filter(s => s.paymentMethod === 'Cash').reduce((acc, curr) => acc + curr.totalAmount, 0);
+        const upiSales = sales.filter(s => s.paymentMethod === 'UPI').reduce((acc, curr) => acc + curr.totalAmount, 0);
+        const cardSales = sales.filter(s => s.paymentMethod === 'Card').reduce((acc, curr) => acc + curr.totalAmount, 0);
+        
+        const expectedCash = shift.openingCash + cashSales;
 
         shift.endTime = new Date();
         shift.closingCash = closingCash || 0;
         shift.expectedCash = expectedCash;
         shift.status = 'Closed';
-        shift.totalSales = allSales.reduce((acc, curr) => acc + curr.totalAmount, 0);
-        shift.totalTransactions = allSales.length;
+        shift.totalCashSales = cashSales;
+        shift.totalUpiSales = upiSales;
+        shift.totalCardSales = cardSales;
+        shift.totalSales = sales.reduce((acc, curr) => acc + curr.totalAmount, 0);
+        shift.totalTransactions = sales.length;
         shift.notes = notes;
 
         await shift.save();

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Sale = require('../models/Sale');
 const Product = require('../models/Product');
+const Shift = require('../models/Shift');
 const InventoryLog = require('../models/InventoryLog');
 const Customer = require('../models/Customer');
 const { sendNotification } = require('../utils/notificationUtils');
@@ -17,6 +18,15 @@ const generateTransactionId = () => {
 exports.createSale = async (req, res) => {
     try {
         const { items, customerName, customerPhone, paymentMethod } = req.body;
+        
+        // Enforce Shift Management
+        const activeShift = await Shift.findOne({ user: req.user._id, status: 'Open' });
+        if (!activeShift) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'No active shift found. Please open a shift before starting sales.' 
+            });
+        }
 
         let totalAmount = 0;
         const processedItems = [];
@@ -134,6 +144,19 @@ exports.createSale = async (req, res) => {
                 console.error("CUSTOMER UPDATE ERROR:", custError);
             }
         }
+
+        // Update Active Shift Totals
+        activeShift.totalSales += totalAmount;
+        activeShift.totalTransactions += 1;
+        if (paymentMethod === 'Cash') {
+            activeShift.totalCashSales += totalAmount;
+            activeShift.expectedCash += totalAmount;
+        } else if (paymentMethod === 'UPI') {
+            activeShift.totalUpiSales += totalAmount;
+        } else if (paymentMethod === 'Card') {
+            activeShift.totalCardSales += totalAmount;
+        }
+        await activeShift.save();
 
         res.status(201).json({ success: true, data: sale });
     } catch (error) {
