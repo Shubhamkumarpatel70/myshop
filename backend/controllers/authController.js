@@ -269,3 +269,17 @@ exports.submitPayment = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+exports.toggleStorefront = async (req, res) => {
+    try {
+        const { isActive } = req.body;
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.isStorefrontActive = isActive;
+        await user.save();
+
+        res.json({ success: true, data: user });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

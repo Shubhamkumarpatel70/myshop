@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { 
     getProducts, createProduct, updateProduct, deleteProduct, 
-    getPublicProducts, getPublicProductsByShop 
+    getPublicProducts, getPublicProductsByShop, getInventoryLogs
 } = require('../controllers/productController');
 const { protect } = require('../middleware/authMiddleware');
 const { checkProductLimit } = require('../middleware/limitMiddleware');
@@ -21,6 +21,8 @@ router.post('/upload', upload.single('image'), (req, res) => {
     // Cloudinary returns the secure_url in req.file.path or req.file.secure_url
     res.json({ success: true, url: req.file.path });
 });
+
+router.get('/logs', getInventoryLogs);
 
 router.route('/')
     .get(getProducts)

@@ -43,7 +43,7 @@ const Staff = () => {
             const res = await api.get('/users/staff');
             setStaff(res.data.data);
         } catch (error) {
-            toast.error("Handshake with HR node failed");
+            toast.error("Failed to connect to staff database");
         } finally {
             setLoading(false);
         }
@@ -87,7 +87,7 @@ const Staff = () => {
 
         try {
             await api.post('/users/staff', formData);
-            toast.success("New Node Onboarded: Human Asset Synced");
+            toast.success("New Staff Registered: Profile Synced");
             setIsModalOpen(false);
             setFormData({ 
                 ownerName: '', email: '', phone: '', password: '', 
@@ -128,7 +128,7 @@ const Staff = () => {
                         Orchestrate your operational team and manage mission-critical permissions.
                     </p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">
+                <button onClick={() => setIsModalOpen(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-[1.25rem] bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">
                     <Plus size={16} /> Onboard Staff
                 </button>
             </div>
@@ -140,19 +140,19 @@ const Staff = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search staff..."
-                    className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-white/5 dark:bg-slate-900 dark:text-white"
+                    className="h-12 w-full rounded-[1.25rem] border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-indigo-600/20 dark:border-white/5 dark:bg-slate-900 dark:text-white"
                 />
             </div>
 
             {/* Staff Grid */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {loading ? [1, 2, 3].map(i => (
-                    <div key={i} className="h-72 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900"></div>
+                    <div key={i} className="h-72 animate-pulse rounded-[1.25rem] border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900"></div>
                 )) : filteredStaff.map((member) => (
-                    <motion.div key={member._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                    <motion.div key={member._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
 
                         <div className="mb-5 flex items-center gap-3">
-                            <div className="grid h-12 w-12 place-items-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
+                            <div className="grid h-12 w-12 place-items-center rounded-[1.25rem] border border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
                                 <User size={20} />
                             </div>
                             <div>
@@ -165,22 +165,22 @@ const Staff = () => {
                         </div>
 
                         <div className="mb-5 space-y-2">
-                            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+                            <div className="flex items-center gap-3 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
                                 <Mail size={16} className="text-indigo-500" /> <span className="truncate">{member.email}</span>
                             </div>
-                            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+                            <div className="flex items-center gap-3 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
                                 <Phone size={16} className="text-indigo-500" /> {member.phone}
                             </div>
-                            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+                            <div className="flex items-center gap-3 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
                                 <ShieldCheck size={16} className="text-indigo-500" /> ID: {member.aadharNumber || 'N/A'}
                             </div>
                         </div>
 
                         <div className="flex gap-2">
-                            <button onClick={() => handleViewStats(member)} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-slate-900 text-sm font-semibold text-white hover:bg-indigo-600">
+                            <button onClick={() => handleViewStats(member)} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[1.25rem] bg-slate-900 text-sm font-semibold text-white hover:bg-indigo-600">
                                 <Activity size={14} /> Details
                             </button>
-                            <button className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+                            <button className="inline-flex h-10 w-10 items-center justify-center rounded-[1.25rem] border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
                                 <Trash2 size={16} />
                             </button>
                         </div>
@@ -193,7 +193,7 @@ const Staff = () => {
                 {selectedStaffStats && (
                     <div className="py-8 space-y-12">
                         <div className="flex items-center gap-5 p-6 bg-slate-50 dark:bg-slate-950 rounded-[2rem] border border-slate-100 dark:border-white/5 shadow-inner">
-                            <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-indigo-500/20"><Cpu size={28} /></div>
+                            <div className="w-16 h-16 bg-indigo-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-2xl shadow-indigo-500/20"><Cpu size={28} /></div>
                             <div>
                                 <h3 className="text-2xl font-black uppercase tracking-tight dark:text-white leading-none">{selectedStaffStats.member.ownerName}</h3>
                                 <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mt-2">{selectedStaffStats.member.role} • ACTIVE</p>
@@ -226,12 +226,12 @@ const Staff = () => {
                                 ].map((side, i) => (
                                     <div key={i} className="space-y-3">
                                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">{side.label}</p>
-                                        <div className="relative group aspect-video rounded-3xl overflow-hidden border-4 border-slate-100 dark:border-white/5 bg-slate-950 shadow-xl">
+                                        <div className="relative group aspect-video rounded-[1.25rem] overflow-hidden border-4 border-slate-100 dark:border-white/5 bg-slate-950 shadow-xl">
                                             {selectedStaffStats.member[side.field] ? (
                                                 <>
                                                     <img src={selectedStaffStats.member[side.field]} alt={side.label} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <a href={selectedStaffStats.member[side.field]} target="_blank" rel="noreferrer" className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-950 shadow-2xl hover:scale-110 transition-all"><ExternalLink size={20} /></a>
+                                                        <a href={selectedStaffStats.member[side.field]} target="_blank" rel="noreferrer" className="w-12 h-12 bg-white rounded-[1.25rem] flex items-center justify-center text-slate-950 shadow-2xl hover:scale-110 transition-all"><ExternalLink size={20} /></a>
                                                     </div>
                                                 </>
                                             ) : (
@@ -250,9 +250,9 @@ const Staff = () => {
                             <h5 className="font-black text-[10px] uppercase tracking-[0.4em] text-slate-400 ml-4">Recent Protocol Logs</h5>
                             <div className="space-y-3">
                                 {selectedStaffStats.recentSales.length > 0 ? selectedStaffStats.recentSales.map(sale => (
-                                    <div key={sale._id} className="flex justify-between items-center p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-[1.5rem] hover:border-indigo-500/20 transition-all shadow-sm">
+                                    <div key={sale._id} className="flex justify-between items-center p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-[1.25rem] hover:border-indigo-500/20 transition-all shadow-sm">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 bg-slate-50 dark:bg-slate-950 rounded-lg flex items-center justify-center text-slate-400"><ShoppingCart size={16} /></div>
+                                            <div className="w-9 h-9 bg-slate-50 dark:bg-slate-950 rounded-[1.25rem] flex items-center justify-center text-slate-400"><ShoppingCart size={16} /></div>
                                             <div>
                                                 <p className="font-black text-[11px] uppercase dark:text-white leading-none">{sale.customerName}</p>
                                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{new Date(sale.createdAt).toLocaleDateString()}</p>
@@ -278,27 +278,27 @@ const Staff = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Full Name</label>
-                            <input type="text" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.ownerName} onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })} />
+                            <input type="text" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-[1.25rem] outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.ownerName} onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })} />
                         </div>
                         <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Mobile Number</label>
-                            <input type="tel" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                            <input type="tel" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-[1.25rem] outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                         </div>
                         <div className="md:col-span-2 space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Email Id</label>
-                            <input type="email" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                            <input type="email" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-[1.25rem] outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                         </div>
                         <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Security Password</label>
-                            <input type="password" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+                            <input type="password" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-[1.25rem] outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
                         </div>
                         <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Aadhar Number</label>
-                            <input type="text" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.aadharNumber} onChange={(e) => setFormData({ ...formData, aadharNumber: e.target.value })} />
+                            <input type="text" required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-[1.25rem] outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.aadharNumber} onChange={(e) => setFormData({ ...formData, aadharNumber: e.target.value })} />
                         </div>
                         <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Secure mPin (4 Digits)</label>
-                            <input type="text" maxLength={4} required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.mPin} onChange={(e) => setFormData({ ...formData, mPin: e.target.value.replace(/\D/g, '') })} />
+                            <input type="text" maxLength={4} required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-[1.25rem] outline-none focus:border-indigo-600 dark:text-white font-bold transition-all" value={formData.mPin} onChange={(e) => setFormData({ ...formData, mPin: e.target.value.replace(/\D/g, '') })} />
                         </div>
 
                         <div className="md:col-span-2 space-y-6">
@@ -306,7 +306,7 @@ const Staff = () => {
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Front Side</p>
-                                    <div className="relative group aspect-video rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 overflow-hidden flex flex-col items-center justify-center gap-3 transition-all hover:border-indigo-500/50">
+                                    <div className="relative group aspect-video rounded-[1.25rem] border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 overflow-hidden flex flex-col items-center justify-center gap-3 transition-all hover:border-indigo-500/50">
                                         {formData.aadharFront ? (
                                             <img src={formData.aadharFront} alt="Front" className="w-full h-full object-cover" />
                                         ) : (
@@ -321,7 +321,7 @@ const Staff = () => {
                                 </div>
                                 <div className="space-y-3">
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Back Side</p>
-                                    <div className="relative group aspect-video rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 overflow-hidden flex flex-col items-center justify-center gap-3 transition-all hover:border-indigo-500/50">
+                                    <div className="relative group aspect-video rounded-[1.25rem] border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 overflow-hidden flex flex-col items-center justify-center gap-3 transition-all hover:border-indigo-500/50">
                                         {formData.aadharBack ? (
                                             <img src={formData.aadharBack} alt="Back" className="w-full h-full object-cover" />
                                         ) : (
@@ -339,15 +339,15 @@ const Staff = () => {
 
                         <div className="md:col-span-2 space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Staff Role</label>
-                            <select required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-2xl outline-none focus:border-indigo-600 dark:text-white font-bold cursor-pointer appearance-none" value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
+                            <select required className="w-full h-18 px-8 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-white/5 rounded-[1.25rem] outline-none focus:border-indigo-600 dark:text-white font-bold cursor-pointer appearance-none" value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
                                 <option value="cashier">CASHIER (PROTOCOL: BILLING ONLY)</option>
                                 <option value="manager">MANAGER (PROTOCOL: INVENTORY + BILLING)</option>
                             </select>
                         </div>
                     </div>
                     <div className="flex flex-col md:flex-row gap-6 pt-10 border-t border-slate-50 dark:border-white/5">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-20 flex-1 bg-slate-50 dark:bg-slate-950 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-500">Cancel</button>
-                        <button type="submit" className="h-20 flex-[2] bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-[0_20px_50px_rgba(79,70,229,0.3)] hover:bg-indigo-700 active:scale-95 transition-all">Add Staff</button>
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-20 flex-1 bg-slate-50 dark:bg-slate-950 rounded-[1.25rem] font-black uppercase text-[10px] tracking-widest text-slate-500">Cancel</button>
+                        <button type="submit" className="h-20 flex-[2] bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase text-[10px] tracking-[0.3em] shadow-[0_20px_50px_rgba(79,70,229,0.3)] hover:bg-indigo-700 active:scale-95 transition-all">Add Staff</button>
                     </div>
                 </form>
             </Modal>

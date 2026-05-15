@@ -162,7 +162,7 @@ const Shops = () => {
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="h-10 bg-transparent text-xs font-bold outline-none dark:text-white"
                     >
-                        <option value="all">ALL NODES</option>
+                        <option value="all">ALL SHOPS</option>
                         <option value="active">ACTIVE ONLY</option>
                         <option value="suspended">SUSPENDED</option>
                         <option value="approved">APPROVED</option>
@@ -338,7 +338,7 @@ const Shops = () => {
                                     <div className="flex items-center gap-3">
                                         <div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800"><Phone size={14} /></div>
                                         <div>
-                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Contact Node</p>
+                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Contact Person</p>
                                             <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedShop.phone || 'N/A'}</p>
                                         </div>
                                     </div>

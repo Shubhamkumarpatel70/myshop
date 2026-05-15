@@ -70,7 +70,7 @@ exports.getGlobalSettings = async (req, res) => {
 
 exports.updateGlobalSettings = async (req, res) => {
     try {
-        const { regFee, upiId, qrCode, supportPhone, isPaymentRequired } = req.body;
+        const { regFee, upiId, qrCode, supportPhone, isPaymentRequired, maintenanceTime, maintenanceDuration } = req.body;
         
         let settings = await GlobalSettings.findOne();
         if (!settings) {
@@ -81,7 +81,21 @@ exports.updateGlobalSettings = async (req, res) => {
         settings.upiId = upiId ?? settings.upiId;
         settings.qrCode = qrCode ?? settings.qrCode;
         settings.supportPhone = supportPhone ?? settings.supportPhone;
-        settings.isPaymentRequired = isPaymentRequired ?? settings.isPaymentRequired;
+        settings.isPaymentRequired = typeof req.body.isPaymentRequired !== 'undefined' ? req.body.isPaymentRequired : settings.isPaymentRequired;
+        
+        // Handle Maintenance Logic
+        if (typeof req.body.isMaintenanceMode !== 'undefined') {
+            settings.isMaintenanceMode = req.body.isMaintenanceMode;
+            // If turning on maintenance and duration provided, calculate end time
+            if (settings.isMaintenanceMode && maintenanceDuration) {
+                const endTime = new Date();
+                endTime.setMinutes(endTime.getMinutes() + parseInt(maintenanceDuration));
+                settings.maintenanceUntil = endTime;
+                settings.maintenanceTime = `${maintenanceDuration} Minutes`;
+            }
+        }
+        
+        if (maintenanceTime) settings.maintenanceTime = maintenanceTime;
         settings.updatedBy = req.user._id;
 
         await settings.save();

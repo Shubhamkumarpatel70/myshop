@@ -67,11 +67,11 @@ const LimitModal = ({ isOpen, onClose, limitType, isTrialUsed }) => {
                         </div>
                         
                         <h2 className="text-3xl font-black tracking-tighter uppercase mb-4 text-slate-900 dark:text-white leading-tight">
-                            {limitType === 'product' ? 'Product Node Limit Reached' : 'Staff Session Limit Reached'}
+                            {limitType === 'product' ? 'Product Limit Reached' : 'Staff Limit Reached'}
                         </h2>
                         
                         <p className="text-slate-500 dark:text-slate-400 font-medium mb-10 leading-relaxed max-w-sm mx-auto">
-                            Your current merchant node has reached its data capacity. Upgrade your license to unlock unlimited operational scalability.
+                            Your current merchant account has reached its data capacity. Upgrade your license to unlock unlimited operational scalability.
                         </p>
 
                         <div className="space-y-4 max-w-sm mx-auto">

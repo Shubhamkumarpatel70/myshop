@@ -4,7 +4,9 @@ import api from '../utils/api';
 import { motion } from 'framer-motion';
 import { 
     Share2, ExternalLink, Package, 
-    Copy, Check, Globe, LayoutGrid, List, MessageSquare
+    Copy, Check, Globe, LayoutGrid, List, MessageSquare,
+    QrCode, Sparkles, Megaphone, ArrowRight, Eye, EyeOff,
+    Power, ShieldAlert, Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +15,9 @@ const MyShop = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
-    const { user } = useAuth();
+    const [updatingId, setUpdatingId] = useState(null);
+    const [isMasterToggling, setIsMasterToggling] = useState(false);
+    const { user, updateUser } = useAuth();
 
     useEffect(() => {
         fetchProducts();
@@ -27,6 +31,37 @@ const MyShop = () => {
             toast.error("Failed to load shop products");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const toggleVisibility = async (productId, currentStatus) => {
+        setUpdatingId(productId);
+        try {
+            const res = await api.put(`/products/${productId}`, { isPublic: !currentStatus });
+            if (res.data.success) {
+                setProducts(products.map(p => p._id === productId ? { ...p, isPublic: !currentStatus } : p));
+                toast.success(!currentStatus ? "Product visible in showcase" : "Product hidden from showcase");
+            }
+        } catch (error) {
+            toast.error("Visibility update failed");
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
+    const handleMasterToggle = async () => {
+        setIsMasterToggling(true);
+        const newStatus = !user.isStorefrontActive;
+        try {
+            const res = await api.post('/auth/toggle-storefront', { isActive: newStatus });
+            if (res.data.success) {
+                updateUser({ isStorefrontActive: newStatus });
+                toast.success(newStatus ? "Global Storefront Activated" : "Global Storefront Deactivated");
+            }
+        } catch (error) {
+            toast.error("Global toggle failed");
+        } finally {
+            setIsMasterToggling(false);
         }
     };
 
@@ -53,174 +88,151 @@ const MyShop = () => {
     };
 
     return (
-        <div className="space-y-8 pb-10">
-            {/* Premium Header Card */}
-            <div className="relative overflow-hidden bg-white dark:bg-secondary-900 p-6 md:p-8 rounded-3xl shadow-xl border border-secondary-100 dark:border-secondary-800">
-                {/* Abstract Background Shapes */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
-
-                <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
-                    <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left w-full lg:w-auto">
-                        <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary-500/20 shrink-0">
-                            <Globe size={48} className="animate-pulse-slow" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                                <h1 className="text-3xl md:text-4xl font-black tracking-tight uppercase truncate">{user?.shopName}</h1>
-                                <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase rounded-lg border border-emerald-200 dark:border-emerald-800 tracking-widest">Live</span>
-                            </div>
-                            <p className="text-secondary-500 font-medium text-sm md:text-base max-w-xl mx-auto md:mx-0">Your professional storefront is active. Customers can browse and view your live inventory from anywhere.</p>
-                            
-                            <div className="flex items-center justify-center md:justify-start gap-2 mt-4 p-2 pl-4 bg-secondary-50 dark:bg-secondary-800/50 rounded-2xl border border-secondary-100 dark:border-secondary-800 max-w-md">
-                                <Globe size={14} className="text-primary-600 shrink-0" />
-                                <span className="text-[11px] font-bold text-secondary-600 dark:text-secondary-400 truncate flex-1">{shopLink}</span>
-                                <button 
-                                    onClick={handleCopyLink}
-                                    className="p-2 bg-white dark:bg-secondary-700 text-secondary-400 hover:text-primary-600 rounded-xl transition-all shadow-sm"
-                                    title="Copy Link"
-                                >
-                                    {copied ? <Check size={16} /> : <Copy size={16} />}
-                                </button>
-                            </div>
-                        </div>
+        <div className="space-y-10 pb-20 font-jakarta">
+            {/* Ultra-Premium Storefront Control Center */}
+            <div className="relative group">
+                <div className={`absolute -inset-1 rounded-[3rem] blur opacity-10 group-hover:opacity-20 transition duration-1000 ${user?.isStorefrontActive !== false ? 'bg-gradient-to-r from-primary-600 to-indigo-600' : 'bg-rose-600'}`}></div>
+                <div className="relative bg-white dark:bg-secondary-900 rounded-[3rem] p-8 md:p-12 border border-secondary-100 dark:border-secondary-800 shadow-2xl overflow-hidden">
+                    
+                    {/* Decorative Elements */}
+                    <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
+                        {user?.isStorefrontActive !== false ? <Sparkles size={120} className="text-primary-500 animate-pulse" /> : <ShieldAlert size={120} className="text-rose-500" />}
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                        {/* QR Code Section */}
-                        <div className="bg-white dark:bg-secondary-800 p-3 rounded-2xl border border-secondary-100 dark:border-secondary-700 shadow-lg flex flex-col items-center justify-center group/qr">
-                            <img 
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(shopLink)}`}
-                                alt="Shop QR Code"
-                                className="w-20 h-20 md:w-24 md:h-24"
-                            />
-                            <span className="text-[8px] font-black uppercase tracking-widest mt-2 text-secondary-400 group-hover/qr:text-primary-600 transition-colors">Scan to visit</span>
+                    <div className="flex flex-col xl:flex-row gap-12 items-center">
+                        {/* Shop Brand Section */}
+                        <div className="flex-1 space-y-8 text-center xl:text-left">
+                            <div className="flex flex-col md:flex-row items-center gap-4 justify-center xl:justify-start">
+                                <div className={`inline-flex items-center gap-3 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border animate-bounce-slow ${user?.isStorefrontActive !== false ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-primary-100 dark:border-primary-800' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                    <Globe size={14} /> {user?.isStorefrontActive !== false ? 'Storefront Online' : 'Storefront Offline'}
+                                </div>
+                                <button 
+                                    onClick={handleMasterToggle}
+                                    disabled={isMasterToggling}
+                                    className={`flex items-center gap-3 px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${user?.isStorefrontActive !== false ? 'bg-rose-600 text-white shadow-rose-500/20 hover:bg-rose-700' : 'bg-emerald-600 text-white shadow-emerald-500/20 hover:bg-emerald-700'}`}
+                                >
+                                    {isMasterToggling ? (
+                                        <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                    ) : (
+                                        <Power size={14} />
+                                    )}
+                                    {user?.isStorefrontActive !== false ? 'Go Offline' : 'Go Live Now'}
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-tight">
+                                    {user?.shopName} <span className={user?.isStorefrontActive !== false ? 'text-primary-600' : 'text-rose-600'}>{user?.isStorefrontActive !== false ? 'Public Store' : 'On Maintenance'}</span>
+                                </h1>
+                                <p className="text-slate-500 font-medium text-lg max-w-2xl leading-relaxed">
+                                    {user?.isStorefrontActive !== false 
+                                        ? "Your professional digital catalog is live. Share this link with your customers to accept orders and showcase your inventory."
+                                        : "Your storefront is currently hidden from the public. Customers visiting your link will see an offline status message."}
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+                                <div className="w-full sm:w-auto flex items-center gap-3 p-1.5 pl-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 group/link cursor-pointer hover:border-primary-200 transition-all" onClick={handleCopyLink}>
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate max-w-[200px]">{shopLink}</span>
+                                    <button className="p-3 bg-white dark:bg-secondary-700 text-slate-400 group-hover/link:text-primary-600 rounded-xl shadow-sm transition-all">
+                                        {copied ? <Check size={18} /> : <Copy size={18} />}
+                                    </button>
+                                </div>
+                                <button onClick={handleShare} className="w-full sm:w-auto h-14 px-8 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl">
+                                    <Share2 size={18} /> Broadcast Shop
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="flex flex-col gap-3 flex-1 sm:flex-initial">
-                            <div className="grid grid-cols-2 gap-3">
-                                <button 
-                                    onClick={handleShare}
-                                    className="px-6 py-4 bg-black dark:bg-white text-white dark:text-black rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 shadow-xl hover:scale-105 transition-all group"
-                                >
-                                    <Share2 size={16} /> Share
-                                </button>
-                                <a 
-                                    href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-6 py-4 bg-emerald-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 shadow-xl hover:scale-105 transition-all"
-                                >
+                        {/* Interactive Share Card */}
+                        <div className={`w-full max-w-[340px] p-8 rounded-[2.5rem] border relative shadow-inner transition-all ${user?.isStorefrontActive !== false ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800' : 'bg-rose-50 border-rose-100 grayscale'}`}>
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-2xl border border-white dark:border-secondary-800 flex flex-col items-center gap-6 relative overflow-hidden group/qr">
+                                <div className="absolute inset-0 bg-primary-600/5 opacity-0 group-hover/qr:opacity-100 transition-opacity"></div>
+                                <div className="relative p-4 bg-slate-50 dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700">
+                                    <img 
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shopLink)}&bgcolor=ffffff`}
+                                        alt="Store QR"
+                                        className="w-32 h-32 md:w-40 md:h-40"
+                                    />
+                                </div>
+                                <div className="text-center space-y-2 relative">
+                                    <p className={`text-[10px] font-black uppercase tracking-widest ${user?.isStorefrontActive !== false ? 'text-primary-600' : 'text-rose-600'}`}>{user?.isStorefrontActive !== false ? 'Scan to browse' : 'Store Offline'}</p>
+                                    <h4 className="font-black text-slate-900 dark:text-white uppercase tracking-tight">{user?.shopName}</h4>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3 mt-6">
+                                <a href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`} target="_blank" rel="noopener noreferrer" className="h-12 bg-emerald-500 text-white rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20">
                                     <MessageSquare size={16} /> WhatsApp
                                 </a>
+                                <a href={shopLink} target="_blank" rel="noopener noreferrer" className="h-12 bg-indigo-500 text-white rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20">
+                                    <ExternalLink size={16} /> Preview
+                                </a>
                             </div>
-                            <a 
-                                href={shopLink} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="w-full px-6 py-4 bg-secondary-100 dark:bg-secondary-800 text-secondary-600 dark:text-secondary-300 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-secondary-200 dark:hover:bg-secondary-700 transition-all border border-secondary-200 dark:border-secondary-700"
-                            >
-                                <ExternalLink size={16} /> Open Public Store
-                            </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Grid Header */}
-            <div className="flex items-center justify-between px-4">
-                <div className="flex items-center gap-4">
-                    <h3 className="text-xl font-black uppercase tracking-tight">Active Products</h3>
-                    <span className="px-3 py-1 bg-secondary-100 dark:bg-secondary-800 text-secondary-500 text-[10px] font-black rounded-full uppercase tracking-widest">{products.length} Items</span>
+            {/* Catalog Management Section */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between px-4">
+                    <div className="space-y-1">
+                        <h3 className="text-2xl font-black uppercase tracking-tight">Active Showcase</h3>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Publicly visible products ({products.filter(p => p.isPublic !== false).length})</p>
+                    </div>
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <button className="px-6 py-2 bg-white dark:bg-slate-900 rounded-xl shadow-sm text-[10px] font-black uppercase tracking-widest text-primary-600">Showcase Registry</button>
+                    </div>
                 </div>
-                <div className="flex bg-secondary-100 dark:bg-secondary-800 p-1 rounded-xl">
-                    <button className="p-2 bg-white dark:bg-secondary-700 rounded-lg shadow-sm text-primary-600"><LayoutGrid size={18} /></button>
-                    <button className="p-2 text-secondary-400 opacity-50"><List size={18} /></button>
-                </div>
-            </div>
 
-            {/* Responsive Product Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 px-2 md:px-0">
-                {loading ? (
-                    [1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                        <div key={i} className="h-[400px] bg-secondary-100 dark:bg-secondary-800 animate-pulse rounded-[2.5rem]"></div>
-                    ))
-                ) : products.length > 0 ? (
-                    products.map((product, idx) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {loading ? (
+                        [1, 2, 3, 4].map(i => (
+                            <div key={i} className="h-96 bg-white dark:bg-slate-900 rounded-[2.5rem] animate-pulse border border-slate-100 dark:border-slate-800"></div>
+                        ))
+                    ) : products.map((product, idx) => (
                         <motion.div 
                             key={product._id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.05 }}
-                            className="bg-white dark:bg-secondary-900 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-secondary-100 dark:border-secondary-800 group relative"
+                            className={`group relative bg-white dark:bg-secondary-900 rounded-[2.5rem] overflow-hidden border transition-all ${product.isPublic !== false ? 'border-slate-100 dark:border-secondary-800 hover:border-primary-500/30 hover:shadow-2xl' : 'border-slate-200 dark:border-slate-800/50 grayscale-[0.5] opacity-80 shadow-inner bg-slate-50/50'}`}
                         >
-                            {/* Product Image Holder */}
-                            <div className="h-64 overflow-hidden relative bg-secondary-50 dark:bg-secondary-950">
-                                {product.productImage ? (
-                                    <img 
-                                        src={product.productImage.startsWith('http') ? product.productImage : product.productImage} 
-                                        alt={product.productName}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=No+Image'; }}
-                                    />
+                            {/* Toggle Button Overlay */}
+                            <button 
+                                onClick={() => toggleVisibility(product._id, product.isPublic !== false)}
+                                disabled={updatingId === product._id}
+                                className={`absolute top-4 left-4 z-20 h-10 px-4 rounded-xl font-black uppercase text-[8px] tracking-widest flex items-center gap-2 transition-all shadow-xl ${product.isPublic !== false ? 'bg-white text-emerald-600' : 'bg-slate-900 text-white'}`}
+                            >
+                                {updatingId === product._id ? (
+                                    <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
                                 ) : (
-                                    <div className="w-full h-full flex flex-col items-center justify-center text-secondary-200">
-                                        <Package size={64} strokeWidth={1} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest mt-2">No Image</span>
-                                    </div>
+                                    product.isPublic !== false ? <Eye size={12} /> : <EyeOff size={12} />
                                 )}
-                                
-                                {/* Float Tags */}
-                                <div className="absolute top-6 left-6">
-                                    <span className="px-3 py-1.5 bg-black/80 backdrop-blur-md text-white text-[10px] font-black uppercase rounded-xl tracking-widest border border-white/10 shadow-lg">
-                                        {product.category?.name || 'Retail'}
-                                    </span>
-                                </div>
-                                <div className="absolute top-6 right-6">
-                                    <div className="flex flex-col items-end gap-2">
-                                        <div className="px-4 py-2 bg-white/90 backdrop-blur-md rounded-2xl text-black font-black text-lg shadow-xl border border-white">
-                                            ₹{product.price}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                {product.isPublic !== false ? 'Live' : 'Hidden'}
+                            </button>
 
-                            {/* Content Area */}
-                            <div className="p-8">
-                                <h3 className="text-xl font-black uppercase truncate tracking-tight mb-2 group-hover:text-primary-600 transition-colors">
-                                    {product.productName}
-                                </h3>
-                                <p className="text-xs text-secondary-400 line-clamp-2 mb-6 min-h-[2rem]">
-                                    {product.description || 'Professional retail quality product ready for purchase.'}
-                                </p>
-                                
-                                <div className="flex justify-between items-center pt-6 border-t border-secondary-50 dark:border-secondary-800">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${product.quantity > 0 ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse`}></div>
-                                        <span className={`text-[10px] font-black uppercase tracking-widest ${product.quantity > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                            {product.quantity > 0 ? `${product.quantity} Units` : 'Out of Stock'}
-                                        </span>
-                                    </div>
-                                    <Link 
-                                        to="/dashboard/inventory"
-                                        className="p-3 bg-secondary-50 dark:bg-secondary-800 text-secondary-400 hover:text-primary-600 hover:bg-primary-50 rounded-2xl transition-all"
-                                    >
-                                        <ExternalLink size={18} />
-                                    </Link>
+                            <div className="h-48 relative bg-slate-50 dark:bg-slate-950 overflow-hidden">
+                                {product.productImage ? (
+                                    <img src={product.productImage} alt={product.productName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-200"><Package size={48} /></div>
+                                )}
+                                <div className="absolute top-4 right-4 px-3 py-1.5 bg-black/80 backdrop-blur-md text-white rounded-xl text-[10px] font-black tracking-widest">₹{product.price}</div>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <h4 className={`font-black uppercase truncate tracking-tight transition-colors ${product.isPublic !== false ? 'text-slate-900 dark:text-white group-hover:text-primary-600' : 'text-slate-400'}`}>{product.productName}</h4>
+                                <div className="flex items-center justify-between">
+                                    <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${product.quantity > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                                        {product.quantity > 0 ? `${product.quantity} In Stock` : 'Sold Out'}
+                                    </span>
+                                    <Link to="/dashboard/inventory" className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-primary-600 rounded-xl transition-all"><ArrowRight size={16} /></Link>
                                 </div>
                             </div>
                         </motion.div>
-                    ))
-                ) : (
-                    <div className="col-span-full py-32 text-center bg-white dark:bg-secondary-900 rounded-[4rem] border-4 border-dashed border-secondary-50 dark:border-secondary-800">
-                        <div className="w-24 h-24 bg-secondary-50 dark:bg-secondary-800 rounded-full flex items-center justify-center mx-auto mb-8">
-                            <Package size={48} className="text-secondary-200" />
-                        </div>
-                        <h3 className="text-2xl font-black uppercase tracking-tight">Empty Inventory</h3>
-                        <p className="text-secondary-500 mt-2 max-w-sm mx-auto font-medium">Your public store needs products to display. Add some items to your inventory to go live!</p>
-                        <Link to="/dashboard/inventory" className="btn btn-primary mt-8 px-10 py-4 rounded-2xl">Add Your First Product</Link>
-                    </div>
-                )}
+                    ))}
+                </div>
             </div>
         </div>
     );

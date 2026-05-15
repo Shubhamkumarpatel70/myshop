@@ -74,21 +74,21 @@ const AdminInventory = () => {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
                     <p className="text-xs font-medium text-slate-500">Total Shops</p>
                     <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{filteredShops.length}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
                     <p className="text-xs font-medium text-slate-500">Total Products</p>
                     <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{totalProducts}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
                     <p className="text-xs font-medium text-slate-500">Inventory Health</p>
                     <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-300">Live</p>
                 </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+            <div className="rounded-[1.25rem] border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:p-4">
                 <div className="relative">
                     <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
@@ -96,7 +96,7 @@ const AdminInventory = () => {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search shop, owner, shop ID"
-                        className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                        className="h-11 w-full rounded-[1.25rem] border border-slate-300 bg-white pl-10 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                     />
                 </div>
             </div>
@@ -104,15 +104,15 @@ const AdminInventory = () => {
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {loading &&
                     [1, 2, 3].map((i) => (
-                        <div key={i} className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900" />
+                        <div key={i} className="h-40 animate-pulse rounded-[1.25rem] border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900" />
                     ))}
 
                 {!loading &&
                     filteredShops.map((shop) => (
-                        <div key={shop._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div key={shop._id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
+                                    <span className="grid h-10 w-10 place-items-center rounded-[1.25rem] bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
                                         <Store size={18} />
                                     </span>
                                     <div>
@@ -120,7 +120,7 @@ const AdminInventory = () => {
                                         <p className="text-xs text-slate-500">{shop.ownerName}</p>
                                     </div>
                                 </div>
-                                <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                <span className="rounded-[1.25rem] bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                                     {shop.productCount || 0} products
                                 </span>
                             </div>
@@ -128,7 +128,7 @@ const AdminInventory = () => {
                             <div className="mt-4 grid grid-cols-3 gap-2 text-[10px]">
                                 <button 
                                     onClick={() => copyToClipboard(shop.shopId)}
-                                    className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+                                    className="rounded-[1.25rem] bg-slate-50 p-2 dark:bg-slate-800/50 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
                                 >
                                     <div className="flex items-center justify-between">
                                         <p className="text-slate-500 font-bold uppercase tracking-tight">Shop ID</p>
@@ -136,7 +136,7 @@ const AdminInventory = () => {
                                     </div>
                                     <p className="mt-1 truncate font-black text-slate-900 dark:text-white">{shop.shopId || 'N/A'}</p>
                                 </button>
-                                <div className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+                                <div className="rounded-[1.25rem] bg-slate-50 p-2 dark:bg-slate-800/50">
                                     <p className="text-slate-500 font-bold uppercase tracking-tight">Proof</p>
                                     {(shop.paymentScreenshot || shop.pendingSubscription?.screenshot) ? (
                                         <a href={ (shop.paymentScreenshot || shop.pendingSubscription?.screenshot).startsWith('http') ? (shop.paymentScreenshot || shop.pendingSubscription?.screenshot) : `${BASE_URL}${shop.paymentScreenshot || shop.pendingSubscription?.screenshot}`} target="_blank" rel="noreferrer" className="mt-1 block text-indigo-600 font-black hover:underline">VIEW</a>
@@ -144,7 +144,7 @@ const AdminInventory = () => {
                                         <p className="mt-1 font-black text-slate-400">NONE</p>
                                     )}
                                 </div>
-                                <div className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+                                <div className="rounded-[1.25rem] bg-slate-50 p-2 dark:bg-slate-800/50">
                                     <p className="text-slate-500 font-bold uppercase tracking-tight">Status</p>
                                     <p className="mt-1 font-black text-emerald-600 dark:text-emerald-300 uppercase tracking-widest">Live</p>
                                 </div>
@@ -152,7 +152,7 @@ const AdminInventory = () => {
 
                             <button
                                 onClick={() => viewShopInventory(shop)}
-                                className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 text-sm font-semibold text-white hover:bg-indigo-700"
+                                className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[1.25rem] bg-indigo-600 px-3 text-sm font-semibold text-white hover:bg-indigo-700"
                             >
                                 <ExternalLink size={15} /> View Inventory
                             </button>
@@ -170,12 +170,12 @@ const AdminInventory = () => {
                 className="max-w-6xl"
             >
                 <div className="space-y-4 py-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/40">
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/40">
                         <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedShop?.shopName || 'Selected shop'}</p>
                         <p className="text-xs text-slate-500">Total Product: {shopInventory.length}</p>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 dark:border-slate-700">
                         <div className="overflow-x-auto">
                             <table className="min-w-[980px] w-full text-left">
                                 <thead className="bg-slate-50 dark:bg-slate-800/50">
@@ -193,7 +193,7 @@ const AdminInventory = () => {
                                         [1, 2, 3].map((i) => (
                                             <tr key={i} className="animate-pulse">
                                                 <td colSpan={6} className="px-3 py-4">
-                                                    <div className="h-5 rounded bg-slate-100 dark:bg-slate-800" />
+                                                    <div className="h-5 rounded-[1.25rem] bg-slate-100 dark:bg-slate-800" />
                                                 </td>
                                             </tr>
                                         ))}
@@ -225,7 +225,7 @@ const AdminInventory = () => {
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-3">
-                                                        <span className="inline-flex rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                                                        <span className="inline-flex rounded-[1.25rem] border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:text-slate-300">
                                                             {isLow ? 'Restock Needed' : 'No Action'}
                                                         </span>
                                                     </td>

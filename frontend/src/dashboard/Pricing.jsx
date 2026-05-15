@@ -213,68 +213,77 @@ const Pricing = () => {
     };
 
     return (
-        <div className="space-y-10 pt-10 pb-16 font-jakarta">
-            {!user && (
-                <div className="mx-auto max-w-3xl py-6 text-center">
-                    <p className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-xs font-semibold text-indigo-700">
-                        Pricing Plans
-                    </p>
-                    <h1 className="mt-4 font-outfit text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
-                        Choose the plan that fits your retail growth
+        <div className="space-y-12 pb-20 font-jakarta">
+            {!user ? (
+                <div className="mx-auto max-w-4xl text-center space-y-6">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20"
+                    >
+                        <Zap size={14} className="text-indigo-600" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Enterprise Ready Infrastructure</span>
+                    </motion.div>
+                    <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none dark:text-white">
+                        Precision <span className="text-indigo-600">Pricing</span> for <br className="hidden md:block" />
+                        Modern <span className="text-slate-400">Retail.</span>
                     </h1>
-                    <p className="mt-3 text-slate-600 dark:text-slate-300">
-                        Start free, then upgrade when you need more inventory capacity and team features.
+                    <p className="mx-auto max-w-2xl text-lg md:text-xl font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Scale your storefront with confidence. Start with our powerful free core and unlock advanced intelligence as your volume grows.
                     </p>
                 </div>
-            )}
-
-            {user && (
-                <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900 md:p-10">
-                    {/* Decorative Blurs */}
-                    <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-500/5 blur-3xl"></div>
-                    <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-emerald-500/5 blur-3xl"></div>
+            ) : (
+                <div className="relative overflow-hidden rounded-[3rem] border border-slate-200 bg-white p-8 shadow-2xl dark:border-slate-800 dark:bg-slate-900 md:p-12">
+                    {/* Cinematic Background Elements */}
+                    <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-indigo-600/5 blur-[120px]"></div>
+                    <div className="absolute -bottom-20 -left-20 h-96 w-96 rounded-full bg-emerald-600/5 blur-[120px]"></div>
                     
-                    <div className="relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-                        <div className="flex items-start gap-6">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 md:h-20 md:w-20 shrink-0">
-                                {getIcon(user.subscriptionPlan)}
+                    <div className="relative flex flex-col gap-10 md:flex-row md:items-center md:justify-between">
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-indigo-600 blur-2xl opacity-20 animate-pulse"></div>
+                                <div className="relative flex h-20 w-20 items-center justify-center rounded-[2rem] bg-indigo-600 text-white shadow-2xl shadow-indigo-500/40 md:h-24 md:w-24 shrink-0">
+                                    {getIcon(user.subscriptionPlan)}
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">Current active plan</p>
-                                <h2 className="mt-1 font-outfit text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-5xl flex items-center gap-4">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></div>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 dark:text-indigo-400">Current active License</p>
+                                </div>
+                                <h2 className="font-outfit text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-6xl flex flex-wrap items-center gap-4">
                                     {user.subscriptionPlan}
                                     {user.subscriptionPlan !== 'Free' && (
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 ring-1 ring-white/20">
-                                            <CheckCircle2 size={10} />
-                                            {user.isTrialUsed && user.planExpiresAt ? 'Active Paid' : 'Active Trial'}
+                                        <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/20 ring-1 ring-white/20">
+                                            <ShieldCheck size={12} /> Verified
                                         </span>
                                     )}
                                 </h2>
-                                <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-bold text-slate-500 dark:text-slate-400">
-                                    <span className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-bold text-slate-500 dark:text-slate-400 pt-2">
+                                    <span className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800">
                                         <Calendar size={14} className="text-indigo-500" />
-                                        Purchase: {formatDate(user.planActivatedAt || user.createdAt)}
+                                        Since {formatDate(user.planActivatedAt || user.createdAt)}
                                     </span>
-                                    <span className="flex items-center gap-2">
+                                    <span className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800">
                                         <Clock size={14} className="text-emerald-500" />
-                                        Expiry: {user.planExpiresAt ? formatDate(user.planExpiresAt) : 'Lifetime Access'}
+                                        Renews: {user.planExpiresAt ? formatDate(user.planExpiresAt) : 'Never (Lifetime)'}
                                     </span>
                                 </div>
                             </div>
                         </div>
                         
-                        <div className="flex shrink-0 flex-col gap-3 md:items-end">
+                        <div className="flex shrink-0 flex-col gap-4 md:items-end">
                             {user.subscriptionPlan !== 'Free' && user.cancellationRequest?.status === 'None' && (
                                 <button
                                     onClick={() => setIsCancelModalOpen(true)}
-                                    className="inline-flex h-12 items-center justify-center rounded-xl border border-rose-200 bg-white px-6 text-xs font-black uppercase tracking-widest text-rose-600 shadow-sm transition-all hover:bg-rose-50 dark:border-rose-500/20 dark:bg-slate-800 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                                    className="inline-flex h-12 items-center justify-center rounded-[1.25rem] border border-slate-200 bg-white px-8 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm transition-all hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
                                 >
-                                    Request cancellation
+                                    Terminate Plan
                                 </button>
                             )}
                             {isNearExpiry() && (
-                                <div className="flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                                    <AlertCircle size={14} /> Plan expires soon
+                                <div className="flex items-center gap-2 rounded-full bg-amber-500 text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 animate-bounce">
+                                    <AlertCircle size={14} /> Action Required: Expiring
                                 </div>
                             )}
                         </div>
@@ -282,19 +291,14 @@ const Pricing = () => {
 
                     <AnimatePresence>
                         {user.cancellationRequest?.status === 'Pending' && (
-                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
-                                Cancellation request pending admin review.
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-8 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 text-xs font-bold text-amber-800 flex items-center gap-3 dark:border-amber-500/20 dark:bg-amber-500/5 dark:text-amber-400">
+                                <Clock size={16} /> Cancellation audit in progress. Access remains until cycle end.
                             </motion.div>
                         )}
                         {user.cancellationRequest?.status === 'Approved' && (
-                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-300">
-                                Cancellation approved. Your refund initiated within 5-7 days.
-                                {user.cancellationRequest.refundUtr ? ` UTR Reference: ${user.cancellationRequest.refundUtr}` : ''}
-                            </motion.div>
-                        )}
-                        {user.cancellationRequest?.status === 'Rejected' && (
-                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300">
-                                Cancellation rejected: {user.cancellationRequest.rejectReason}
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 text-xs font-bold text-emerald-800 flex items-center gap-3 dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:text-emerald-400">
+                                <CheckCircle2 size={16} /> Termination successful. Refund sequence initiated (5-7 business days).
+                                {user.cancellationRequest.refundUtr && <span className="ml-auto bg-emerald-100 px-2 py-1 rounded-lg">UTR: {user.cancellationRequest.refundUtr}</span>}
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -311,7 +315,7 @@ const Pricing = () => {
                         <button
                             onClick={handleActivateTrial}
                             disabled={submitting}
-                            className="inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-semibold text-indigo-700 transition-colors hover:bg-slate-100 disabled:opacity-70"
+                            className="inline-flex h-11 items-center justify-center rounded-[1.25rem] bg-white px-5 text-sm font-semibold text-indigo-700 transition-colors hover:bg-slate-100 disabled:opacity-70"
                         >
                             {submitting ? 'Activating...' : 'Activate trial'}
                         </button>
@@ -343,7 +347,7 @@ const Pricing = () => {
                                       </span>
                                   )}
 
-                                  <div className="mb-6 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
+                                  <div className="mb-6 inline-flex h-11 w-11 items-center justify-center rounded-[1.25rem] bg-slate-100 dark:bg-slate-800">
                                       {getIcon(plan.name)}
                                   </div>
 
@@ -355,7 +359,7 @@ const Pricing = () => {
                                       <p className="pb-1 text-sm text-slate-500">/ {plan.duration}</p>
                                   </div>
 
-                                  <div className="mt-5 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-800/50">
+                                  <div className="mt-5 space-y-2 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-800/50">
                                       <p className="inline-flex items-center gap-2 text-slate-700 dark:text-slate-200">
                                           <Package size={15} className="text-indigo-600" /> Products: {plan.maxProducts === 0 ? 'Unlimited' : plan.maxProducts}
                                       </p>
@@ -380,7 +384,7 @@ const Pricing = () => {
                                       {!user ? (
                                           <button
                                               onClick={() => navigate('/login')}
-                                              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900"
+                                              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[1.25rem] bg-slate-900 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900"
                                           >
                                               <LogIn size={16} />
                                               Login to subscribe
@@ -397,7 +401,7 @@ const Pricing = () => {
                                                       setSelectedPlan(plan);
                                                       setIsUpgradeModalOpen(true);
                                                   }}
-                                                  className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-colors ${isCurrentPlan ? (isNearExpiry() ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'cursor-default bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300') : 'bg-indigo-600 text-white hover:bg-indigo-700'} disabled:opacity-50`}
+                                                  className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-[1.25rem] text-sm font-semibold transition-colors ${isCurrentPlan ? (isNearExpiry() ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'cursor-default bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300') : 'bg-indigo-600 text-white hover:bg-indigo-700'} disabled:opacity-50`}
                                               >
                                                   {hasPendingForPlan ? (
                                                       <>
@@ -452,8 +456,7 @@ const Pricing = () => {
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-80">Final Payable Amount</p>
                                 <h3 className="mt-2 font-outfit text-6xl font-black tracking-tighter">₹{(prorationData?.finalPrice || selectedPlan?.price || 0).toLocaleString()}</h3>
-                                
-                                <div className="mt-8 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-between">
+                                <div className="mt-8 p-4 bg-white/10 backdrop-blur-md rounded-[1.25rem] border border-white/10 flex items-center justify-between">
                                     <div>
                                         <p className="text-[9px] font-black uppercase tracking-widest opacity-60">UPI Merchant ID</p>
                                         <p className="font-bold text-sm">{settings?.upiId || 'stocksaathi@upi'}</p>
@@ -464,7 +467,7 @@ const Pricing = () => {
                                             navigator.clipboard.writeText(settings?.upiId || 'stocksaathi@upi');
                                             toast.success('Merchant ID Copied');
                                         }}
-                                        className="p-2.5 bg-white text-indigo-600 rounded-xl hover:scale-110 transition-all shadow-lg"
+                                        className="p-2.5 bg-white text-indigo-600 rounded-[1.25rem] hover:scale-110 transition-all shadow-lg"
                                     >
                                         <ExternalLink size={16} />
                                     </button>
@@ -473,7 +476,7 @@ const Pricing = () => {
 
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em] ml-4">Payment Proof</label>
-                                <div className="relative group rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-hidden min-h-[220px] transition-all hover:border-indigo-500">
+                                <div className="relative group rounded-[1.25rem] border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-hidden min-h-[220px] transition-all hover:border-indigo-500">
                                     <input 
                                         type="file" 
                                         accept="image/*" 
@@ -485,7 +488,7 @@ const Pricing = () => {
                                         <img src={screenshot} alt="Payment proof" className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-6 text-center">
-                                            <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+                                            <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-sm">
                                                 <Upload size={28} />
                                             </div>
                                             <p className="text-xs font-bold uppercase tracking-widest">Tap to upload screenshot</p>
@@ -534,7 +537,7 @@ const Pricing = () => {
                             <button
                                 onClick={handleSubmitRequest}
                                 disabled={submitting || !screenshot}
-                                className="w-full h-18 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] shadow-2xl shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+                                className="w-full h-18 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase text-xs tracking-[0.3em] shadow-2xl shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
                             >
                                 {submitting ? 'Authenticating...' : <><Zap size={20} /> Initialize License</>}
                             </button>
@@ -607,7 +610,7 @@ const Pricing = () => {
                                 setSelectedPlan({ name: 'Barcode Booster', price: 499, isAddon: true });
                                 setIsUpgradeModalOpen(true);
                             }}
-                            className={`w-full h-18 rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all flex items-center justify-center gap-4 shadow-2xl ${
+                            className={`w-full h-18 rounded-[1.25rem] font-black uppercase text-xs tracking-[0.3em] transition-all flex items-center justify-center gap-4 shadow-2xl ${
                                 user?.hasBarcodeAddon 
                                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 cursor-default' 
                                 : user?.pendingSubscription?.plan === 'Barcode Booster'

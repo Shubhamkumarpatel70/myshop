@@ -52,13 +52,17 @@ exports.updatePOStatus = async (req, res) => {
                     await product.save();
 
                     // Log the inventory change
+                    // Log the inventory change for Stock Ledger
                     await InventoryLog.create({
                         product: product._id,
-                        user: req.shopOwnerId,
+                        user: req.user._id,
+                        shop: req.shopOwnerId,
                         action: 'Restock',
                         reason: `Received from PO #${po.poNumber}`,
                         previousQuantity: product.quantity - item.quantity,
-                        newQuantity: product.quantity
+                        newQuantity: product.quantity,
+                        price: item.expectedPrice || product.price,
+                        batchNumber: 'PO-' + (po.poNumber.split('-')[1] || 'Batch')
                     });
                 }
             }

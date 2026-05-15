@@ -2,27 +2,49 @@ import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { motion } from 'framer-motion';
 import {
-    Tag, Search, Filter,
-    Calendar, Box, RefreshCw,
-    Download, Printer, Plus, Trash2
+    Download, Printer, Plus, Trash2, CreditCard,
+    ShieldCheck, Upload, Zap, QrCode, ExternalLink,
+    AlertCircle, CheckCircle2, Tag, Search, Calendar
 } from 'lucide-react';
 import BarcodeImage from '../components/BarcodeImage';
 import toast from 'react-hot-toast';
+import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 
 const ShopBarcodes = () => {
+    const { user } = useAuth();
     const [barcodes, setBarcodes] = useState([]);
+    const [usage, setUsage] = useState({ used: 0, limit: 30, isUnlimited: false });
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
 
+    // Booster Modal States
+    const [isBoosterModalOpen, setIsBoosterModalOpen] = useState(false);
+    const [screenshot, setScreenshot] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [settings, setSettings] = useState(null);
+
     useEffect(() => {
         fetchBarcodes();
+        fetchSettings();
     }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const res = await api.get('/admin/settings');
+            setSettings(res.data.data);
+        } catch (error) {
+            console.error('Failed to load settings', error);
+        }
+    };
 
     const fetchBarcodes = async () => {
         try {
             const res = await api.get('/barcodes/shop');
             setBarcodes(res.data.data);
+            if (res.data.usage) setUsage(res.data.usage);
         } catch (error) {
             toast.error("Network Link Failure");
         } finally {
@@ -31,6 +53,10 @@ const ShopBarcodes = () => {
     };
 
     const handleGenerate = async () => {
+        if (!usage.isUnlimited && usage.used >= usage.limit) {
+            toast.error("Limit Quota Limit is Over");
+            return;
+        }
         try {
             const res = await api.post('/barcodes/generate');
             if (res.data.success) {
@@ -38,7 +64,7 @@ const ShopBarcodes = () => {
                 fetchBarcodes();
             }
         } catch (error) {
-            toast.error("Generation Protocol Failure");
+            toast.error("Limit Quota Limit is Over");
         }
     };
 
@@ -47,11 +73,55 @@ const ShopBarcodes = () => {
         try {
             const res = await api.delete(`/barcodes/${id}`);
             if (res.data.success) {
-                toast.success("Identity Purged Successfully");
-                setBarcodes(barcodes.filter(b => b._id !== id));
+                toast.success("Barcode Deleted Successfully");
+                fetchBarcodes(); // Refresh both list and usage count
             }
         } catch (error) {
             toast.error("Deletion Protocol Failed");
+        }
+    };
+
+    const handleScreenshotUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const res = await api.post('/products/upload', formData);
+            setScreenshot(res.data.url);
+            toast.success('Payment screenshot uploaded');
+        } catch {
+            toast.error('Upload failed');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleSubmitBooster = async () => {
+        if (!screenshot) {
+            toast.error('Please upload payment screenshot');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const res = await api.post('/subscriptions/request-addon', {
+                addon: 'Barcode Booster',
+                screenshot,
+            });
+
+            if (res.data.success) {
+                toast.success('Booster request submitted for audit');
+                setIsBoosterModalOpen(false);
+                setScreenshot(null);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Unable to submit request');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -198,10 +268,37 @@ const ShopBarcodes = () => {
                 <div className="flex gap-2">
                     <button
                         onClick={handleGenerate}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/20"
+                        disabled={!usage.isUnlimited && usage.used >= usage.limit}
+                        className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-white shadow-lg transition-all ${(!usage.isUnlimited && usage.used >= usage.limit) ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/20'}`}
                     >
-                        <Plus size={18} /> Generate New
+                        <Plus size={18} /> Generate Identifier
                     </button>
+                    {!usage.isUnlimited && usage.used >= usage.limit && (
+                        <button
+                            onClick={() => setIsBoosterModalOpen(true)}
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
+                        >
+                            <CreditCard size={18} /> Add Barcode Booster
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Quota Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Total Capacity</p>
+                    <h3 className="text-2xl font-black">{usage.isUnlimited ? '∞ Unlimited' : usage.limit}</h3>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Identities Used</p>
+                    <h3 className="text-2xl font-black text-indigo-600">{usage.used}</h3>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Available Slots</p>
+                    <h3 className={`text-2xl font-black ${(!usage.isUnlimited && usage.limit - usage.used <= 5) ? 'text-rose-500' : 'text-emerald-500'}`}>
+                        {usage.isUnlimited ? '∞' : Math.max(0, usage.limit - usage.used)}
+                    </h3>
                 </div>
             </div>
 
@@ -302,6 +399,105 @@ const ShopBarcodes = () => {
                     </div>
                 )}
             </div>
+
+            {/* Barcode Booster Modal */}
+            <Modal 
+                isOpen={isBoosterModalOpen} 
+                onClose={() => setIsBoosterModalOpen(false)} 
+                title="Activate Barcode Booster" 
+                className="max-w-4xl"
+            >
+                <div className="py-6 space-y-10">
+                    <div className="rounded-3xl border-2 border-emerald-100 bg-emerald-50/50 p-6 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+                        <div className="flex items-center gap-4 text-emerald-700 dark:text-emerald-300">
+                            <ShieldCheck size={24} />
+                            <div>
+                                <p className="text-lg font-black uppercase tracking-tight leading-tight">Barcode Booster Activation</p>
+                                <p className="text-xs font-bold opacity-80 mt-1">
+                                    Need more identifiers without upgrading your entire plan? Get unlimited barcode generation for your shop with our standalone booster.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        {/* Left Side: Payment Details */}
+                        <div className="space-y-8">
+                            <div className="rounded-[2.5rem] bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 text-white shadow-2xl shadow-indigo-500/20 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-80">One-time Activation Fee</p>
+                                <h3 className="mt-2 font-outfit text-6xl font-black tracking-tighter">₹499</h3>
+                                <div className="mt-8 p-4 bg-white/10 backdrop-blur-md rounded-[1.25rem] border border-white/10 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-60">Merchant ID</p>
+                                        <p className="font-bold text-sm">{settings?.upiId || 'stocksaathi@upi'}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(settings?.upiId || 'stocksaathi@upi');
+                                            toast.success('Merchant ID Copied');
+                                        }}
+                                        className="p-2.5 bg-white text-indigo-600 rounded-[1.25rem] hover:scale-110 transition-all shadow-lg"
+                                    >
+                                        <ExternalLink size={16} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em] ml-4">Payment Proof</label>
+                                <div className="relative group rounded-[1.25rem] border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-hidden min-h-[220px] transition-all hover:border-indigo-500">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="absolute inset-0 cursor-pointer opacity-0 z-10" 
+                                        onChange={handleScreenshotUpload} 
+                                        disabled={uploading} 
+                                    />
+                                    {screenshot ? (
+                                        <img src={screenshot} alt="Payment proof" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-6 text-center">
+                                            <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-sm">
+                                                <Upload size={28} />
+                                            </div>
+                                            <p className="text-xs font-bold uppercase tracking-widest">Upload Screenshot</p>
+                                        </div>
+                                    )}
+                                    {uploading && (
+                                        <div className="absolute inset-0 grid place-items-center bg-white/70 backdrop-blur-sm dark:bg-slate-900/70 z-20">
+                                            <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Side: QR Code & Steps */}
+                        <div className="space-y-8">
+                            <div className="bg-slate-950 rounded-[3rem] p-8 flex flex-col items-center text-white relative shadow-2xl">
+                                <div className="w-full aspect-square max-w-[200px] bg-white rounded-[2rem] p-4 flex items-center justify-center mb-6 shadow-2xl">
+                                    <img 
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`upi://pay?pa=${settings?.upiId || 'stocksaathi@upi'}&pn=StockSaathi&am=499&cu=INR`)}`} 
+                                        alt="Payment QR" 
+                                        className="w-full h-full object-contain" 
+                                    />
+                                </div>
+                                <h4 className="text-lg font-black uppercase tracking-tight">Scan to Pay</h4>
+                            </div>
+
+                            <button
+                                onClick={handleSubmitBooster}
+                                disabled={submitting || !screenshot}
+                                className="w-full h-18 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase text-xs tracking-[0.3em] shadow-2xl shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+                            >
+                                {submitting ? 'Processing...' : <><Zap size={20} /> Request Booster</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };

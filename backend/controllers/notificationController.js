@@ -2,6 +2,22 @@ const Notification = require('../models/Notification');
 
 exports.getNotifications = async (req, res) => {
     try {
+        // Auto-delete expired notifications
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+        const threeDaysAgo = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+
+        await Notification.deleteMany({
+            $or: [
+                { type: 'Broadcast', createdAt: { $lt: oneDayAgo } },
+                { type: 'Stock', createdAt: { $lt: twoDaysAgo } },
+                { type: 'Expiry', createdAt: { $lt: threeDaysAgo } }, // Critical/Expiry
+                { type: 'System', createdAt: { $lt: threeDaysAgo } }, // Critical/System
+                { type: { $nin: ['Broadcast', 'Stock', 'Expiry', 'System'] }, createdAt: { $lt: twoDaysAgo } }
+            ]
+        });
+
         const notifications = await Notification.find({ 
             $or: [
                 { user: req.shopOwnerId },

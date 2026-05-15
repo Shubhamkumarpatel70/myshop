@@ -1,5 +1,6 @@
 const Barcode = require('../models/Barcode');
 const User = require('../models/User');
+const Plan = require('../models/Plan');
 
 // Generate a valid EAN-13 barcode
 exports.generateBarcode = async (req, res) => {
@@ -30,15 +31,9 @@ exports.generateBarcode = async (req, res) => {
         }
 
         const shop = await User.findById(req.shopOwnerId);
+        const plan = await Plan.findOne({ name: shop.subscriptionPlan });
         
-        // Plan Enforcement Logic
-        const planLimits = {
-            'Free': 30,
-            'Professional': 80,
-            'Enterprise': Infinity
-        };
-
-        const currentLimit = planLimits[shop.subscriptionPlan] || 30;
+        const currentLimit = plan ? plan.maxBarcodes : 30;
         const hasAddon = shop.hasBarcodeAddon;
 
         if (!hasAddon && shop.barcodeUsedCount >= currentLimit) {
@@ -104,7 +99,20 @@ exports.getShopBarcodes = async (req, res) => {
         const barcodes = await Barcode.find({ user: req.shopOwnerId })
             .sort({ createdAt: -1 });
             
-        res.json({ success: true, data: barcodes });
+        const shop = await User.findById(req.shopOwnerId);
+        const plan = await Plan.findOne({ name: shop.subscriptionPlan });
+        
+        const currentLimit = shop.hasBarcodeAddon ? Infinity : (plan ? (plan.maxBarcodes === 0 ? Infinity : plan.maxBarcodes) : 30);
+
+        res.json({ 
+            success: true, 
+            data: barcodes,
+            usage: {
+                used: shop.barcodeUsedCount,
+                limit: currentLimit,
+                isUnlimited: shop.hasBarcodeAddon || currentLimit === Infinity
+            }
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -123,6 +131,34 @@ exports.getBarcodes = async (req, res) => {
     }
 };
 
+// Get shop-wise barcode statistics (Admin Only)
+exports.getAdminBarcodeStats = async (req, res) => {
+    try {
+        const shops = await User.find({ role: 'shop_owner' })
+            .select('shopName subscriptionPlan hasBarcodeAddon barcodeUsedCount');
+        
+        const barcodes = await Barcode.find();
+        
+        const stats = shops.map(shop => {
+            const shopBarcodes = barcodes.filter(b => b.user && b.user.toString() === shop._id.toString());
+            const unlinkedCount = shopBarcodes.filter(b => b.status === 'Generated').length;
+            
+            return {
+                _id: shop._id,
+                shopName: shop.shopName,
+                subscriptionPlan: shop.subscriptionPlan,
+                hasBarcodeAddon: shop.hasBarcodeAddon,
+                totalUsed: shop.barcodeUsedCount,
+                unlinkedCount
+            };
+        });
+
+        res.json({ success: true, data: stats });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 exports.deleteBarcode = async (req, res) => {
     try {
         const barcode = await Barcode.findOne({ 
@@ -135,6 +171,14 @@ exports.deleteBarcode = async (req, res) => {
         }
 
         await Barcode.findByIdAndDelete(req.params.id);
+
+        // Decrement Usage Count
+        const shop = await User.findById(req.shopOwnerId);
+        if (shop && shop.barcodeUsedCount > 0) {
+            shop.barcodeUsedCount -= 1;
+            await shop.save();
+        }
+
         res.json({ success: true, message: 'Barcode deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

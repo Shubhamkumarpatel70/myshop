@@ -11,7 +11,10 @@ const {
     impersonateUser
 } = require('../controllers/adminController');
 
-// All routes here are protected
+// Publicly accessible settings (for maintenance check and payment info)
+router.get('/settings', getGlobalSettings);
+
+// All other routes here are protected
 router.use(protect);
 
 // Shop owner specific
@@ -22,7 +25,6 @@ router.get('/pending-approvals', admin, getPendingApprovals);
 router.put('/approvals/:id', admin, updateApprovalStatus);
 router.get('/shop-lookup/:shopId', admin, getShopById);
 router.post('/impersonate/:id', admin, impersonateUser);
-router.get('/settings', getGlobalSettings); // Everyone needs to see settings for payment
 router.put('/settings', admin, updateGlobalSettings);
 
 module.exports = router;

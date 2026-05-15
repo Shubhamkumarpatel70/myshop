@@ -21,6 +21,7 @@ const productSchema = new mongoose.Schema({
     lowStockThreshold: { type: Number, default: 10 },
     description: { type: String },
     productImage: { type: String, default: '' },
+    isPublic: { type: Boolean, default: true },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 

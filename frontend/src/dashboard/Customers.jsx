@@ -5,7 +5,8 @@ import {
     Users, Search, Filter, Download, 
     TrendingUp, Calendar, Phone, Mail, 
     ArrowRight, ChevronRight, X, Heart,
-    Zap, ShoppingBag, MessageCircle, Plus
+    Zap, ShoppingBag, MessageCircle, Plus,
+    Star, Wallet, Clock, MapPin, History
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -19,6 +20,7 @@ const Customers = () => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [customerSales, setCustomerSales] = useState([]);
     const [fetchingDetails, setFetchingDetails] = useState(false);
+    const [filterTier, setFilterTier] = useState('All');
 
     useEffect(() => {
         fetchCustomers();
@@ -63,320 +65,250 @@ const Customers = () => {
         }
     };
 
-    const [filterTier, setFilterTier] = useState('All');
-
     const filteredCustomers = customers.filter(c => {
         const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone.includes(searchTerm);
         
-        if (filterTier === 'VIP') return matchesSearch && c.totalSpent > 1000;
-        if (filterTier === 'Dormant') return matchesSearch && c.totalSpent < 100;
+        if (filterTier === 'VIP') return matchesSearch && c.totalSpent > 5000; // Adjusted VIP threshold
+        if (filterTier === 'New') return matchesSearch && c.orderCount <= 1;
         return matchesSearch;
     });
 
     const handleSendWhatsApp = (phone, name) => {
-        const message = `Hello ${name}! Thank you for shopping with us at StockSaathi. We have some special offers for you!`;
+        const message = `Hello ${name}! Thank you for your continued loyalty at our shop. We've added a special discount for your next visit!`;
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Syncing CRM Registry...</p>
+        </div>
+    );
+
     return (
-        <div className="space-y-10 pb-20">
-            {/* Header & Meta */}
-            <div className="space-y-2">
-                <div className="flex items-center gap-2 text-indigo-600 font-black uppercase text-[10px] tracking-[0.3em]">
-                    <Users size={14} /> Relationship Manager
+        <div className="space-y-8 animate-fade-in pb-20">
+            {/* Simple Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Customer Registry</h1>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Loyalty Management & VIP Tracking</p>
                 </div>
-                <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
-                    Customer <span className="text-indigo-600">Registry</span>
-                </h1>
-                <p className="text-slate-500 font-medium max-w-2xl text-sm md:text-lg leading-relaxed">
-                    Track lifetime spending, identify VIP customers, and drive repeat business with personalized loyalty.
-                </p>
+                <button 
+                    onClick={() => setShowAddModal(true)}
+                    className="h-12 px-8 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95"
+                >
+                    <Plus size={16} /> Register Customer
+                </button>
             </div>
 
-            {/* Loyalty Analytics Dashboard */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {/* Clean Stats Row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Customers', value: customers.length, icon: Users, color: 'bg-indigo-50 text-indigo-600' },
-                    { label: 'Lifetime Sales', value: `₹${customers.reduce((acc, c) => acc + c.totalSpent, 0).toLocaleString()}`, icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600' },
-                    { label: 'VIP Nodes', value: customers.filter(c => c.totalSpent > 1000).length, icon: Zap, color: 'bg-amber-50 text-amber-600' },
-                    { label: 'Avg spending', value: `₹${Math.round(customers.reduce((acc, c) => acc + c.totalSpent, 0) / (customers.length || 1)).toLocaleString()}`, icon: Heart, color: 'bg-rose-50 text-rose-600' },
+                    { label: 'Total Base', value: customers.length, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                    { label: 'Lifetime Value', value: `₹${customers.reduce((acc, c) => acc + c.totalSpent, 0).toLocaleString()}`, icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { label: 'VIP Members', value: customers.filter(c => c.totalSpent > 5000).length, icon: Star, color: 'text-amber-500', bg: 'bg-amber-50' },
+                    { label: 'Avg Ticket', value: `₹${Math.round(customers.reduce((acc, c) => acc + c.totalSpent, 0) / (customers.length || 1)).toLocaleString()}`, icon: TrendingUp, color: 'text-rose-500', bg: 'bg-rose-50' },
                 ].map((stat, i) => (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        key={stat.label} 
-                        className="bg-white dark:bg-slate-900 p-5 md:p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm"
-                    >
-                        <div className={`w-10 h-10 md:w-12 md:h-12 ${stat.color} rounded-xl md:rounded-2xl flex items-center justify-center mb-4`}>
-                            <stat.icon size={20} className="md:w-6 md:h-6" />
+                    <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center gap-4 shadow-sm">
+                        <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-[1.25rem] flex items-center justify-center`}>
+                            <stat.icon size={22} />
                         </div>
-                        <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">{stat.label}</p>
-                        <p className="text-lg md:text-2xl font-black mt-1.5">{stat.value}</p>
-                    </motion.div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">{stat.label}</p>
+                            <p className="text-xl font-black mt-1.5">{stat.value}</p>
+                        </div>
+                    </div>
                 ))}
             </div>
 
-            {/* Search & Tactical Filters */}
-            <div className="flex flex-col xl:flex-row gap-4">
-                <div className="relative flex-1 group">
-                    <Search className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+            {/* Filter & Search Bar */}
+            <div className="flex flex-col lg:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input 
                         type="text" 
-                        placeholder="Search Registry..." 
-                        className="w-full h-14 md:h-16 pl-12 md:pl-16 pr-6 rounded-xl md:rounded-[2rem] bg-white dark:bg-slate-900 border-none shadow-lg shadow-slate-200/50 dark:shadow-none font-bold text-sm md:text-lg focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                        placeholder="Search by name or mobile number..." 
+                        className="w-full h-14 pl-14 pr-6 rounded-[1.25rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex flex-wrap items-center gap-2 p-1.5 md:p-2 bg-white dark:bg-slate-900 rounded-xl md:rounded-[2rem] shadow-lg shadow-slate-200/50 dark:shadow-none">
-                    <button 
-                        onClick={() => setFilterTier('All')}
-                        className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-lg md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === 'All' ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
-                    >
-                        All
-                    </button>
-                    <button 
-                        onClick={() => setFilterTier('VIP')}
-                        className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-lg md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === 'VIP' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:bg-slate-50'}`}
-                    >
-                        VIP
-                    </button>
-                    <button 
-                        onClick={() => setFilterTier('Dormant')}
-                        className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-lg md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === 'Dormant' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'text-slate-400 hover:bg-slate-50'}`}
-                    >
-                        Dormant
-                    </button>
-                    <div className="w-px h-6 bg-slate-100 dark:bg-slate-800 mx-1 hidden sm:block" />
-                    <button 
-                        onClick={() => setShowAddModal(true)}
-                        className="h-10 md:h-12 px-4 md:px-8 bg-indigo-600 text-white rounded-lg md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none"
-                    >
-                        <Plus size={14} /> New
-                    </button>
+                <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-[1.25rem] border border-slate-100 dark:border-slate-800">
+                    {['All', 'VIP', 'New'].map((t) => (
+                        <button 
+                            key={t}
+                            onClick={() => setFilterTier(t)}
+                            className={`px-6 py-2.5 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest transition-all ${filterTier === t ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                        >
+                            {t}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Customer Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                    [1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="h-64 bg-white dark:bg-slate-900 rounded-[2.5rem] animate-pulse border border-slate-100 dark:border-slate-800"></div>
-                    ))
-                ) : filteredCustomers.map((customer, i) => (
-                    <motion.div 
-                        key={customer._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="group relative bg-white dark:bg-slate-900 rounded-3xl md:rounded-[2.5rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 hover:border-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/5 transition-all cursor-default"
-                    >
-                        {/* VIP Badge */}
-                        {customer.totalSpent > 1000 && (
-                            <div className="absolute top-6 right-6 flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-600 rounded-full text-[9px] font-black uppercase border border-amber-100 dark:border-amber-500/20">
-                                <Zap size={10} fill="currentColor" /> VIP Tier
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-4 md:gap-5 mb-6 md:mb-8">
-                            <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-50 dark:bg-slate-800 rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-600 font-black text-xl md:text-2xl shadow-inner">
-                                {customer.name.charAt(0)}
-                            </div>
-                            <div>
-                                <h3 className="text-lg md:text-xl font-black tracking-tight">{customer.name}</h3>
-                                <div className="flex items-center gap-2 text-slate-400 mt-0.5 md:mt-1">
-                                    <Phone size={12} />
-                                    <span className="text-[10px] md:text-xs font-bold">{customer.phone}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
-                            <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl md:rounded-2xl">
-                                <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest mb-0.5 md:mb-1">Lifetime</p>
-                                <p className="text-lg md:text-xl font-black text-emerald-600">₹{customer.totalSpent.toLocaleString()}</p>
-                            </div>
-                            <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl md:rounded-2xl">
-                                <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest mb-0.5 md:mb-1">Orders</p>
-                                <p className="text-lg md:text-xl font-black text-indigo-600">{customer.orderCount}</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 md:gap-3">
-                            <button 
-                                onClick={() => {
-                                    setSelectedCustomer(customer);
-                                    fetchCustomerDetails(customer.phone);
-                                }}
-                                className="flex-1 h-10 md:h-12 bg-indigo-600 text-white rounded-lg md:rounded-xl font-black uppercase text-[9px] md:text-[10px] tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                            >
-                                <ShoppingBag size={14} /> History
-                            </button>
-                            <button 
-                                onClick={() => handleSendWhatsApp(customer._id, customer.name)}
-                                className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-lg md:rounded-xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
-                                title="Send WhatsApp Discount"
-                            >
-                                <MessageCircle size={18} />
-                            </button>
-                        </div>
-                    </motion.div>
-                ))}
+            {/* Customer List Table - Simple & Professional */}
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Customer Identity</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Lifetime Spending</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Visits</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Tier Status</th>
+                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                            {filteredCustomers.map((customer) => (
+                                <tr key={customer._id} className="hover:bg-slate-50/30 dark:hover:bg-white/5 transition-colors group">
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-11 h-11 rounded-[1.25rem] bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-black text-sm border border-indigo-100 dark:border-indigo-500/20">
+                                                {customer.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black uppercase tracking-tight text-slate-900 dark:text-white">{customer.name}</p>
+                                                <div className="flex items-center gap-1.5 text-slate-400 mt-0.5 font-bold">
+                                                    <Phone size={10} />
+                                                    <span className="text-[10px]">{customer.phone}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-6 text-center">
+                                        <p className="text-sm font-black text-emerald-600">₹{customer.totalSpent.toLocaleString()}</p>
+                                    </td>
+                                    <td className="px-6 py-6 text-center">
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                            <ShoppingBag size={12} className="text-slate-400" />
+                                            <span className="text-xs font-black text-slate-700 dark:text-slate-300">{customer.orderCount}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-6 text-center">
+                                        {customer.totalSpent > 5000 ? (
+                                            <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase border border-amber-100 flex items-center justify-center gap-1 w-fit mx-auto">
+                                                <Star size={10} fill="currentColor" /> VIP Star
+                                            </span>
+                                        ) : (
+                                            <span className="px-3 py-1 bg-slate-50 text-slate-400 rounded-full text-[9px] font-black uppercase border border-slate-100 w-fit mx-auto flex items-center justify-center">Regular</span>
+                                        )}
+                                    </td>
+                                    <td className="px-8 py-6 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button 
+                                                onClick={() => { setSelectedCustomer(customer); fetchCustomerDetails(customer.phone); }}
+                                                className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-[1.25rem] transition-all"
+                                                title="View History"
+                                            >
+                                                <History size={18} />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleSendWhatsApp(customer.phone, customer.name)}
+                                                className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-[1.25rem] transition-all"
+                                                title="Send Promo"
+                                            >
+                                                <MessageCircle size={18} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
+            {/* Customer Details Modal */}
             <AnimatePresence>
                 {selectedCustomer && (
-                    <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto no-scrollbar py-6 sm:py-10">
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setSelectedCustomer(null)}
-                            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-                        />
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="relative w-full max-w-3xl bg-white dark:bg-slate-950 rounded-[3rem] shadow-2xl overflow-hidden"
-                        >
-                            <div className="p-6 md:p-10 border-b border-slate-100 dark:border-slate-900 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50 dark:bg-slate-900/50">
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
-                                        <h2 className="text-xl md:text-3xl font-black tracking-tighter uppercase truncate max-w-full">{selectedCustomer.name}</h2>
-                                        <span className="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest break-all">ID: {selectedCustomer._id}</span>
-                                    </div>
-                                    <p className="text-slate-500 font-medium mt-1 uppercase text-[8px] md:text-[10px] tracking-widest">Full Purchase History & Behavior Audit</p>
-                                </div>
-                                <button onClick={() => setSelectedCustomer(null)} className="absolute top-6 right-6 md:static p-3 bg-white dark:bg-slate-800 rounded-2xl text-slate-400 hover:text-rose-500 transition-all shadow-sm">
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <div className="p-6 md:p-10 max-h-[60vh] overflow-y-auto space-y-6 custom-scrollbar">
-                                {fetchingDetails ? (
-                                    <div className="space-y-4 py-10 text-center">
-                                        <TrendingUp className="mx-auto text-indigo-600 animate-bounce" size={40} />
-                                        <p className="text-slate-400 font-black uppercase text-xs tracking-widest">Analyzing Transactions...</p>
-                                    </div>
-                                ) : customerSales.length === 0 ? (
-                                    <p className="text-center text-slate-400 py-10">No transactions found.</p>
-                                ) : customerSales.map((sale) => (
-                                    <div key={sale._id} className="p-5 md:p-6 bg-slate-50 dark:bg-slate-900 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 dark:border-slate-800">
-                                        <div className="flex flex-col sm:flex-row justify-between items-start mb-4 md:mb-6 gap-2">
-                                            <div>
-                                                <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Order Date</p>
-                                                <p className="font-bold text-xs md:text-sm">{new Date(sale.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                                            </div>
-                                            <div className="sm:text-right">
-                                                <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Total Paid</p>
-                                                <p className="text-lg md:text-xl font-black text-indigo-600">₹{sale.totalAmount.toLocaleString()}</p>
-                                            </div>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedCustomer(null)} className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white dark:bg-slate-950 w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden border border-white/5">
+                            <div className="p-8 md:p-10 space-y-8">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-16 h-16 bg-indigo-600 text-white rounded-[1.25rem] flex items-center justify-center font-black text-2xl shadow-xl shadow-indigo-500/20">
+                                            {selectedCustomer.name.charAt(0)}
                                         </div>
-                                        <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                            {sale.items.map((item, idx) => (
-                                                <span key={idx} className="px-2 md:px-3 py-1 md:py-1.5 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold border border-slate-100 dark:border-slate-700">
-                                                    {item.product?.productName || 'Product'} × {item.quantity}
-                                                </span>
-                                            ))}
+                                        <div>
+                                            <h2 className="text-2xl font-black uppercase tracking-tight">{selectedCustomer.name}</h2>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{selectedCustomer.phone}</p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-
-                            <div className="p-6 md:p-10 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                <div className="text-center sm:text-left">
-                                    <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Last Interaction</p>
-                                    <p className="text-xs md:text-sm font-bold">{new Date(selectedCustomer.lastPurchase).toLocaleDateString()}</p>
+                                    <button onClick={() => setSelectedCustomer(null)} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-[1.25rem] text-slate-400 hover:text-rose-500 transition-all">
+                                        <X size={20} />
+                                    </button>
                                 </div>
-                                <button 
-                                    onClick={() => handleSendWhatsApp(selectedCustomer._id, selectedCustomer.name)}
-                                    className="w-full sm:w-auto h-14 md:h-16 px-6 md:px-10 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] md:text-xs tracking-widest shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-3"
-                                >
-                                    <MessageCircle size={18} /> Send Loyalty Bonus
-                                </button>
+
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="p-5 bg-slate-50 dark:bg-slate-900 rounded-[1.25rem] border border-slate-100 dark:border-slate-800">
+                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Lifetime</p>
+                                        <p className="text-xl font-black text-emerald-600">₹{selectedCustomer.totalSpent.toLocaleString()}</p>
+                                    </div>
+                                    <div className="p-5 bg-slate-50 dark:bg-slate-900 rounded-[1.25rem] border border-slate-100 dark:border-slate-800">
+                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Visits</p>
+                                        <p className="text-xl font-black text-indigo-600">{selectedCustomer.orderCount}</p>
+                                    </div>
+                                    <div className="p-5 bg-slate-50 dark:bg-slate-900 rounded-[1.25rem] border border-slate-100 dark:border-slate-800">
+                                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Last Seen</p>
+                                        <p className="text-sm font-black text-slate-900 dark:text-white uppercase mt-1">{selectedCustomer.lastPurchase ? new Date(selectedCustomer.lastPurchase).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Never'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Recent Transactions</h4>
+                                    <div className="max-h-[30vh] overflow-y-auto pr-2 custom-scrollbar space-y-3">
+                                        {fetchingDetails ? (
+                                            <div className="py-10 text-center animate-pulse"><Clock className="mx-auto text-indigo-400 mb-2" /><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Retrieving Logs...</p></div>
+                                        ) : customerSales.map((sale) => (
+                                            <div key={sale._id} className="p-4 bg-slate-50 dark:bg-slate-900 rounded-[1.25rem] flex justify-between items-center border border-slate-100 dark:border-slate-800">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tight">{new Date(sale.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{sale.items.length} items · {sale.paymentMethod}</p>
+                                                </div>
+                                                <p className="font-black text-indigo-600">₹{sale.totalAmount.toLocaleString()}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <button className="flex-1 h-14 bg-emerald-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20" onClick={() => handleSendWhatsApp(selectedCustomer.phone, selectedCustomer.name)}><MessageCircle size={18} /> Send WhatsApp Promo</button>
+                                </div>
                             </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
-            {/* New Customer Modal */}
+
+            {/* Registration Modal */}
             <AnimatePresence>
                 {showAddModal && (
-                    <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto no-scrollbar py-6 sm:py-10">
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowAddModal(false)}
-                            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-                        />
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden"
-                        >
-                            <form onSubmit={handleAddCustomer} className="p-10 space-y-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-2xl font-black uppercase tracking-tight">Register Customer</h2>
-                                    <button type="button" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all">
-                                        <X size={20} />
-                                    </button>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white dark:bg-slate-950 w-full max-w-md rounded-[3rem] shadow-2xl relative z-10 overflow-hidden border border-white/5">
+                            <form onSubmit={handleAddCustomer} className="p-10 space-y-8">
+                                <div className="text-center">
+                                    <div className="w-20 h-20 bg-indigo-600 rounded-[1.25rem] flex items-center justify-center text-white mx-auto mb-6 shadow-2xl shadow-indigo-500/30"><Users size={32} /></div>
+                                    <h2 className="text-2xl font-black uppercase tracking-tight">Register Client</h2>
+                                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-2">Add to your loyalty database</p>
                                 </div>
-
                                 <div className="space-y-4">
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Full Name</label>
-                                        <input 
-                                            required
-                                            type="text" 
-                                            className="w-full h-14 px-6 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none font-bold focus:ring-2 focus:ring-indigo-500 transition-all"
-                                            placeholder="John Doe"
-                                            value={newCustomer.name}
-                                            onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                                        />
+                                        <input required type="text" className="w-full h-14 px-6 rounded-[1.25rem] bg-slate-50 dark:bg-slate-900 border-none font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" value={newCustomer.name} onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})} placeholder="Customer Name" />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Phone Number</label>
-                                        <input 
-                                            required
-                                            type="tel" 
-                                            className="w-full h-14 px-6 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none font-bold focus:ring-2 focus:ring-indigo-500 transition-all"
-                                            placeholder="+91 00000 00000"
-                                            value={newCustomer.phone}
-                                            onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                                        />
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mobile Number</label>
+                                        <input required type="tel" className="w-full h-14 px-6 rounded-[1.25rem] bg-slate-50 dark:bg-slate-900 border-none font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all" value={newCustomer.phone} onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})} placeholder="91XXXXXXXX" />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Email (Optional)</label>
-                                        <input 
-                                            type="email" 
-                                            className="w-full h-14 px-6 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none font-bold focus:ring-2 focus:ring-indigo-500 transition-all"
-                                            placeholder="john@example.com"
-                                            value={newCustomer.email}
-                                            onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Address</label>
-                                        <textarea 
-                                            className="w-full p-6 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none font-bold focus:ring-2 focus:ring-indigo-500 transition-all h-32 resize-none"
-                                            placeholder="Customer locality..."
-                                            value={newCustomer.address}
-                                            onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
-                                        />
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Locality/Address (Optional)</label>
+                                        <textarea className="w-full p-6 rounded-[1.25rem] bg-slate-50 dark:bg-slate-900 border-none font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all h-24 resize-none" value={newCustomer.address} onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})} placeholder="Area, City..." />
                                     </div>
                                 </div>
-
-                                <button 
-                                    disabled={submitting}
-                                    type="submit"
-                                    className="w-full h-16 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 disabled:opacity-50 transition-all"
-                                >
-                                    {submitting ? 'Registering...' : 'Register Customer'}
-                                </button>
+                                <button disabled={submitting} type="submit" className="w-full h-16 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all">Register & Enroll</button>
                             </form>
                         </motion.div>
                     </div>

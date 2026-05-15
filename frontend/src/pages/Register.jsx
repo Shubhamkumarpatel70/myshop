@@ -161,7 +161,7 @@ const Register = () => {
                                     <button
                                         type="button"
                                         onClick={nextStep}
-                                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[1.25rem] bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
                                     >
                                         Continue
                                         <ArrowRight size={16} />
@@ -250,14 +250,14 @@ const Register = () => {
                                         <button
                                             type="button"
                                             onClick={prevStep}
-                                            className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-100"
+                                            className="inline-flex h-11 items-center justify-center rounded-[1.25rem] border border-slate-300 text-slate-700 transition-colors hover:bg-slate-100"
                                         >
                                             <ArrowLeft size={16} />
                                         </button>
                                         <button
                                             type="button"
                                             onClick={nextStep}
-                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-[1.25rem] bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
                                         >
                                             Continue
                                             <ArrowRight size={16} />
@@ -322,14 +322,14 @@ const Register = () => {
                                         <button
                                             type="button"
                                             onClick={prevStep}
-                                            className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition-colors hover:bg-slate-100"
+                                            className="inline-flex h-11 items-center justify-center rounded-[1.25rem] border border-slate-300 text-slate-700 transition-colors hover:bg-slate-100"
                                         >
                                             <ArrowLeft size={16} />
                                         </button>
                                         <button
                                             type="submit"
                                             disabled={loading || uploading.front || uploading.back}
-                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-[1.25rem] bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
                                         >
                                             {loading ? <Loader2 size={18} className="animate-spin" /> : 'Complete Registration'}
                                         </button>

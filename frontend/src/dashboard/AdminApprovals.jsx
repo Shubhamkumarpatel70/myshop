@@ -27,7 +27,7 @@ const AdminApprovals = () => {
             const res = await api.get('/admin/pending-approvals');
             setPendingShops(res.data.data);
         } catch (error) {
-            toast.error("Telemetry failed: Queue unreachable");
+            toast.error(error.response?.data?.message || "Failed to connect to approval list");
         } finally {
             setLoading(false);
         }
@@ -61,7 +61,7 @@ const AdminApprovals = () => {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 md:gap-10 pt-4">
                 <div className="space-y-3">
                     <div className="flex items-center gap-2 text-amber-500 font-black uppercase text-[10px] tracking-[0.4em]">
-                        <RefreshCcw size={14} className="animate-spin-slow" /> Approval Queue
+                        <RefreshCcw size={14} className="animate-spin-slow" /> Pending Requests
                     </div>
                     <h1 className="text-3xl md:text-7xl font-black tracking-tighter uppercase dark:text-white leading-[0.9]">
                         Shop <span className="text-amber-500">Approvals</span>
@@ -85,7 +85,7 @@ const AdminApprovals = () => {
                     <div className="w-20 h-20 md:w-24 md:h-24 bg-emerald-500 rounded-2xl md:rounded-[2.5rem] flex items-center justify-center text-white mb-6 md:mb-8 shadow-2xl shadow-emerald-500/20 rotate-12">
                         <ShieldCheck size={40} md:size={48} />
                     </div>
-                    <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter dark:text-white">Queue Clear</h3>
+                    <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter dark:text-white">All Clear</h3>
                     <p className="text-slate-500 font-medium max-w-sm mt-3 uppercase text-[10px] tracking-[0.2em]">All shops have been reviewed.</p>
                 </motion.div>
             ) : (
@@ -131,7 +131,7 @@ const AdminApprovals = () => {
             )}
 
             {/* Application Detail Modal - Futuristic Overlay */}
-            <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title="Vetting Manifest" className="max-w-5xl">
+            <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title="Verification Details" className="max-w-5xl">
                 {selectedShop && (
                     <div className="py-8 space-y-12">
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-12">

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Zap, Shield, Crown, Plus, 
     Save, Trash2, Check, Settings2,
-    Package, Users, Info
+    Package, Users, Info, Tag
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -39,6 +39,19 @@ const AdminPricing = () => {
             }
         } catch (error) {
             toast.error("Failed to save plan");
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this plan? This cannot be undone.")) return;
+        try {
+            const res = await api.delete(`/subscriptions/admin/plans/${id}`);
+            if (res.data.success) {
+                toast.success("Plan deleted successfully!");
+                fetchPlans();
+            }
+        } catch (error) {
+            toast.error("Failed to delete plan");
         }
     };
 
@@ -81,7 +94,10 @@ const AdminPricing = () => {
                             <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-indigo-600">
                                 {plan.name === 'Free' ? <Zap size={24} /> : plan.name === 'Professional' ? <Shield size={24} /> : <Crown size={24} />}
                             </div>
-                            <button onClick={() => setEditingPlan(plan)} className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-slate-400"><Settings2 size={18} /></button>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setEditingPlan(plan)} className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-slate-400"><Settings2 size={18} /></button>
+                                <button onClick={() => handleDelete(plan._id)} className="p-2 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg text-slate-400 hover:text-rose-500"><Trash2 size={18} /></button>
+                            </div>
                         </div>
                         <h3 className="text-xl font-black tracking-tight">{plan.name}</h3>
                         <div className="flex items-baseline gap-1 mt-2">

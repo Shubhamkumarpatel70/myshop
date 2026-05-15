@@ -43,11 +43,11 @@ exports.activateTrial = async (req, res) => {
 // @desc    Create/Update Plan (Admin)
 exports.upsertPlan = async (req, res) => {
     try {
-        const { name, price, description, maxProducts, maxStaff, features, isRecommended } = req.body;
+        const { name, price, description, maxProducts, maxStaff, maxBarcodes, features, isRecommended } = req.body;
         
         const plan = await Plan.findOneAndUpdate(
             { name },
-            { name, price, description, maxProducts, maxStaff, features, isRecommended },
+            { name, price, description, maxProducts, maxStaff, maxBarcodes, features, isRecommended },
             { upsert: true, new: true }
         );
 
@@ -307,6 +307,17 @@ exports.requestAddon = async (req, res) => {
 
         await user.save();
         res.json({ success: true, message: `${addon} request submitted!` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Admin: Delete Plan
+exports.deletePlan = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Plan.findByIdAndDelete(id);
+        res.json({ success: true, message: 'Plan deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

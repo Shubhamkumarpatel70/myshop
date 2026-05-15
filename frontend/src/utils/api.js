@@ -24,4 +24,18 @@ api.interceptors.request.use(
     }
 );
 
+// Add a response interceptor to handle errors globally
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const isNetworkError = !error.response || error.code === 'ERR_NETWORK' || error.message.includes('Network Error');
+        
+        if (isNetworkError) {
+            error.message = "Network connection lost. Please check your internet.";
+        }
+        
+        return Promise.reject(error);
+    }
+);
+
 export default api;

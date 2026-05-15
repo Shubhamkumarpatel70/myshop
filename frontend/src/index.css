@@ -45,7 +45,7 @@
 
   /* Modern Buttons */
   .btn {
-    @apply px-4 py-3 md:px-8 md:py-4 rounded-xl md:rounded-[1.25rem] font-black transition-all duration-300 active:scale-95 flex items-center justify-center gap-3 text-[10px] md:text-[11px] uppercase tracking-[0.15em] md:tracking-[0.2em] relative overflow-hidden;
+    @apply px-4 py-3 md:px-8 md:py-4 rounded-[1.25rem] font-black transition-all duration-300 active:scale-95 flex items-center justify-center gap-3 text-[10px] md:text-[11px] uppercase tracking-[0.15em] md:tracking-[0.2em] relative overflow-hidden;
   }
 
   .btn-primary {
@@ -135,4 +135,17 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Privacy Mode Infrastructure */
+.privacy-mode .privacy-blur {
+  filter: blur(12px);
+  pointer-events: none;
+  user-select: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.8;
+}
+
+.privacy-blur {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }

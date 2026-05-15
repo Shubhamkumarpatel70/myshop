@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const { register, login, getProfile, submitPayment, refresh, checkLockout } = require('../controllers/authController');
+const { register, login, getProfile, submitPayment, refresh, checkLockout, toggleStorefront } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
@@ -31,5 +31,6 @@ router.get('/check-lockout', checkLockout);
 router.post('/refresh', refresh);
 router.get('/profile', protect, getProfile);
 router.post('/submit-payment', protect, upload.single('screenshot'), submitPayment);
+router.post('/toggle-storefront', protect, toggleStorefront);
 
 module.exports = router;

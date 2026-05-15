@@ -81,8 +81,10 @@ export const AuthProvider = ({ children }) => {
             }
             return { success: false, message: res.data.message };
         } catch (error) {
-            // Automatic fallback if request fails due to network
-            if (!error.response && mPin) {
+            // Automatic fallback if request fails due to network or offline
+            const isNetworkError = !error.response || error.code === 'ERR_NETWORK' || error.message.includes('Network Error');
+            
+            if (isNetworkError && mPin) {
                 const cachedUser = JSON.parse(localStorage.getItem('user'));
                 if (cachedUser && cachedUser.email === email && cachedUser.offlineHash) {
                     const inputHash = await hashMPin(email, mPin);
@@ -95,7 +97,7 @@ export const AuthProvider = ({ children }) => {
 
             return { 
                 success: false, 
-                message: error.response?.data?.message || "Login failed",
+                message: isNetworkError ? "Connection lost. Please check your internet or use mPIN for offline access." : (error.response?.data?.message || "Login failed"),
                 attemptsLeft: error.response?.data?.attemptsLeft,
                 lockoutUntil: error.response?.data?.lockoutUntil,
                 remainingSeconds: error.response?.data?.remainingSeconds,

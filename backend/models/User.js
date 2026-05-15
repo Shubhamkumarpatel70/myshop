@@ -76,7 +76,8 @@ const userSchema = new mongoose.Schema({
     barcodeUsedCount: { type: Number, default: 0 },
     hasBarcodeAddon: { type: Boolean, default: false },
     loginAttempts: { type: Number, default: 0 },
-    lockoutUntil: { type: Date, default: null }
+    lockoutUntil: { type: Date, default: null },
+    isStorefrontActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
 // Helper to create slug

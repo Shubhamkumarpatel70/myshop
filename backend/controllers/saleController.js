@@ -93,11 +93,15 @@ exports.createSale = async (req, res) => {
             await InventoryLog.create({
                 product: product._id,
                 user: req.user._id,
+                shop: req.shopOwnerId,
                 action: 'Sale',
                 previousQuantity: oldQuantity,
                 newQuantity: product.quantity,
+                batchNumber: usedBatchNumber,
+                expiryDate: usedExpiryDate,
+                price: item.price,
                 reason: `Sold ${item.quantity} units`,
-                transactionId: null // Will update after sale creation if possible, or just use a placeholder
+                transactionId: null 
             });
         }
 
@@ -218,11 +222,14 @@ exports.returnProduct = async (req, res) => {
             await InventoryLog.create({
                 product: product._id,
                 user: req.user._id,
-                action: 'Restock',
+                shop: req.shopOwnerId,
+                action: 'Return',
                 previousQuantity: oldQuantity,
                 newQuantity: product.quantity,
+                batchNumber: item.batchNumber || 'Return',
+                price: item.price,
                 reason: `Returned from sale. Reason: ${returnReason || 'No reason provided'}`,
-                transactionId: sale._id
+                transactionId: sale.transactionId
             });
         }
 

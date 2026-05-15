@@ -118,9 +118,9 @@ const Reports = () => {
 
     if (loading && !analytics) return (
         <div className="space-y-8 animate-pulse p-4">
-            <div className="h-12 w-64 bg-slate-200 dark:bg-slate-800 rounded-2xl mb-8"></div>
+            <div className="h-12 w-64 bg-slate-200 dark:bg-slate-800 rounded-[1.25rem] mb-8"></div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-slate-200 dark:bg-slate-800 rounded-3xl"></div>)}
+                {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-slate-200 dark:bg-slate-800 rounded-[1.25rem]"></div>)}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
                 <div className="h-[450px] bg-slate-200 dark:bg-slate-800 rounded-[2.5rem]"></div>
@@ -193,7 +193,7 @@ const Reports = () => {
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-                    <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-[1.25rem] border border-slate-200 dark:border-slate-800">
                         <input 
                             type="date" 
                             className="bg-transparent border-none text-xs font-black uppercase focus:ring-0 cursor-pointer"
@@ -208,13 +208,13 @@ const Reports = () => {
                             onChange={(e) => { setMonthFilter(e.target.value); setDateFilter(''); }}
                         />
                         {(dateFilter || monthFilter || paymentMethodFilter || categoryFilter || periodFilter !== '30') && (
-                            <button onClick={clearFilters} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all">
+                            <button onClick={clearFilters} className="p-2 text-rose-500 hover:bg-rose-50 rounded-[1.25rem] transition-all">
                                 <X size={16} />
                             </button>
                         )}
                     </div>
 
-                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1.5 rounded-[1.25rem] border border-slate-200 dark:border-slate-800">
                         {[
                             { label: '7D', value: '7' },
                             { label: '30D', value: '30' },
@@ -223,7 +223,7 @@ const Reports = () => {
                             <button
                                 key={p.value}
                                 onClick={() => { setPeriodFilter(p.value); setDateFilter(''); setMonthFilter(''); }}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all ${periodFilter === p.value ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                                className={`px-4 py-2 rounded-[1.25rem] text-[10px] font-black transition-all ${periodFilter === p.value ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
                             >
                                 {p.label}
                             </button>
@@ -232,7 +232,7 @@ const Reports = () => {
 
                     {/* Admin Only Advanced Filters */}
                     {user?.role === 'super_admin' && (
-                        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800">
+                        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-[1.25rem] border border-slate-200 dark:border-slate-800">
                             <select 
                                 className="bg-transparent border-none text-[10px] font-black uppercase focus:ring-0 cursor-pointer"
                                 value={paymentMethodFilter}
@@ -260,7 +260,7 @@ const Reports = () => {
                     )}
                     <button 
                         onClick={handleExportPDF}
-                        className="flex-1 xl:flex-none h-14 px-8 rounded-2xl bg-indigo-600 text-white text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3"
+                        className="flex-1 xl:flex-none h-14 px-8 rounded-[1.25rem] bg-indigo-600 text-white text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3"
                     >
                         <Download size={18} /> Export Audit
                     </button>
@@ -275,9 +275,9 @@ const Reports = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.1 }}
-                        className="card p-8 group hover:scale-[1.02] transition-all cursor-default"
+                        className="card p-8 group hover:scale-[1.02] transition-all cursor-default rounded-[1.25rem]"
                     >
-                        <div className={`w-10 h-10 ${card.bg} ${card.color} rounded-xl flex items-center justify-center mb-6`}>
+                        <div className={`w-10 h-10 ${card.bg} ${card.color} rounded-[1.25rem] flex items-center justify-center mb-6`}>
                             {card.icon}
                         </div>
                         <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-1">{card.label}</p>
@@ -298,11 +298,11 @@ const Reports = () => {
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-slate-950 rounded-[3rem] p-10 text-white relative overflow-hidden"
+                className="bg-slate-950 rounded-[1.25rem] p-10 text-white relative overflow-hidden"
             >
                 <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-8">
-                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center">
+                        <div className="w-12 h-12 bg-indigo-600 rounded-[1.25rem] flex items-center justify-center">
                             <ShieldCheck size={24} />
                         </div>
                         <div>

@@ -43,14 +43,14 @@ const Navbar = () => {
         <header className="fixed inset-x-0 top-0 z-[110] px-4 pt-4 sm:px-6">
             <nav
                 className={[
-                    'mx-auto flex max-w-7xl items-center justify-between rounded-2xl border px-4 py-3 transition-all duration-300 sm:px-6',
+                    'mx-auto flex max-w-7xl items-center justify-between rounded-[1.25rem] border px-4 py-3 transition-all duration-300 sm:px-6',
                     scrolled
                         ? 'border-slate-200/80 bg-white/90 shadow-[0_10px_35px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/85'
                         : 'border-transparent bg-white/70 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:bg-slate-900/60',
                 ].join(' ')}
             >
                 <Link to="/" className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.35)]">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-[1.25rem] bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.35)]">
                         <ShoppingBag size={20} />
                     </span>
                     <span className="font-outfit text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -84,9 +84,9 @@ const Navbar = () => {
                         <div className="relative">
                             <button
                                 onClick={() => setIsProfileOpen((prev) => !prev)}
-                                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-left dark:border-slate-700 dark:bg-slate-900"
+                                className="flex items-center gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-2 py-1.5 text-left dark:border-slate-700 dark:bg-slate-900"
                             >
-                                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+                                <span className="flex h-9 w-9 items-center justify-center rounded-[1.25rem] bg-indigo-600 text-sm font-bold text-white">
                                     {initial}
                                 </span>
                                 <span className="max-w-[130px]">
@@ -139,7 +139,7 @@ const Navbar = () => {
                             </Link>
                             <Link
                                 to="/register"
-                                className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(79,70,229,0.35)] transition-colors hover:bg-indigo-700"
+                                className="rounded-[1.25rem] bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(79,70,229,0.35)] transition-colors hover:bg-indigo-700"
                             >
                                 Start Free
                             </Link>
@@ -149,7 +149,7 @@ const Navbar = () => {
 
                 <button
                     onClick={() => setIsOpen((prev) => !prev)}
-                    className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden"
+                    className="grid h-10 w-10 place-items-center rounded-[1.25rem] border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden"
                     aria-label="Toggle menu"
                 >
                     {isOpen ? <X size={18} /> : <Menu size={18} />}

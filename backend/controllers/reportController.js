@@ -20,6 +20,11 @@ exports.getDashboardStats = async (req, res) => {
         const activeShifts = await Shift.countDocuments({ ...shopFilter, status: 'Open' });
         const pendingPOs = await PurchaseOrder.countDocuments({ ...filter, status: 'Sent' });
 
+        const lowStockProductsList = await Product.find({ 
+            ...filter,
+            $expr: { $lte: ["$quantity", "$lowStockThreshold"] } 
+        }).sort({ quantity: 1 }).limit(5);
+
         const sales = await Sale.find(filter);
         const totalRevenue = sales.reduce((acc, curr) => acc + curr.totalAmount, 0);
         
@@ -75,6 +80,7 @@ exports.getDashboardStats = async (req, res) => {
                 expiredProducts,
                 expiringProductsList,
                 expiredProductsList,
+                lowStockProductsList,
                 totalRevenue,
                 todayRevenue,
                 todayCount,

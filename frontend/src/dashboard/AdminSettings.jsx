@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { 
     Settings, CreditCard, ShieldCheck, 
-    Smartphone, QrCode, Save, Info
+    Smartphone, QrCode, Save, Info,
+    Hammer, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -12,10 +13,13 @@ const AdminSettings = () => {
         upiId: '',
         qrCode: '',
         supportPhone: '',
-        isPaymentRequired: false
+        isPaymentRequired: false,
+        isMaintenanceMode: false,
+        maintenanceTime: '15 Minutes'
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [duration, setDuration] = useState('15');
 
     useEffect(() => {
         fetchSettings();
@@ -33,7 +37,7 @@ const AdminSettings = () => {
     };
 
     const handleUpdate = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setSaving(true);
         try {
             await api.put('/admin/settings', settings);
@@ -42,6 +46,27 @@ const AdminSettings = () => {
             toast.error("Update failed");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleMaintenanceToggle = async (checked) => {
+        const updatedSettings = { 
+            ...settings, 
+            isMaintenanceMode: checked,
+            maintenanceDuration: duration // Send duration for timer calculation
+        };
+        setSettings(updatedSettings);
+        
+        try {
+            const res = await api.put('/admin/settings', updatedSettings);
+            toast.success(`Maintenance Mode: ${checked ? 'ACTIVE' : 'INACTIVE'}`);
+            // Update local state with server calculated time if needed
+            if (res.data.success) {
+                setSettings(res.data.data);
+            }
+        } catch (error) {
+            toast.error("Failed to toggle maintenance mode");
+            setSettings(settings); // Revert on failure
         }
     };
 
@@ -60,6 +85,48 @@ const AdminSettings = () => {
             </div>
 
             <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Maintenance Mode Section */}
+                <div className="md:col-span-2 bg-rose-50 dark:bg-rose-500/5 p-8 rounded-[3rem] border-2 border-rose-100 dark:border-rose-500/20 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-rose-500 text-white rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-rose-500/30">
+                            <Hammer size={32} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black uppercase tracking-tight text-rose-600">Maintenance Mode</h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">When active, all non-admin users will be blocked and redirected to the maintenance page.</p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row items-center gap-6">
+                        <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-6 py-4 rounded-2xl border border-rose-200 dark:border-rose-500/30">
+                            <div className="text-left">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Duration (Mins)</p>
+                                <input 
+                                    type="number"
+                                    value={duration}
+                                    onChange={(e) => setDuration(e.target.value)}
+                                    placeholder="e.g. 15"
+                                    className="bg-transparent text-sm font-bold outline-none text-rose-600 w-16"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-6 py-4 rounded-2xl border border-rose-200 dark:border-rose-500/30">
+                        <span className={`text-xs font-black uppercase tracking-widest ${settings.isMaintenanceMode ? 'text-rose-500' : 'text-slate-400'}`}>
+                            {settings.isMaintenanceMode ? 'Active (Offline)' : 'Inactive (Online)'}
+                        </span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                className="sr-only peer"
+                                checked={settings.isMaintenanceMode}
+                                onChange={(e) => handleMaintenanceToggle(e.target.checked)}
+                            />
+                            <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-6 after:transition-all peer-checked:bg-rose-500"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
                 {/* Registration Fee Section */}
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl space-y-6">
                     <div className="flex items-center gap-3 text-indigo-600">

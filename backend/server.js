@@ -40,10 +40,12 @@ const authLimiter = rateLimit({
 connectDB().then(async () => {
     const { checkExpiringProducts } = require('./utils/expiryCheck');
     const { startBarcodeCleanupTask } = require('./utils/barcodeCleanup');
+    const { startNotificationCleanupTask } = require('./utils/notificationCleanup');
     const seedAdmin = require('./utils/seeder');
     await seedAdmin();
     checkExpiringProducts();
     startBarcodeCleanupTask();
+    startNotificationCleanupTask();
 });
 
 // Middleware

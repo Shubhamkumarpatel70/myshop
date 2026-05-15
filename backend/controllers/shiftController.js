@@ -104,6 +104,15 @@ exports.getCurrentShift = async (req, res) => {
 exports.getShifts = async (req, res) => {
     try {
         const filter = req.isAdmin ? {} : { shop: req.shopOwnerId };
+        
+        if (req.query.month) {
+            const [year, mon] = req.query.month.split('-');
+            filter.createdAt = {
+                $gte: new Date(year, mon - 1, 1),
+                $lte: new Date(year, mon, 0, 23, 59, 59, 999)
+            };
+        }
+
         const shifts = await Shift.find(filter)
             .populate('user', 'ownerName role')
             .sort({ createdAt: -1 });

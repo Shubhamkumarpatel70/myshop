@@ -207,7 +207,7 @@ const Login = () => {
                                             value={digit}
                                             onChange={(e) => handleMpinChange(index, e.target.value)}
                                             onKeyDown={(e) => handleKeyDown(index, e)}
-                                            className="h-12 w-full rounded-lg border border-slate-300 bg-white text-center text-xl font-bold text-slate-900 outline-none transition-colors focus:border-indigo-500"
+                                            className="h-12 w-full rounded-[1.25rem] border border-slate-300 bg-white text-center text-xl font-bold text-slate-900 outline-none transition-colors focus:border-indigo-500"
                                         />
                                     ))}
                                 </div>
@@ -217,19 +217,19 @@ const Login = () => {
                         <button
                             type="submit"
                             disabled={isSubmitting || timeLeft > 0}
-                            className={`mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-60 ${
+                            className={`mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[1.25rem] text-sm font-black uppercase tracking-widest text-white transition-all shadow-lg disabled:opacity-60 group border border-transparent ${
                                 timeLeft > 0 
-                                ? 'bg-rose-500 hover:bg-rose-600' 
-                                : 'bg-indigo-600 hover:bg-indigo-700'
+                                ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-200' 
+                                : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-200 dark:hover:shadow-none hover:border-indigo-400/30'
                             }`}
                         >
                             {isSubmitting ? (
                                 <Loader2 size={18} className="animate-spin" />
                             ) : timeLeft > 0 ? (
-                                `Try again in ${formatTime(timeLeft)}`
+                                `Locked: ${formatTime(timeLeft)}`
                             ) : (
                                 <>
-                                    Login <ArrowRight size={16} />
+                                    Login Access <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
                         </button>
