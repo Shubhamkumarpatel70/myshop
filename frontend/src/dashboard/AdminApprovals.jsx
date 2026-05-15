@@ -111,6 +111,13 @@ const AdminApprovals = () => {
                                                 <div className="flex items-center gap-2 text-slate-400">
                                                     <Calendar size={14} className="text-amber-500" /> <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{formatDate(shop.createdAt)}</span>
                                                 </div>
+                                                <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border ${
+                                                    shop.pendingSubscription?.plan === 'Professional' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 
+                                                    shop.pendingSubscription?.plan === 'Enterprise' ? 'bg-amber-50 border-amber-100 text-amber-600' : 
+                                                    'bg-slate-50 border-slate-100 text-slate-600'
+                                                }`}>
+                                                    <Zap size={12} /> <span className="text-[9px] font-black uppercase tracking-widest">{shop.pendingSubscription?.plan || 'Free Plan'}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

@@ -98,6 +98,7 @@ exports.verifySubscription = async (req, res) => {
 
             if (isAddon && requestedPlan === 'Barcode Booster') {
                 user.hasBarcodeAddon = true;
+                user.subscriptionPlan = 'Enterprise'; // Automatically upgrade label to Enterprise as requested
             } else {
                 user.subscriptionPlan = requestedPlan;
                 const now = new Date();
