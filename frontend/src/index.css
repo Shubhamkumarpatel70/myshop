@@ -71,7 +71,7 @@
   }
 
   .card-premium {
-    @apply bg-gradient-to-br from-indigo-600 to-violet-700 text-white border-none shadow-[0_15px_30px_rgba(79,70,229,0.2)] md:shadow-[0_30px_60px_rgba(79,70,229,0.3)];
+    @apply bg-indigo-600 text-white border-none shadow-[0_15px_30px_rgba(79,70,229,0.2)] md:shadow-[0_30px_60px_rgba(79,70,229,0.3)];
   }
 
   /* Sidebar Navigation */

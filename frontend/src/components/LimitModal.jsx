@@ -59,7 +59,7 @@ const LimitModal = ({ isOpen, onClose, limitType, isTrialUsed }) => {
                     className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-[0_32px_120px_rgba(0,0,0,0.25)] overflow-hidden border border-slate-200 dark:border-slate-800"
                 >
                     {/* Decorative Top Border */}
-                    <div className="h-2 w-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 shrink-0" />
+                    <div className="h-2 w-full bg-amber-500 shrink-0" />
                     
                     <div className="p-8 md:p-12 text-center">
                         <div className="w-24 h-24 bg-amber-50 dark:bg-amber-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-amber-600 ring-8 ring-amber-500/5">

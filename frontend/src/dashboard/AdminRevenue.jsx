@@ -7,8 +7,10 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../context/LanguageContext';
 
 const AdminRevenue = () => {
+    const { t } = useLanguage();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -21,42 +23,42 @@ const AdminRevenue = () => {
             const res = await api.get('/subscriptions/admin/revenue');
             setStats(res.data.data);
         } catch (error) {
-            toast.error("Failed to load financial records");
+            toast.error(t("Failed to load financial records"));
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) return <div className="p-10 text-center">Initalizing Financial Core...</div>;
+    if (loading) return <div className="p-10 text-center">{t("Initializing Financial Core...")}</div>;
 
     const cards = [
         { 
-            title: 'Total Revenue', 
+            title: t('Total Revenue'), 
             value: `₹${stats.totalEarnings.toLocaleString()}`, 
             icon: <IndianRupee className="text-emerald-500" />,
-            desc: 'Total lifetime platform earnings'
+            desc: t('Total lifetime platform earnings')
         },
         { 
-            title: 'Active Subscriptions', 
+            title: t('Active Subscriptions'), 
             value: stats.activeSubscriptions, 
             icon: <Zap className="text-amber-500" />,
-            desc: 'Pro & Enterprise accounts'
+            desc: t('Pro & Enterprise accounts')
         },
         { 
-            title: 'Total Merchants', 
+            title: t('Total Merchants'), 
             value: stats.totalShops, 
             icon: <Store className="text-indigo-500" />,
-            desc: 'Global shop network'
+            desc: t('Global shop network')
         }
     ];
 
     return (
         <div className="space-y-8 pb-10 font-jakarta">
             <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">Financial Hub</p>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">Revenue Reconciliation</h1>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">{t("Financial Hub")}</p>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">{t("Revenue Reconciliation")}</h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Real-time audit of platform revenue, subscription performance, and growth metrics.
+                    {t("Real-time audit of platform revenue, subscription performance, and growth metrics.")}
                 </p>
             </div>
 
@@ -74,7 +76,7 @@ const AdminRevenue = () => {
                                 {card.icon}
                             </div>
                             <span className="p-1.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 rounded-lg text-[10px] font-bold">
-                                LIVE DATA
+                                {t("LIVE DATA")}
                             </span>
                         </div>
                         <h3 className="text-sm font-bold text-slate-500 uppercase tracking-tight">{card.title}</h3>
@@ -90,15 +92,15 @@ const AdminRevenue = () => {
                         <div className="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 rounded-xl">
                             <PieChart size={20} />
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Plan Distribution</h3>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t("Plan Distribution")}</h3>
                     </div>
                     
                     <div className="space-y-4">
                         {Object.entries(stats.planDistribution).map(([name, count], i) => (
                             <div key={i} className="space-y-2">
                                 <div className="flex justify-between items-center px-1">
-                                    <span className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight">{name}</span>
-                                    <span className="text-sm font-black text-slate-900 dark:text-white">{count} Shops</span>
+                                    <span className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight">{t(name)}</span>
+                                    <span className="text-sm font-black text-slate-900 dark:text-white">{count} {t("Shops")}</span>
                                 </div>
                                 <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                     <motion.div 
@@ -115,24 +117,24 @@ const AdminRevenue = () => {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
+                <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="p-2.5 bg-white/10 text-white rounded-xl">
                                 <TrendingUp size={20} />
                             </div>
-                            <h3 className="text-lg font-bold">Growth Momentum</h3>
+                            <h3 className="text-lg font-bold">{t("Growth Momentum")}</h3>
                         </div>
                         <p className="text-4xl font-black">74%</p>
-                        <p className="text-sm text-indigo-200 mt-2 font-medium">Retention rate of Pro users</p>
+                        <p className="text-sm text-indigo-200 mt-2 font-medium">{t("Retention rate of Pro users")}</p>
                         
                         <div className="mt-12 grid grid-cols-2 gap-4">
                             <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">Avg. Revenue</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">{t("Avg. Revenue")}</p>
                                 <p className="text-xl font-bold mt-1">₹1,490</p>
                             </div>
                             <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">Churn Rate</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">{t("Churn Rate")}</p>
                                 <p className="text-xl font-bold mt-1">2.4%</p>
                             </div>
                         </div>

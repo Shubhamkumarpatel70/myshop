@@ -35,7 +35,7 @@ const Modal = ({ isOpen, onClose, title, children, className = "max-w-2xl" }) =>
                         className={`fixed left-1/2 w-[95%] ${className} max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 z-[70] rounded-[2rem] shadow-[0_20px_80px_rgba(0,0,0,0.25)] overflow-hidden border border-slate-200 dark:border-slate-800 transition-colors`}
                     >
                         {/* Decorative Top Border */}
-                        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 shrink-0" />
+                        <div className="h-1.5 w-full bg-indigo-600 shrink-0" />
                         
                         {/* Header */}
                         <div className="flex justify-between items-center px-6 py-5 border-b border-slate-100 dark:border-slate-800/60 shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">

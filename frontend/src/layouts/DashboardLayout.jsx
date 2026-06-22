@@ -32,9 +32,11 @@ import {
     Undo2,
     ShieldAlert,
     Tag,
-    WifiOff
+    WifiOff,
+    Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import NotificationDropdown from '../components/NotificationDropdown';
@@ -55,6 +57,7 @@ const DashboardLayout = () => {
     });
 
     const { user, logout, updateUser } = useAuth();
+    const { language, setLanguage, t } = useLanguage();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -120,54 +123,54 @@ const DashboardLayout = () => {
     };
 
     const allNavItems = [
-        { name: 'Overview', icon: LayoutDashboard, path: '/dashboard', roles: ['super_admin', 'shop_owner', 'manager', 'cashier'], priority: true, description: 'Role summary and quick actions', group: 'core' },
-        { name: 'Sales', icon: ShoppingCart, path: '/dashboard/sales', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: 'POS transactions and returns', group: 'operations' },
-        { name: 'Shifts', icon: Clock, path: '/dashboard/shifts', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: 'Open/close and shift logs', group: 'operations' },
-        { name: 'Reports', icon: BarChart3, path: '/dashboard/reports', roles: ['shop_owner', 'manager', 'super_admin'], priority: true, description: 'Sales and business analytics', group: 'operations' },
-        { name: 'Inventory', icon: Package, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'], priority: true, description: 'Stock levels and adjustments', group: 'inventory' },
-        { name: 'Stock Ledger', icon: History, path: '/dashboard/ledger', roles: ['shop_owner', 'manager'], description: 'Complete product history log', group: 'inventory' },
-        { name: 'Categories', icon: Layers, path: '/dashboard/categories', roles: ['shop_owner', 'manager'], description: 'Catalog grouping', group: 'inventory' },
-        { name: 'Barcodes', icon: Tag, path: '/dashboard/barcodes', roles: ['shop_owner', 'manager'], description: 'Manage product identifiers', group: 'inventory' },
-        { name: 'Staff', icon: Users, path: '/dashboard/staff', roles: ['shop_owner'], description: 'Team access and roles', group: 'management' },
-        { name: 'Pricing', icon: Zap, path: '/dashboard/pricing', roles: ['shop_owner'], description: 'Plan and billing controls', group: 'management' },
-        { name: 'Payments', icon: CreditCard, path: '/dashboard/payment-settings', roles: ['shop_owner'], description: 'Gateway and UPI settings', group: 'management' },
-        { name: 'Share Shop', icon: Share2, path: '/dashboard/share', roles: ['shop_owner'], description: 'Promote your shop link', group: 'community' },
-        { name: 'Customers', icon: Users, path: '/dashboard/customers', roles: ['shop_owner', 'manager'], priority: true, description: 'Client CRM and loyalty', group: 'community' },
-        { name: 'Purchase Orders', icon: ShoppingCart, path: '/dashboard/purchase-orders', roles: ['shop_owner', 'manager'], description: 'Procurement and restocking', group: 'inventory' },
-        { name: 'Account', icon: User, path: '/dashboard/account', roles: ['shop_owner', 'manager', 'cashier'], description: 'Profile and security', group: 'management' },
+        { name: t('Overview'), icon: LayoutDashboard, path: '/dashboard', roles: ['super_admin', 'shop_owner', 'manager', 'cashier'], priority: true, description: t('Role summary and quick actions'), group: 'core' },
+        { name: t('Sales'), icon: ShoppingCart, path: '/dashboard/sales', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: t('POS transactions and returns'), group: 'operations' },
+        { name: t('Shifts'), icon: Clock, path: '/dashboard/shifts', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: t('Open/close and shift logs'), group: 'operations' },
+        { name: t('Reports'), icon: BarChart3, path: '/dashboard/reports', roles: ['shop_owner', 'manager', 'super_admin'], priority: true, description: t('Sales and business analytics'), group: 'operations' },
+        { name: t('Inventory'), icon: Package, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'], priority: true, description: t('Stock levels and adjustments'), group: 'inventory' },
+        { name: t('Stock Ledger'), icon: History, path: '/dashboard/ledger', roles: ['shop_owner', 'manager'], description: t('Complete product history log'), group: 'inventory' },
+        { name: t('Categories'), icon: Layers, path: '/dashboard/categories', roles: ['shop_owner', 'manager'], description: t('Catalog grouping'), group: 'inventory' },
+        { name: t('Barcodes'), icon: Tag, path: '/dashboard/barcodes', roles: ['shop_owner', 'manager'], description: t('Manage product identifiers'), group: 'inventory' },
+        { name: t('Staff'), icon: Users, path: '/dashboard/staff', roles: ['shop_owner'], description: t('Team access and roles'), group: 'management' },
+        { name: t('Pricing'), icon: Zap, path: '/dashboard/pricing', roles: ['shop_owner'], description: t('Plan and billing controls'), group: 'management' },
+        { name: t('Payments'), icon: CreditCard, path: '/dashboard/payment-settings', roles: ['shop_owner'], description: t('Gateway and UPI settings'), group: 'management' },
+        { name: t('Share Shop'), icon: Share2, path: '/dashboard/share', roles: ['shop_owner'], description: t('Promote your shop link'), group: 'community' },
+        { name: t('Customers'), icon: Users, path: '/dashboard/customers', roles: ['shop_owner', 'manager'], priority: true, description: t('Client CRM and loyalty'), group: 'community' },
+        { name: t('Purchase Orders'), icon: ShoppingCart, path: '/dashboard/purchase-orders', roles: ['shop_owner', 'manager'], description: t('Procurement and restocking'), group: 'inventory' },
+        { name: t('Account'), icon: User, path: '/dashboard/account', roles: ['shop_owner', 'manager', 'cashier'], description: t('Profile and security'), group: 'management' },
 
-        { name: 'Shops', icon: Store, path: '/dashboard/shops', roles: ['super_admin'], priority: true, description: 'All registered shops', group: 'admin-core' },
-        { name: 'Approvals', icon: ShieldCheck, path: '/dashboard/admin/approvals', roles: ['super_admin'], priority: true, description: 'Shop verification list', group: 'admin-core' },
-        { name: 'Global Staff', icon: Users, path: '/dashboard/admin/staff', roles: ['super_admin'], description: 'Monitor all shop employees', group: 'admin-core' },
-        { name: 'Admin Barcodes', icon: Tag, path: '/dashboard/admin/barcodes', roles: ['super_admin'], description: 'Global identifier registry', group: 'admin-core' },
-        { name: 'Subscriptions', icon: CreditCard, path: '/dashboard/admin/subscriptions', roles: ['super_admin'], description: 'Manage shop subscriptions', group: 'admin-core' },
-        { name: 'Admin Sales', icon: ShoppingCart, path: '/dashboard/admin/sales', roles: ['super_admin'], priority: true, description: 'Platform-wide transaction audit', group: 'admin-ops' },
-        { name: 'Admin Inventory', icon: Package, path: '/dashboard/admin/inventory', roles: ['super_admin'], priority: true, description: 'Platform-wide inventory view', group: 'admin-ops' },
-        { name: 'Admin POs', icon: ShoppingCart, path: '/dashboard/admin/purchase-orders', roles: ['super_admin'], priority: true, description: 'Platform-wide procurement audit', group: 'admin-ops' },
-        { name: 'Platform Reports', icon: BarChart3, path: '/dashboard/reports', roles: ['super_admin'], priority: true, description: 'Global business intelligence', group: 'admin-ops' },
-        { name: 'Shop Finder', icon: Search, path: '/dashboard/admin/shop-finder', roles: ['super_admin'], description: 'Lookup by shop ID', group: 'admin-tools' },
-        { name: 'Order Finder', icon: Search, path: '/dashboard/admin/order-finder', roles: ['super_admin'], description: 'Lookup by order or transaction ID', group: 'admin-tools' },
-        { name: 'Broadcast', icon: Megaphone, path: '/dashboard/broadcast', roles: ['super_admin'], description: 'Send announcements to shops', group: 'admin-comms' },
-        { name: 'Queries', icon: MessageSquare, path: '/dashboard/admin/queries', roles: ['super_admin'], description: 'Customer support inquiries', group: 'admin-comms' },
-        { name: 'Activity', icon: Activity, path: '/dashboard/activity', roles: ['super_admin'], description: 'Platform activity logs', group: 'admin-comms' },
-        { name: 'Pricing Config', icon: Zap, path: '/dashboard/admin/pricing', roles: ['super_admin'], description: 'Manage plans and pricing', group: 'admin-system' },
-        { name: 'Settings', icon: Settings, path: '/dashboard/admin/settings', roles: ['super_admin'], description: 'Global platform configuration', group: 'admin-system' },
-        { name: 'Platform Revenue', icon: IndianRupee, path: '/dashboard/admin/revenue', roles: ['super_admin'], priority: true, description: 'Subscription earnings audit', group: 'admin-system' },
+        { name: t('Shops'), icon: Store, path: '/dashboard/shops', roles: ['super_admin'], priority: true, description: t('All registered shops'), group: 'admin-core' },
+        { name: t('Approvals'), icon: ShieldCheck, path: '/dashboard/admin/approvals', roles: ['super_admin'], priority: true, description: t('Shop verification list'), group: 'admin-core' },
+        { name: t('Global Staff'), icon: Users, path: '/dashboard/admin/staff', roles: ['super_admin'], description: t('Monitor all shop employees'), group: 'admin-core' },
+        { name: t('Admin Barcodes'), icon: Tag, path: '/dashboard/admin/barcodes', roles: ['super_admin'], description: t('Global identifier registry'), group: 'admin-core' },
+        { name: t('Subscriptions'), icon: CreditCard, path: '/dashboard/admin/subscriptions', roles: ['super_admin'], description: t('Manage shop subscriptions'), group: 'admin-core' },
+        { name: t('Admin Sales'), icon: ShoppingCart, path: '/dashboard/admin/sales', roles: ['super_admin'], priority: true, description: t('Platform-wide transaction audit'), group: 'admin-ops' },
+        { name: t('Admin Inventory'), icon: Package, path: '/dashboard/admin/inventory', roles: ['super_admin'], priority: true, description: t('Platform-wide inventory view'), group: 'admin-ops' },
+        { name: t('Admin POs'), icon: ShoppingCart, path: '/dashboard/admin/purchase-orders', roles: ['super_admin'], priority: true, description: t('Platform-wide procurement audit'), group: 'admin-ops' },
+        { name: t('Platform Reports'), icon: BarChart3, path: '/dashboard/reports', roles: ['super_admin'], priority: true, description: t('Global business intelligence'), group: 'admin-ops' },
+        { name: t('Shop Finder'), icon: Search, path: '/dashboard/admin/shop-finder', roles: ['super_admin'], description: t('Lookup by shop ID'), group: 'admin-tools' },
+        { name: t('Order Finder'), icon: Search, path: '/dashboard/admin/order-finder', roles: ['super_admin'], description: t('Lookup by order or transaction ID'), group: 'admin-tools' },
+        { name: t('Broadcast'), icon: Megaphone, path: '/dashboard/broadcast', roles: ['super_admin'], description: t('Send announcements to shops'), group: 'admin-comms' },
+        { name: t('Queries'), icon: MessageSquare, path: '/dashboard/admin/queries', roles: ['super_admin'], description: t('Customer support inquiries'), group: 'admin-comms' },
+        { name: t('Activity'), icon: Activity, path: '/dashboard/activity', roles: ['super_admin'], description: t('Platform activity logs'), group: 'admin-comms' },
+        { name: t('Pricing Config'), icon: Zap, path: '/dashboard/admin/pricing', roles: ['super_admin'], description: t('Manage plans and pricing'), group: 'admin-system' },
+        { name: t('Settings'), icon: Settings, path: '/dashboard/admin/settings', roles: ['super_admin'], description: t('Global platform configuration'), group: 'admin-system' },
+        { name: t('Platform Revenue'), icon: IndianRupee, path: '/dashboard/admin/revenue', roles: ['super_admin'], priority: true, description: t('Subscription earnings audit'), group: 'admin-system' },
     ];
 
     const navItems = useMemo(
         () => allNavItems.filter((item) => item.roles.includes(user?.role)),
-        [user?.role]
+        [user?.role, language]
     );
 
     const groupedNavItems = useMemo(() => {
         if (user?.role !== 'super_admin') {
             const sections = [
-                { key: 'core', label: 'Main' },
-                { key: 'operations', label: 'Operations' },
-                { key: 'inventory', label: 'Supply Chain' },
-                { key: 'community', label: 'Community' },
-                { key: 'management', label: 'Administrative' },
+                { key: 'core', label: t('Main') },
+                { key: 'operations', label: t('Operations') },
+                { key: 'inventory', label: t('Supply Chain') },
+                { key: 'community', label: t('Community') },
+                { key: 'management', label: t('Administrative') },
             ];
 
             return sections
@@ -179,11 +182,11 @@ const DashboardLayout = () => {
         }
 
         const sections = [
-            { key: 'admin-core', label: 'Core Admin' },
-            { key: 'admin-ops', label: 'Operations' },
-            { key: 'admin-tools', label: 'Lookup Tools' },
-            { key: 'admin-comms', label: 'Communication' },
-            { key: 'admin-system', label: 'System' },
+            { key: 'admin-core', label: t('Core Admin') },
+            { key: 'admin-ops', label: t('Operations') },
+            { key: 'admin-tools', label: t('Lookup Tools') },
+            { key: 'admin-comms', label: t('Communication') },
+            { key: 'admin-system', label: t('System') },
         ];
 
         return sections
@@ -203,7 +206,7 @@ const DashboardLayout = () => {
                         : section.items.filter((item) => item.path !== '/dashboard'),
             }))
             .filter((section) => section.items.length > 0);
-    }, [navItems, user?.role]);
+    }, [navItems, user?.role, language]);
 
     const mobileBottomItems = useMemo(() => {
         const preferred = navItems.filter((item) => item.priority);
@@ -349,14 +352,14 @@ const DashboardLayout = () => {
                         ].join(' ')}
                     >
                         <LogOut size={17} />
-                        {isSidebarOpen && 'Logout'}
+                        {isSidebarOpen && t('Logout')}
                     </button>
 
                     <button
                         onClick={() => setIsSidebarOpen((prev) => !prev)}
                         className="inline-flex h-10 w-full items-center justify-center rounded-[1.25rem] border border-slate-200 text-sm text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
-                        {isSidebarOpen ? 'Collapse' : 'Expand'}
+                        {isSidebarOpen ? t('Collapse') : t('Expand')}
                     </button>
                 </div>
             </aside>
@@ -389,7 +392,7 @@ const DashboardLayout = () => {
                             </button>
 
                             <div className="min-w-0">
-                                <h1 className="truncate text-sm font-black uppercase tracking-tight text-slate-900 dark:text-white">{currentNavItem?.name || 'Dashboard'}</h1>
+                                <h1 className="truncate text-sm font-black uppercase tracking-tight text-slate-900 dark:text-white">{currentNavItem?.name || t('Dashboard')}</h1>
                                 <div className="flex items-center gap-1.5 opacity-60">
                                     <Store size={10} className="text-indigo-600" />
                                     <p className="truncate text-[10px] font-bold uppercase tracking-widest">{user?.shopName || 'Workspace'}</p>
@@ -403,7 +406,7 @@ const DashboardLayout = () => {
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Universal Search..."
+                                placeholder={t('Search') + '...'}
                                 className="w-full bg-transparent text-[11px] font-black uppercase tracking-widest outline-none placeholder:text-slate-400"
                             />
                         </div>
@@ -419,12 +422,25 @@ const DashboardLayout = () => {
                                         title="System Offline"
                                     >
                                         <div className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></div>
-                                        <span className="hidden xs:inline text-[9px] font-black uppercase tracking-widest">Offline</span>
+                                        <span className="hidden xs:inline text-[9px] font-black uppercase tracking-widest">{t('Offline')}</span>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
                             <div className="flex items-center gap-1 sm:gap-2 bg-slate-100/50 dark:bg-white/5 p-1 rounded-xl border border-slate-100 dark:border-white/5">
+                                {/* Language Switcher */}
+                                <div className="flex items-center gap-1 px-1.5 py-1">
+                                    <Globe size={14} className="text-slate-500" />
+                                    <select 
+                                        value={language} 
+                                        onChange={(e) => setLanguage(e.target.value)} 
+                                        className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer text-slate-600 dark:text-slate-300 border-none pr-1"
+                                    >
+                                        <option value="en" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">EN</option>
+                                        <option value="hi" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">HI</option>
+                                    </select>
+                                </div>
+
                                 <button
                                     onClick={togglePrivacyMode}
                                     title={privacyMode ? 'Disable Privacy' : 'Enable Privacy'}
@@ -455,20 +471,20 @@ const DashboardLayout = () => {
                         </div>
                     </div>
 
-                    <div className="border-t border-slate-100 px-4 py-2 dark:border-slate-800 xl:hidden bg-slate-50/50 dark:bg-white/5">
-                        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 dark:border-slate-700 dark:bg-slate-900 shadow-sm">
+                    <div className="border-t border-slate-100 px-4 py-3 dark:border-slate-800 xl:hidden bg-slate-50/50 dark:bg-white/5">
+                        <div className="flex items-center gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-2 dark:border-slate-700 dark:bg-slate-900 shadow-sm transition-all focus-within:border-indigo-500/30">
                             <Search size={14} className="text-slate-400" />
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search workspace..."
+                                placeholder={t('Search') + '...'}
                                 className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest outline-none placeholder:text-slate-400"
                             />
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-x-auto overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-24 lg:pb-6">
+                <main className="flex-1 overflow-x-auto overflow-y-auto p-4 pb-32 sm:p-6 sm:pb-32 lg:pb-10">
                     <div className="w-full min-w-0">
                         <AnimatePresence mode="wait">
                             {user?.role === 'shop_owner' && user?.approvalStatus === 'Rejected' ? (
@@ -506,7 +522,7 @@ const DashboardLayout = () => {
                 </main>
 
                 {mobileBottomItems.length > 0 && (
-                    <nav className="fixed bottom-5 left-5 right-5 z-40 rounded-2xl border border-white/20 bg-white/80 px-2 py-2 shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/80 lg:hidden ring-1 ring-black/5">
+                    <nav className="fixed bottom-6 left-6 right-6 z-40 rounded-[2rem] border border-white/20 bg-white/80 px-2.5 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/80 lg:hidden ring-1 ring-black/5">
                         <div className="grid grid-cols-4 gap-1">
                             {mobileBottomItems.map((item) => {
                                 const Icon = item.icon;

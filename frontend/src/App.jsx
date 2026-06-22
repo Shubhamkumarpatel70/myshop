@@ -53,6 +53,7 @@ import NotFound from './pages/NotFound';
 import AccessDenied from './pages/AccessDenied';
 import Maintenance from './pages/Maintenance';
 import { ShieldAlert, Info } from 'lucide-react';
+import { LanguageProvider } from './context/LanguageContext';
 
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
@@ -280,9 +281,11 @@ const AppContent = () => {
 const App = () => {
     return (
         <AuthProvider>
-            <Router>
-                <AppContent />
-            </Router>
+            <LanguageProvider>
+                <Router>
+                    <AppContent />
+                </Router>
+            </LanguageProvider>
         </AuthProvider>
     );
 };

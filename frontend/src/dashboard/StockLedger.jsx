@@ -102,81 +102,83 @@ const StockLedger = () => {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
                         <History size={24} />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Stock Ledger</h1>
-                        <p className="text-xs font-medium text-slate-500">Complete historical record of all product movements.</p>
+                        <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white leading-tight">Stock Ledger</h1>
+                        <p className="text-[10px] sm:text-xs font-medium text-slate-500 leading-tight">Complete historical record of all product movements.</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="flex-1 md:flex-none flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 sm:py-2 shadow-sm w-full sm:w-auto justify-center">
                         <Calendar size={14} className="text-slate-400 mr-2" />
                         <input 
                             type="month" 
                             value={filters.month}
                             onChange={(e) => setFilters({...filters, month: e.target.value})}
-                            className="bg-transparent text-xs font-bold outline-none dark:text-white w-full"
+                            className="bg-transparent text-[10px] sm:text-xs font-black uppercase outline-none dark:text-white"
                         />
                     </div>
-                    <select 
-                        value={filters.action}
-                        onChange={(e) => setFilters({...filters, action: e.target.value})}
-                        className="flex-1 md:flex-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none shadow-sm dark:text-white"
-                    >
-                        <option value="">ALL ACTIONS</option>
-                        <option value="Sale">SALES</option>
-                        <option value="Return">RETURNS</option>
-                        <option value="Restock">RESTOCKS</option>
-                        <option value="Adjustment">ADJUSTMENTS</option>
-                    </select>
-                    <button 
-                        onClick={handleExport}
-                        className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-[9px] flex items-center gap-2 shadow-lg transition-transform active:scale-95"
-                    >
-                        <Download size={14} /> Export
-                    </button>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <select 
+                            value={filters.action}
+                            onChange={(e) => setFilters({...filters, action: e.target.value})}
+                            className="flex-1 sm:flex-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 sm:py-2 text-[10px] sm:text-xs font-black uppercase outline-none shadow-sm dark:text-white"
+                        >
+                            <option value="">ALL ACTIONS</option>
+                            <option value="Sale">SALES</option>
+                            <option value="Return">RETURNS</option>
+                            <option value="Restock">RESTOCKS</option>
+                            <option value="Adjustment">ADJUSTMENTS</option>
+                        </select>
+                        <button 
+                            onClick={handleExport}
+                            className="flex-1 sm:flex-none bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-3 sm:py-2.5 rounded-xl font-black uppercase tracking-widest text-[9px] flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95"
+                        >
+                            <Download size={14} /> Export
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Summary Insights */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                    <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col xs:flex-row items-center xs:items-start gap-3 sm:gap-4 text-center xs:text-left">
+                    <div className="w-10 h-10 shrink-0 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
                         <TrendingUp size={20} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Value Inward</p>
-                        <p className="text-xl font-black text-slate-900 dark:text-white">₹{summary.totalInValue.toLocaleString()}</p>
+                        <p className="text-base sm:text-xl font-black text-slate-900 dark:text-white privacy-blur truncate">₹{summary.totalInValue.toLocaleString()}</p>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                    <div className="w-10 h-10 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center">
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col xs:flex-row items-center xs:items-start gap-3 sm:gap-4 text-center xs:text-left">
+                    <div className="w-10 h-10 shrink-0 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center">
                         <TrendingDown size={20} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Value Outward</p>
-                        <p className="text-xl font-black text-slate-900 dark:text-white">₹{summary.totalOutValue.toLocaleString()}</p>
+                        <p className="text-base sm:text-xl font-black text-slate-900 dark:text-white privacy-blur truncate">₹{summary.totalOutValue.toLocaleString()}</p>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                    <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center">
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col xs:flex-row items-center xs:items-start gap-3 sm:gap-4 text-center xs:text-left">
+                    <div className="w-10 h-10 shrink-0 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center">
                         <ClipboardCheck size={20} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Log Entries</p>
-                        <p className="text-xl font-black text-slate-900 dark:text-white">{summary.count}</p>
+                        <p className="text-base sm:text-xl font-black text-slate-900 dark:text-white truncate">{summary.count}</p>
                     </div>
                 </div>
-                <div className="bg-indigo-600 p-5 rounded-[2rem] text-white shadow-lg shadow-indigo-500/20 flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <div className="bg-indigo-600 p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2rem] text-white shadow-lg shadow-indigo-500/20 flex flex-col xs:flex-row items-center xs:items-start gap-3 sm:gap-4 text-center xs:text-left">
+                    <div className="w-10 h-10 shrink-0 bg-white/20 rounded-xl flex items-center justify-center">
                         <Database size={20} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <p className="text-[9px] font-black uppercase tracking-widest text-white/70">Net Stock Value</p>
-                        <p className="text-xl font-black">₹{(summary.totalInValue - summary.totalOutValue).toLocaleString()}</p>
+                        <p className="text-base sm:text-xl font-black truncate">₹{(summary.totalInValue - summary.totalOutValue).toLocaleString()}</p>
                     </div>
                 </div>
             </div>

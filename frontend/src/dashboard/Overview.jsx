@@ -19,9 +19,12 @@ import {
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import Loader from '../components/Loader';
 
 const Overview = () => {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const [stats, setStats] = useState(null);
     const [salesData, setSalesData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -90,33 +93,21 @@ const Overview = () => {
         if (!stats) return [];
         if (currentRole === 'super_admin') {
             return [
-                { label: 'Total Shops', value: stats.totalOwners || 0, icon: <Store size={20} />, color: 'indigo', hint: 'Registered partners' },
-                { label: 'Network Items', value: stats.totalProducts || 0, icon: <Package size={20} />, color: 'emerald', hint: 'Across all shops' },
-                { label: 'Net Profit', value: `₹${Number(stats.totalProfit || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'violet', hint: 'Platform earnings' },
-                { label: 'Low Stock Shops', value: stats.lowStockProducts || 0, icon: <AlertTriangle size={20} />, color: 'rose', hint: 'Action required' },
+                { label: t('Total Shops'), value: stats.totalOwners || 0, icon: <Store size={20} />, color: 'indigo', hint: t('Registered partners') },
+                { label: t('Network Items'), value: stats.totalProducts || 0, icon: <Package size={20} />, color: 'emerald', hint: t('Across all shops') },
+                { label: t('Net Profit'), value: `₹${Number(stats.totalProfit || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'violet', hint: t('Platform earnings') },
+                { label: t('Low Stock Shops'), value: stats.lowStockProducts || 0, icon: <AlertTriangle size={20} />, color: 'rose', hint: t('Action required') },
             ];
         }
         return [
-            { label: 'Revenue', value: `₹${Number(stats.totalRevenue || 0).toLocaleString()}`, icon: <DollarSign size={20} />, color: 'indigo', hint: 'Selected period' },
-            { label: 'Net Profit', value: `₹${Number(stats.totalProfit || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'emerald', hint: 'Calculated earnings' },
-            { label: 'Transactions', value: Number(stats.totalSalesCount || 0).toLocaleString(), icon: <ShoppingCart size={20} />, color: 'amber', hint: 'Orders completed' },
-            { label: 'Low Stock', value: Number(stats.lowStockProducts || 0).toLocaleString(), icon: <AlertTriangle size={20} />, color: 'rose', hint: 'Critical inventory' },
+            { label: t('Revenue'), value: `₹${Number(stats.totalRevenue || 0).toLocaleString()}`, icon: <DollarSign size={20} />, color: 'indigo', hint: t('Selected period') },
+            { label: t('Net Profit'), value: `₹${Number(stats.totalProfit || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'emerald', hint: t('Calculated earnings') },
+            { label: t('Transactions'), value: Number(stats.totalSalesCount || 0).toLocaleString(), icon: <ShoppingCart size={20} />, color: 'amber', hint: t('Orders completed') },
+            { label: t('Low Stock'), value: Number(stats.lowStockProducts || 0).toLocaleString(), icon: <AlertTriangle size={20} />, color: 'rose', hint: t('Critical inventory') },
         ];
-    }, [stats, currentRole]);
+    }, [stats, currentRole, t]);
 
-    if (loading) {
-        return (
-            <div className="space-y-6 animate-pulse p-4">
-                <div className="h-40 rounded-[1.25rem] bg-slate-100" />
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="h-32 rounded-[1.25rem] bg-slate-100" />
-                    ))}
-                </div>
-                <div className="h-[400px] rounded-[1.25rem] bg-slate-100" />
-            </div>
-        );
-    }
+    if (loading) return <Loader message={t("Analyzing Operations")} />;
 
     return (
         <div className="space-y-8 pb-20 font-jakarta px-1">
@@ -126,46 +117,46 @@ const Overview = () => {
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Real-time Performance Metrics</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{t("Real-time Performance Metrics")}</p>
                         </div>
-                        <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase">
-                            Business <span className="text-indigo-600">Audit</span>
+                        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-none">
+                            {t("Business")} <span className="text-indigo-600">{t("Audit")}</span>
                         </h1>
-                        <p className="text-slate-500 text-sm font-medium max-w-xl">
-                            A detailed breakdown of your storefront's financial performance and operational efficiency.
+                        <p className="text-slate-500 text-xs sm:text-sm font-medium max-w-xl">
+                            {t("A detailed breakdown of your storefront's financial performance and operational efficiency.")}
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 flex items-center gap-2 w-full sm:w-auto justify-center">
                             <Activity size={16} className="text-emerald-500" />
-                            <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-300 tracking-wider">Systems Nominal</span>
+                            <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-300 tracking-wider">{t("Systems Nominal")}</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-6 bg-slate-50 dark:bg-slate-800/40 rounded-[1.25rem] border border-slate-100 dark:border-slate-800/50">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Today's Revenue</p>
+                    <div className="p-5 sm:p-6 bg-slate-50 dark:bg-slate-800/40 rounded-[1.25rem] border border-slate-100 dark:border-slate-800/50">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{t("Today's Revenue")}</p>
                         <div className="flex items-center justify-between">
-                            <h3 className="text-3xl font-black text-slate-900 dark:text-white privacy-blur">₹{Number(stats?.todayRevenue || 0).toLocaleString()}</h3>
+                            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white privacy-blur">₹{Number(stats?.todayRevenue || 0).toLocaleString()}</h3>
                             <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600">
                                 <TrendingUp size={20} />
                             </div>
                         </div>
                     </div>
-                    <div className="p-6 bg-slate-50 dark:bg-slate-800/40 rounded-[1.25rem] border border-slate-100 dark:border-slate-800/50">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Active Orders</p>
+                    <div className="p-5 sm:p-6 bg-slate-50 dark:bg-slate-800/40 rounded-[1.25rem] border border-slate-100 dark:border-slate-800/50">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{t("Active Orders")}</p>
                         <div className="flex items-center justify-between">
-                            <h3 className="text-3xl font-black text-slate-900 dark:text-white">{stats?.todayCount || 0}</h3>
+                            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{stats?.todayCount || 0}</h3>
                             <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-600">
                                 <ShoppingCart size={20} />
                             </div>
                         </div>
                     </div>
-                    <div className="p-6 bg-slate-50 dark:bg-slate-800/40 rounded-[1.25rem] border border-slate-100 dark:border-slate-800/50">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Inventory Health</p>
+                    <div className="p-5 sm:p-6 bg-slate-50 dark:bg-slate-800/40 rounded-[1.25rem] border border-slate-100 dark:border-slate-800/50">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{t("Inventory Health")}</p>
                         <div className="flex items-center justify-between">
-                            <h3 className="text-3xl font-black text-slate-900 dark:text-white">{stockHealth}%</h3>
+                            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{stockHealth}%</h3>
                             <div className="w-10 h-10 bg-rose-50 dark:bg-rose-900/20 rounded-xl flex items-center justify-center text-rose-600">
                                 <Zap size={20} />
                             </div>
@@ -208,8 +199,8 @@ const Overview = () => {
                 <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                         <div>
-                            <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">Revenue Analytics</h3>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Growth Velocity Tracking</p>
+                            <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">{t("Revenue Analytics")}</h3>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t("Growth Velocity Tracking")}</p>
                         </div>
                         <div className="flex bg-slate-50 dark:bg-slate-800 p-1 rounded-[1.25rem] border border-slate-100 dark:border-slate-800">
                             {['7D', '30D', '90D'].map((r) => (
@@ -226,47 +217,40 @@ const Overview = () => {
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={salesData}>
-                                <defs>
-                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
-                                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="_id" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
                                 <Tooltip 
                                     contentStyle={{ borderRadius: '1.25rem', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', fontWeight: 800, fontSize: '12px' }}
                                 />
-                                <Area type="monotone" dataKey="total" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                                <Area type="monotone" dataKey="total" stroke="#4f46e5" strokeWidth={3} fillOpacity={0.08} fill="#4f46e5" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                <div className="bg-indigo-600 rounded-[1.25rem] p-8 text-white relative overflow-hidden shadow-xl shadow-indigo-500/20">
+                <div className="bg-indigo-600 rounded-[1.25rem] p-8 text-white relative overflow-hidden shadow-sm">
                     <div className="relative z-10 h-full flex flex-col justify-between">
                         <div>
                             <div className="w-12 h-12 bg-white/10 rounded-[1.25rem] flex items-center justify-center mb-6">
                                 <Zap size={24} />
                             </div>
-                            <h3 className="text-2xl font-black uppercase tracking-tight leading-tight">Optimization<br/>Engine Active</h3>
+                            <h3 className="text-2xl font-black uppercase tracking-tight leading-tight">{t("Optimization Engine Active")}</h3>
                             <p className="mt-4 text-indigo-100 text-sm font-medium leading-relaxed">
-                                System indicates healthy net margins. Focus on clearing high-risk items from the watchlist below.
+                                {t("System indicates healthy net margins. Focus on clearing high-risk items from the watchlist below.")}
                             </p>
                         </div>
                         <div className="mt-10 pt-8 border-t border-white/10 grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Total Profit</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200">{t("Net Profit")}</p>
                                 <p className="text-2xl font-black privacy-blur">₹{Number(stats?.totalProfit || 0).toLocaleString()}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Avg Ticket</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200">{t("Avg Ticket")}</p>
                                 <p className="text-2xl font-black privacy-blur">₹{Math.round((stats?.totalRevenue || 0) / (stats?.totalSalesCount || 1)).toLocaleString()}</p>
                             </div>
                         </div>
                     </div>
-                    <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
                 </div>
             </section>
 
@@ -274,19 +258,19 @@ const Overview = () => {
             {currentRole !== 'super_admin' && (
                 <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Expiry Watchlist */}
-                    <div className="bg-white dark:bg-slate-900 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 p-5 sm:p-8 shadow-sm">
                         <div className="flex justify-between items-center mb-8">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-[1.25rem] flex items-center justify-center text-rose-600 shadow-sm border border-rose-100/50">
                                     <Clock size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">Expiry Watchlist</h3>
-                                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Critical: Action Required</p>
+                                    <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">{t("Expiry Watchlist")}</h3>
+                                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">{t("Critical: Action Required")}</p>
                                 </div>
                             </div>
                             <span className="px-4 py-1.5 bg-rose-50 dark:bg-rose-900/40 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-100">
-                                {stats?.expiringProducts || 0} Alerts
+                                {stats?.expiringProducts || 0} {t("Alerts")}
                             </span>
                         </div>
 
@@ -301,14 +285,14 @@ const Overview = () => {
                                             <div>
                                                 <p className="font-black text-sm uppercase text-slate-900 dark:text-white truncate max-w-[200px]">{item.productName}</p>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">Expires: {new Date(item.expiryDate).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">{t("Expires")}: {new Date(item.expiryDate).toLocaleDateString()}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs font-black text-slate-900 dark:text-white">{item.quantity} Units</p>
+                                            <p className="text-xs font-black text-slate-900 dark:text-white">{item.quantity} {t("Units")}</p>
                                             <Link to="/dashboard/inventory" className="inline-flex items-center gap-1 mt-1 text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline group-hover:gap-2 transition-all">
-                                                Audit <ArrowRight size={10} />
+                                                {t("Audit")} <ArrowRight size={10} />
                                             </Link>
                                         </div>
                                     </div>
@@ -318,26 +302,26 @@ const Overview = () => {
                                     <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-200 mb-4 border border-slate-100">
                                         <ShieldCheck size={32} />
                                     </div>
-                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">All Assets Stable</p>
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("All Assets Stable")}</p>
                                 </div>
                             )}
                         </div>
                     </div>
 
                     {/* Low Stock Watchlist */}
-                    <div className="bg-white dark:bg-slate-900 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">
+                    <div className="bg-white dark:bg-slate-900 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 p-5 sm:p-8 shadow-sm">
                         <div className="flex justify-between items-center mb-8">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-[1.25rem] flex items-center justify-center text-amber-600 shadow-sm border border-amber-100/50">
                                     <AlertTriangle size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">Low Stock Watchlist</h3>
-                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Refill Protocol Active</p>
+                                    <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">{t("Low Stock Watchlist")}</h3>
+                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{t("Refill Protocol Active")}</p>
                                 </div>
                             </div>
                             <span className="px-4 py-1.5 bg-amber-50 dark:bg-amber-900/40 text-amber-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100">
-                                {stats?.lowStockProducts || 0} Items
+                                {stats?.lowStockProducts || 0} {t("Items")}
                             </span>
                         </div>
 
@@ -352,14 +336,14 @@ const Overview = () => {
                                             <div>
                                                 <p className="font-black text-sm uppercase text-slate-900 dark:text-white truncate max-w-[200px]">{item.productName}</p>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Current: {item.quantity} Units</span>
+                                                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">{t("Current")}: {item.quantity} {t("Units")}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs font-black text-slate-900 dark:text-white">Min: {item.lowStockThreshold}</p>
+                                            <p className="text-xs font-black text-slate-900 dark:text-white">{t("Min")}: {item.lowStockThreshold}</p>
                                             <Link to="/dashboard/inventory" className="inline-flex items-center gap-1 mt-1 text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline group-hover:gap-2 transition-all">
-                                                Restock <ArrowUpRight size={10} />
+                                                {t("Restock")} <ArrowUpRight size={10} />
                                             </Link>
                                         </div>
                                     </div>
@@ -369,7 +353,7 @@ const Overview = () => {
                                     <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-200 mb-4 border border-slate-100">
                                         <ShieldCheck size={32} />
                                     </div>
-                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Inventory Fully Operational</p>
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("Inventory Fully Operational")}</p>
                                 </div>
                             )}
                         </div>
@@ -382,11 +366,11 @@ const Overview = () => {
                 <section className="bg-white dark:bg-slate-900 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h3 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Network Directory</h3>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Latest Merchant Onboarding</p>
+                            <h3 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">{t("Network Directory")}</h3>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("Latest Merchant Onboarding")}</p>
                         </div>
                         <Link to="/dashboard/shops" className="px-5 py-2.5 bg-indigo-50 text-indigo-600 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all">
-                            View All Partners
+                            {t("View All Partners")}
                         </Link>
                     </div>
 
@@ -394,10 +378,10 @@ const Overview = () => {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b border-slate-50 dark:border-slate-800">
-                                    <th className="py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Merchant Entity</th>
-                                    <th className="py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Ownership</th>
-                                    <th className="py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Plan Tier</th>
-                                    <th className="py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                                    <th className="py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("Merchant Entity")}</th>
+                                    <th className="py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("Ownership")}</th>
+                                    <th className="py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("Plan Tier")}</th>
+                                    <th className="py-4 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">{t("Status")}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">

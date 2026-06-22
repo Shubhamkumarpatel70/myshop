@@ -15,8 +15,10 @@ import Modal from '../components/Modal';
 import BarcodeScanner from '../components/BarcodeScanner';
 import { posStore } from '../utils/posStore';
 import Skeleton from '../components/Skeleton';
+import { useLanguage } from '../context/LanguageContext';
 
 const Sales = () => {
+    const { t } = useLanguage();
     const { searchQuery } = useOutletContext() || { searchQuery: '' };
     const navigate = useNavigate();
     const [sales, setSales] = useState([]);
@@ -799,6 +801,7 @@ const Sales = () => {
                                         <th className="px-6 py-4 font-black uppercase text-[10px] text-slate-400 tracking-widest">Product</th>
                                         <th className="px-6 py-4 font-black uppercase text-[10px] text-slate-400 tracking-widest text-center">Qty</th>
                                         <th className="px-6 py-4 font-black uppercase text-[10px] text-slate-400 tracking-widest text-right">Price</th>
+                                        <th className="px-6 py-4 font-black uppercase text-[10px] text-slate-400 tracking-widest text-right">Control</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -806,10 +809,24 @@ const Sales = () => {
                                         <tr key={idx} className={item.isReturned ? 'bg-rose-50/50' : ''}>
                                             <td className="px-6 py-4">
                                                 <p className="font-black text-slate-900 dark:text-white uppercase tracking-tight">{item.product?.productName || item.productName}</p>
-                                                {item.isReturned && <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Returned</span>}
                                             </td>
                                             <td className="px-6 py-4 text-center font-bold">{item.quantity}</td>
                                             <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-white">₹{(item.price * item.quantity).toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                {item.isReturned ? (
+                                                    <span className="text-[9px] font-black text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2.5 py-1 rounded-lg uppercase tracking-widest">{t('Returned')}</span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => {
+                                                            setItemToReturn(item);
+                                                            setIsReturnModalOpen(true);
+                                                        }}
+                                                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                        <Undo2 size={12} /> {t('Return')}
+                                                    </button>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -818,38 +835,38 @@ const Sales = () => {
 
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                             <div className="text-center sm:text-left">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Settlement Mode</p>
-                                <p className="text-sm font-black text-emerald-600 uppercase tracking-widest">{viewingSale.paymentMethod}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Settlement Mode')}</p>
+                                <p className="text-sm font-black text-emerald-600 uppercase tracking-widest">{t(viewingSale.paymentMethod)}</p>
                             </div>
                             <div className="text-center sm:text-right">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Settlement</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Total Settlement')}</p>
                                 <p className="text-3xl font-black text-slate-900 dark:text-white">₹{viewingSale.totalAmount.toLocaleString()}</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 pt-4">
-                            <button onClick={() => handlePrintInvoice(viewingSale)} className="h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl"><Printer size={18} /> Physical Bill</button>
-                            <button onClick={() => handleShare(viewingSale)} className="h-14 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all shadow-xl"><Share2 size={18} /> Digital Bill</button>
+                            <button onClick={() => handlePrintInvoice(viewingSale)} className="h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl"><Printer size={18} /> {t('Physical Bill')}</button>
+                            <button onClick={() => handleShare(viewingSale)} className="h-14 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all shadow-xl"><Share2 size={18} /> {t('Digital Bill')}</button>
                         </div>
                     </div>
                 )}
             </Modal>
 
             {/* Return & Scanner Modals */}
-            <Modal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} title="Registry Adjustment" className="max-w-md">
+            <Modal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} title={t('Registry Adjustment')} className="max-w-md">
                 <div className="py-6 space-y-8 text-center">
                     <div className="w-24 h-24 bg-rose-100 text-rose-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl shadow-rose-500/10"><Undo2 size={40} /></div>
                     <div className="space-y-2">
-                        <h4 className="text-2xl font-black uppercase tracking-tight">Initiate Return?</h4>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">This will restock inventory and record a refund.</p>
+                        <h4 className="text-2xl font-black uppercase tracking-tight">{t('Initiate Return?')}</h4>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('This will restock inventory and record a refund.')}</p>
                     </div>
                     <div className="space-y-3 text-left">
-                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Reason for Return</label>
-                        <textarea required placeholder="Damage, Expiry, Exchange..." className="w-full p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-rose-500 outline-none h-32 resize-none font-bold dark:text-white transition-all" value={returnReasonInput} onChange={(e) => setReturnReasonInput(e.target.value)} />
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">{t('Reason for Return')}</label>
+                        <textarea required placeholder={t('Damage, Expiry, Exchange...')} className="w-full p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-rose-500 outline-none h-32 resize-none font-bold dark:text-white transition-all" value={returnReasonInput} onChange={(e) => setReturnReasonInput(e.target.value)} />
                     </div>
                     <div className="flex gap-4 pt-4">
-                        <button onClick={() => setIsReturnModalOpen(false)} className="h-14 flex-1 bg-slate-100 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-500">Abort</button>
-                        <button onClick={handleReturn} className="h-14 flex-[2] bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-700 shadow-xl shadow-rose-500/20">Process Return</button>
+                        <button onClick={() => setIsReturnModalOpen(false)} className="h-14 flex-1 bg-slate-100 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-500">{t('Abort')}</button>
+                        <button onClick={handleReturn} className="h-14 flex-[2] bg-rose-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-700 shadow-xl shadow-rose-500/20">{t('Process Return')}</button>
                     </div>
                 </div>
             </Modal>

@@ -29,7 +29,7 @@ const ReceiptLookup = () => {
         try {
             const res = await api.get(`/sales/public/${lookupId}`);
             setReceipt(res.data.data);
-            toast.success("Receipt found!");
+            toast.success("Order Id found!");
         } catch (error) {
             toast.error(error.response?.data?.message || "Invalid Transaction ID");
         } finally {

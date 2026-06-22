@@ -42,7 +42,12 @@ exports.checkStaffLimit = async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id);
         const plan = user.subscriptionPlan || 'Free';
-        const limit = PLAN_LIMITS[plan].staff;
+        let limit = PLAN_LIMITS[plan].staff;
+
+        // Apply Team Expansion Add-on
+        if (user.hasStaffAddon) {
+            limit += 5;
+        }
 
         const staffCount = await User.countDocuments({ createdBy: req.user.id });
 

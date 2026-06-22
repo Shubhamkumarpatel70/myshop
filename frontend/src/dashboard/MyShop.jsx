@@ -10,8 +10,10 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const MyShop = () => {
+    const { t } = useLanguage();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
@@ -91,8 +93,8 @@ const MyShop = () => {
         <div className="space-y-10 pb-20 font-jakarta">
             {/* Ultra-Premium Storefront Control Center */}
             <div className="relative group">
-                <div className={`absolute -inset-1 rounded-[3rem] blur opacity-10 group-hover:opacity-20 transition duration-1000 ${user?.isStorefrontActive !== false ? 'bg-gradient-to-r from-primary-600 to-indigo-600' : 'bg-rose-600'}`}></div>
-                <div className="relative bg-white dark:bg-secondary-900 rounded-[3rem] p-8 md:p-12 border border-secondary-100 dark:border-secondary-800 shadow-2xl overflow-hidden">
+                <div className={`absolute -inset-1 rounded-[3rem] blur opacity-10 group-hover:opacity-20 transition duration-1000 ${user?.isStorefrontActive !== false ? 'bg-indigo-600' : 'bg-rose-600'}`}></div>
+                <div className="relative bg-white dark:bg-secondary-900 rounded-[3rem] p-8 md:p-12 border border-secondary-100 dark:border-secondary-800 shadow-sm overflow-hidden">
                     
                     {/* Decorative Elements */}
                     <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
@@ -104,7 +106,7 @@ const MyShop = () => {
                         <div className="flex-1 space-y-8 text-center xl:text-left">
                             <div className="flex flex-col md:flex-row items-center gap-4 justify-center xl:justify-start">
                                 <div className={`inline-flex items-center gap-3 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border animate-bounce-slow ${user?.isStorefrontActive !== false ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-primary-100 dark:border-primary-800' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                                    <Globe size={14} /> {user?.isStorefrontActive !== false ? 'Storefront Online' : 'Storefront Offline'}
+                                    <Globe size={14} /> {user?.isStorefrontActive !== false ? t('Storefront Online') : t('Storefront Offline')}
                                 </div>
                                 <button 
                                     onClick={handleMasterToggle}
@@ -116,18 +118,18 @@ const MyShop = () => {
                                     ) : (
                                         <Power size={14} />
                                     )}
-                                    {user?.isStorefrontActive !== false ? 'Go Offline' : 'Go Live Now'}
+                                    {user?.isStorefrontActive !== false ? t('Go Offline') : t('Go Live Now')}
                                 </button>
                             </div>
                             
                             <div className="space-y-4">
                                 <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-tight">
-                                    {user?.shopName} <span className={user?.isStorefrontActive !== false ? 'text-primary-600' : 'text-rose-600'}>{user?.isStorefrontActive !== false ? 'Public Store' : 'On Maintenance'}</span>
+                                    {user?.shopName} <span className={user?.isStorefrontActive !== false ? 'text-primary-600' : 'text-rose-600'}>{user?.isStorefrontActive !== false ? t('Public Store') : t('On Maintenance')}</span>
                                 </h1>
                                 <p className="text-slate-500 font-medium text-lg max-w-2xl leading-relaxed">
                                     {user?.isStorefrontActive !== false 
-                                        ? "Your professional digital catalog is live. Share this link with your customers to accept orders and showcase your inventory."
-                                        : "Your storefront is currently hidden from the public. Customers visiting your link will see an offline status message."}
+                                        ? t("Your professional digital catalog is live. Share this link with your customers to accept orders and showcase your inventory.")
+                                        : t("Your storefront is currently hidden from the public. Customers visiting your link will see an offline status message.")}
                                 </p>
                             </div>
 
@@ -138,8 +140,8 @@ const MyShop = () => {
                                         {copied ? <Check size={18} /> : <Copy size={18} />}
                                     </button>
                                 </div>
-                                <button onClick={handleShare} className="w-full sm:w-auto h-14 px-8 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl">
-                                    <Share2 size={18} /> Broadcast Shop
+                                <button onClick={handleShare} className="w-full sm:w-auto h-14 px-8 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-sm">
+                                    <Share2 size={18} /> {t("Broadcast Shop")}
                                 </button>
                             </div>
                         </div>
@@ -161,17 +163,17 @@ const MyShop = () => {
                                     />
                                 </div>
                                 <div className="text-center space-y-2 relative">
-                                    <p className={`text-[10px] font-black uppercase tracking-widest ${user?.isStorefrontActive !== false ? 'text-primary-600' : 'text-rose-600'}`}>{user?.isStorefrontActive !== false ? 'Scan to browse' : 'Store Offline'}</p>
+                                    <p className={`text-[10px] font-black uppercase tracking-widest ${user?.isStorefrontActive !== false ? 'text-primary-600' : 'text-rose-600'}`}>{user?.isStorefrontActive !== false ? t('Scan to browse') : t('Store Offline')}</p>
                                     <h4 className="font-black text-slate-900 dark:text-white uppercase tracking-tight">{user?.shopName}</h4>
                                 </div>
                             </div>
                             
                             <div className="grid grid-cols-2 gap-3 mt-6">
                                 <a href={`https://wa.me/?text=${encodeURIComponent(shareMessage)}`} target="_blank" rel="noopener noreferrer" className="h-12 bg-emerald-500 text-white rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20">
-                                    <MessageSquare size={16} /> WhatsApp
+                                    <MessageSquare size={16} /> {t("WhatsApp")}
                                 </a>
                                 <a href={shopLink} target="_blank" rel="noopener noreferrer" className="h-12 bg-indigo-500 text-white rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20">
-                                    <ExternalLink size={16} /> Preview
+                                    <ExternalLink size={16} /> {t("Preview")}
                                 </a>
                             </div>
                         </div>
@@ -183,11 +185,11 @@ const MyShop = () => {
             <div className="space-y-6">
                 <div className="flex items-center justify-between px-4">
                     <div className="space-y-1">
-                        <h3 className="text-2xl font-black uppercase tracking-tight">Active Showcase</h3>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Publicly visible products ({products.filter(p => p.isPublic !== false).length})</p>
+                        <h3 className="text-2xl font-black uppercase tracking-tight">{t("Active Showcase")}</h3>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{t("Publicly visible products")} ({products.filter(p => p.isPublic !== false).length})</p>
                     </div>
                     <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
-                        <button className="px-6 py-2 bg-white dark:bg-slate-900 rounded-xl shadow-sm text-[10px] font-black uppercase tracking-widest text-primary-600">Showcase Registry</button>
+                        <button className="px-6 py-2 bg-white dark:bg-slate-900 rounded-xl shadow-sm text-[10px] font-black uppercase tracking-widest text-primary-600">{t("Showcase Registry")}</button>
                     </div>
                 </div>
 
@@ -215,7 +217,7 @@ const MyShop = () => {
                                 ) : (
                                     product.isPublic !== false ? <Eye size={12} /> : <EyeOff size={12} />
                                 )}
-                                {product.isPublic !== false ? 'Live' : 'Hidden'}
+                                {product.isPublic !== false ? t('Live') : t('Hidden')}
                             </button>
 
                             <div className="h-48 relative bg-slate-50 dark:bg-slate-950 overflow-hidden">
@@ -230,7 +232,7 @@ const MyShop = () => {
                                 <h4 className={`font-black uppercase truncate tracking-tight transition-colors ${product.isPublic !== false ? 'text-slate-900 dark:text-white group-hover:text-primary-600' : 'text-slate-400'}`}>{product.productName}</h4>
                                 <div className="flex items-center justify-between">
                                     <span className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${product.quantity > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                                        {product.quantity > 0 ? `${product.quantity} In Stock` : 'Sold Out'}
+                                        {product.quantity > 0 ? `${product.quantity} ${t("In Stock")}` : t('Sold Out')}
                                     </span>
                                     <Link to="/dashboard/inventory" className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-primary-600 rounded-xl transition-all"><ArrowRight size={16} /></Link>
                                 </div>

@@ -76,6 +76,7 @@ const userSchema = new mongoose.Schema({
     isTrialUsed: { type: Boolean, default: false },
     barcodeUsedCount: { type: Number, default: 0 },
     hasBarcodeAddon: { type: Boolean, default: false },
+    hasStaffAddon: { type: Boolean, default: false },
     loginAttempts: { type: Number, default: 0 },
     lockoutUntil: { type: Date, default: null },
     isStorefrontActive: { type: Boolean, default: true }

@@ -483,7 +483,7 @@ const ShopBarcodes = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                         {/* Left Side: Payment Details */}
                         <div className="space-y-8">
-                            <div className="rounded-[2.5rem] bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 text-white shadow-2xl shadow-indigo-500/20 relative overflow-hidden">
+                            <div className="rounded-[2.5rem] bg-indigo-600 p-8 text-white shadow-2xl shadow-indigo-500/20 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-80">One-time Activation Fee</p>
                                 <h3 className="mt-2 font-outfit text-6xl font-black tracking-tighter">₹499</h3>

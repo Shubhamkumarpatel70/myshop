@@ -254,7 +254,7 @@ const Pricing = () => {
                                 <h2 className="font-outfit text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-6xl flex flex-wrap items-center gap-4">
                                     {user.subscriptionPlan}
                                     {user.subscriptionPlan !== 'Free' && (
-                                        <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/20 ring-1 ring-white/20">
+                                        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/20 ring-1 ring-white/20">
                                             <ShieldCheck size={12} /> Verified
                                         </span>
                                     )}
@@ -341,7 +341,7 @@ const Pricing = () => {
                                   className={`relative flex flex-col rounded-3xl border p-6 shadow-sm transition-all sm:p-7 ${isCurrentPlan ? 'border-indigo-500 bg-indigo-50/40 dark:border-indigo-400 dark:bg-indigo-500/10' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'}`}
                               >
                                   {plan.isRecommended && (
-                                      <span className="absolute -top-4 left-6 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-500/30 ring-4 ring-white dark:ring-slate-900">
+                                      <span className="absolute -top-4 left-6 inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-500/30 ring-4 ring-white dark:ring-slate-900">
                                           <Star size={12} fill="currentColor" />
                                           Recommended
                                       </span>
@@ -452,7 +452,7 @@ const Pricing = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                         {/* Left Side: Payment Details */}
                         <div className="space-y-8">
-                            <div className="rounded-[2.5rem] bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 text-white shadow-2xl shadow-indigo-500/20 relative overflow-hidden">
+                            <div className="rounded-[2.5rem] bg-indigo-600 p-8 text-white shadow-2xl shadow-indigo-500/20 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-80">Final Payable Amount</p>
                                 <h3 className="mt-2 font-outfit text-6xl font-black tracking-tighter">₹{(prorationData?.finalPrice || selectedPlan?.price || 0).toLocaleString()}</h3>
@@ -563,66 +563,125 @@ const Pricing = () => {
                 ))}
             </div>
 
-            {/* Barcode Booster Section */}
-            <div className="mt-20 relative overflow-hidden rounded-[3rem] border border-indigo-200 bg-indigo-50/30 p-10 dark:border-indigo-500/20 dark:bg-indigo-500/5">
-                <div className="absolute top-0 right-0 p-10 opacity-10">
-                    <QrCode size={200} className="text-indigo-600" />
-                </div>
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div>
-                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest mb-6 shadow-lg shadow-indigo-500/20">
-                            <Tag size={12} /> Add-on Module
-                        </span>
-                        <h2 className="font-outfit text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-5xl">
-                            Barcode <span className="text-indigo-600">Booster</span>
-                        </h2>
-                        <p className="mt-4 text-lg text-slate-600 dark:text-slate-400 font-medium max-w-lg leading-relaxed">
-                            Need more identifiers without upgrading your entire plan? Get unlimited barcode generation for your shop with our standalone booster.
-                        </p>
-                        
-                        <div className="mt-8 flex items-center gap-4">
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-4xl font-black text-slate-900 dark:text-white">₹499</span>
-                                <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">One-time payment</span>
+            {/* Add-on Modules Section */}
+            {user && (
+                <div className="space-y-10 mt-20">
+                    <div className="text-center space-y-2">
+                        <h2 className="text-3xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Standalone <span className="text-indigo-600">Modules</span></h2>
+                        <p className="text-slate-500 font-medium">Power up your shop without changing your core plan.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        {/* Barcode Booster */}
+                        <div className="relative overflow-hidden rounded-[3rem] border border-indigo-200 bg-indigo-50/30 p-10 dark:border-indigo-500/20 dark:bg-indigo-500/5">
+                            <div className="absolute top-0 right-0 p-10 opacity-10">
+                                <QrCode size={160} className="text-indigo-600" />
+                            </div>
+                            <div className="relative z-10 flex flex-col h-full justify-between">
+                                <div>
+                                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest mb-6 shadow-lg shadow-indigo-500/20">
+                                        <Tag size={12} /> Add-on Module
+                                    </span>
+                                    <h2 className="font-outfit text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
+                                        Barcode <span className="text-indigo-600">Booster</span>
+                                    </h2>
+                                    <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 font-medium max-w-md leading-relaxed">
+                                        Unlimited barcode generation and priority registry access for your entire inventory.
+                                    </p>
+                                    
+                                    <div className="mt-8 flex items-baseline gap-1">
+                                        <span className="text-3xl font-black text-slate-900 dark:text-white">₹499</span>
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">One-time payment</span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-10 flex flex-col gap-4">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={12} /></div>
+                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Unlimited Identifiers</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={12} /></div>
+                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Lifetime Validity</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        disabled={user?.hasBarcodeAddon || user?.pendingSubscription?.plan === 'Barcode Booster'}
+                                        onClick={() => {
+                                            setSelectedPlan({ name: 'Barcode Booster', price: 499, isAddon: true });
+                                            setIsUpgradeModalOpen(true);
+                                        }}
+                                        className={`w-full h-14 rounded-[1.25rem] font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-4 shadow-xl ${
+                                            user?.hasBarcodeAddon 
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 cursor-default' 
+                                            : user?.pendingSubscription?.plan === 'Barcode Booster'
+                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                                            : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 shadow-indigo-500/20'
+                                        }`}
+                                    >
+                                        {user?.hasBarcodeAddon ? <><ShieldCheck size={16} /> Activated</> : user?.pendingSubscription?.plan === 'Barcode Booster' ? <><Clock size={16} /> Pending</> : <><Zap size={16} /> Activate</>}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Team Booster */}
+                        <div className="relative overflow-hidden rounded-[3rem] border border-violet-200 bg-violet-50/30 p-10 dark:border-violet-500/20 dark:bg-violet-500/5">
+                            <div className="absolute top-0 right-0 p-10 opacity-10">
+                                <Users size={160} className="text-violet-600" />
+                            </div>
+                            <div className="relative z-10 flex flex-col h-full justify-between">
+                                <div>
+                                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest mb-6 shadow-lg shadow-violet-500/20">
+                                        <Users size={12} /> Team Module
+                                    </span>
+                                    <h2 className="font-outfit text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
+                                        Team <span className="text-violet-600">Expansion</span>
+                                    </h2>
+                                    <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 font-medium max-w-md leading-relaxed">
+                                        Scale your team infrastructure. Instantly unlock 5 additional staff slots with advanced role-based permissions.
+                                    </p>
+                                    
+                                    <div className="mt-8 flex items-baseline gap-1">
+                                        <span className="text-3xl font-black text-slate-900 dark:text-white">₹999</span>
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">One-time payment</span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-10 flex flex-col gap-4">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={12} /></div>
+                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">+5 Permanent Staff Slots</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={12} /></div>
+                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Advanced Access Control</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        disabled={user?.hasStaffAddon || user?.pendingSubscription?.plan === 'Team Expansion'}
+                                        onClick={() => {
+                                            setSelectedPlan({ name: 'Team Expansion', price: 999, isAddon: true });
+                                            setIsUpgradeModalOpen(true);
+                                        }}
+                                        className={`w-full h-14 rounded-[1.25rem] font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-4 shadow-xl ${
+                                            user?.hasStaffAddon 
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 cursor-default' 
+                                            : user?.pendingSubscription?.plan === 'Team Expansion'
+                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                                            : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-violet-600 dark:hover:bg-violet-700 shadow-violet-500/20'
+                                        }`}
+                                    >
+                                        {user?.hasStaffAddon ? <><ShieldCheck size={16} /> Activated</> : user?.pendingSubscription?.plan === 'Team Expansion' ? <><Clock size={16} /> Pending</> : <><Zap size={16} /> Activate</>}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    <div className="flex flex-col gap-6">
-                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={14} /></div>
-                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Unlimited EAN-13 Barcode Generation</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={14} /></div>
-                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Permanent License Activation</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={14} /></div>
-                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Priority Global Registry Access</p>
-                            </div>
-                        </div>
-
-                        <button 
-                            disabled={user?.hasBarcodeAddon || user?.pendingSubscription?.plan === 'Barcode Booster'}
-                            onClick={() => {
-                                setSelectedPlan({ name: 'Barcode Booster', price: 499, isAddon: true });
-                                setIsUpgradeModalOpen(true);
-                            }}
-                            className={`w-full h-18 rounded-[1.25rem] font-black uppercase text-xs tracking-[0.3em] transition-all flex items-center justify-center gap-4 shadow-2xl ${
-                                user?.hasBarcodeAddon 
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 cursor-default' 
-                                : user?.pendingSubscription?.plan === 'Barcode Booster'
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
-                                : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 shadow-indigo-500/20'
-                            }`}
-                        >
-                            {user?.hasBarcodeAddon ? <><ShieldCheck size={20} /> Already Activated</> : user?.pendingSubscription?.plan === 'Barcode Booster' ? <><Clock size={20} /> Request Pending</> : <><Zap size={20} /> Activate Booster</>}
-                        </button>
-                    </div>
                 </div>
-            </div>
+            )}
 
             {/* FAQ Section */}
             <section className="mt-32 max-w-4xl mx-auto space-y-12">

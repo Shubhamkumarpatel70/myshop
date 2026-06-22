@@ -5,10 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Package, ShoppingBag, MapPin, Phone, 
     ArrowRight, ShieldCheck, 
-    Zap, Star, Award
+    Zap, Star, Award, Sparkles
 } from 'lucide-react';
+import Loader from '../components/Loader';
+import { useLanguage } from '../context/LanguageContext';
 
 const PublicShop = () => {
+    const { t } = useLanguage();
     const { shopSlug, shopId } = useParams();
     const [shopData, setShopData] = useState(null);
     const [products, setProducts] = useState([]);
@@ -52,17 +55,7 @@ const PublicShop = () => {
         return str.substring(0, 5) + '*** **' + str.substring(str.length - 2);
     };
 
-    if (loading) return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-                <div className="relative">
-                    <div className="w-16 h-16 border-4 border-slate-200 rounded-[1.25rem]"></div>
-                    <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-[1.25rem] animate-spin absolute top-0 left-0"></div>
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Initializing Boutique</p>
-            </div>
-        </div>
-    );
+    if (loading) return <Loader message={t("Initializing Boutique")} />;
 
     if (!shopData) return (
         <div className="min-h-screen bg-white flex items-center justify-center flex-col gap-8 p-6 text-center">
@@ -70,10 +63,10 @@ const PublicShop = () => {
                 <ShieldCheck size={48} />
             </div>
             <div className="space-y-3">
-                <h1 className="text-4xl font-black tracking-tighter text-slate-900 uppercase leading-none">Boutique Unavailable</h1>
-                <p className="text-slate-500 text-sm max-w-xs mx-auto font-medium leading-relaxed">The requested digital storefront is currently offline or the security clearance has expired.</p>
+                <h1 className="text-4xl font-black tracking-tighter text-slate-900 uppercase leading-none">{t("Boutique Unavailable")}</h1>
+                <p className="text-slate-500 text-sm max-w-xs mx-auto font-medium leading-relaxed">{t("The requested digital storefront is currently offline or the security clearance has expired.")}</p>
             </div>
-            <a href="/" className="px-8 py-4 bg-slate-900 text-white rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-slate-900/20">Return to Portal</a>
+            <a href="/" className="px-8 py-4 bg-slate-900 text-white rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-slate-900/20">{t("Return to Portal")}</a>
         </div>
     );
 
@@ -90,7 +83,7 @@ const PublicShop = () => {
                             <h1 className="text-lg font-black uppercase tracking-tight text-slate-900 leading-none mb-1">{shopData.shopName}</h1>
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center gap-1 text-[9px] font-bold uppercase text-slate-400 tracking-wider">
-                                    <MapPin size={10} className="text-indigo-500" /> {shopData.address?.split(',')[0] || 'Flagship Store'}
+                                    <MapPin size={10} className="text-indigo-500" /> {shopData.address?.split(',')[0] || t('Flagship Store')}
                                 </span>
                             </div>
                         </div>
@@ -99,7 +92,7 @@ const PublicShop = () => {
                     <div className="flex items-center gap-3">
                         <a href={`tel:${shopData.phone}`} className="h-11 px-6 flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white rounded-[1.25rem] transition-all group">
                             <Phone size={14} className="text-indigo-400" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Connect</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">{t("Connect")}</span>
                         </a>
                     </div>
                 </div>
@@ -116,7 +109,7 @@ const PublicShop = () => {
                             className="inline-flex items-center gap-3 px-4 py-2 bg-indigo-50 rounded-[1.25rem] border border-indigo-100"
                         >
                             <Sparkles size={14} className="text-indigo-600" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Curated Intelligence</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">{t("Curated Intelligence")}</span>
                         </motion.div>
                         
                         <motion.div
@@ -126,11 +119,10 @@ const PublicShop = () => {
                             className="space-y-4"
                         >
                             <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 uppercase leading-[0.85]">
-                                Premium <br />
-                                <span className="text-indigo-600">Collection</span>
+                                {t("Premium Collection")}
                             </h1>
                             <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-xl">
-                                Synchronized real-time inventory from {shopData.shopName}. Experience the future of retail transparency.
+                                {t("Synchronized real-time inventory from")} {shopData.shopName}. {t("Experience the future of retail transparency.")}
                             </p>
                         </motion.div>
 
@@ -145,8 +137,8 @@ const PublicShop = () => {
                                     <Award size={18} />
                                 </div>
                                 <div className="leading-none">
-                                    <p className="text-[10px] font-black uppercase text-slate-900">Verified</p>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Official Merchant</p>
+                                    <p className="text-[10px] font-black uppercase text-slate-900">{t("Verified")}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t("Official Merchant")}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
@@ -154,8 +146,8 @@ const PublicShop = () => {
                                     <Zap size={18} />
                                 </div>
                                 <div className="leading-none">
-                                    <p className="text-[10px] font-black uppercase text-slate-900">Live Sync</p>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Real-time Data</p>
+                                    <p className="text-[10px] font-black uppercase text-slate-900">{t("Live Sync")}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t("Real-time Data")}</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -174,7 +166,7 @@ const PublicShop = () => {
                                 onClick={() => setActiveCategory(cat)}
                                 className={`px-8 h-12 rounded-[1.25rem] text-[10px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap border ${activeCategory === cat ? 'bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/10' : 'bg-white text-slate-500 border-slate-100 hover:bg-slate-50'}`}
                             >
-                                {cat}
+                                {cat === "All" ? t("Metric: All Items") : cat}
                             </button>
                         ))}
                     </div>
@@ -205,7 +197,7 @@ const PublicShop = () => {
                                         ) : (
                                             <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-200">
                                                 <Package size={64} strokeWidth={1} />
-                                                <span className="text-[9px] font-black uppercase tracking-[0.3em] mt-4 opacity-50">Image Pending</span>
+                                                <span className="text-[9px] font-black uppercase tracking-[0.3em] mt-4 opacity-50">{t("Image Pending")}</span>
                                             </div>
                                         )}
                                         
@@ -215,7 +207,7 @@ const PublicShop = () => {
                                             </div>
                                             {product.quantity <= 5 && product.quantity > 0 && (
                                                 <div className="px-3 py-1.5 bg-rose-500 text-white rounded-[1.25rem] text-[8px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/20">
-                                                    Limited
+                                                    {t("Limited")}
                                                 </div>
                                             )}
                                         </div>
@@ -227,21 +219,21 @@ const PublicShop = () => {
                                     {/* Intelligence Data */}
                                     <div className="px-2 space-y-3">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500">{product.category?.name || 'Essential'}</span>
+                                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500">{product.category?.name || t('Essential')}</span>
                                             <div className="h-px flex-1 bg-slate-100"></div>
                                         </div>
                                         
                                         <h3 className="text-xl font-black uppercase tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors">{product.productName}</h3>
                                         
                                         <p className="text-sm text-slate-400 font-medium line-clamp-2 leading-relaxed min-h-[40px]">
-                                            {product.description || 'Premium industrial-grade quality assets, inspected and verified for platform standards.'}
+                                            {product.description || t('Premium industrial-grade quality assets, inspected and verified for platform standards.')}
                                         </p>
                                         
                                         <div className="pt-4 flex items-center justify-between border-t border-slate-50">
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-2 h-2 rounded-full ${product.quantity > 0 ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
                                                 <span className={`text-[10px] font-black uppercase tracking-[0.1em] ${product.quantity > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                    {product.quantity > 0 ? `${product.quantity} Units Syncing` : 'Depleted'}
+                                                    {product.quantity > 0 ? `${product.quantity} ${t("Units Syncing")}` : t('Depleted')}
                                                 </span>
                                             </div>
                                             <div className="w-8 h-8 rounded-[1.25rem] bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
@@ -260,8 +252,8 @@ const PublicShop = () => {
                                 <div className="w-24 h-24 bg-slate-100 rounded-[1.25rem] flex items-center justify-center mx-auto mb-8">
                                     <Package size={40} className="text-slate-300" />
                                 </div>
-                                <h3 className="text-3xl font-black uppercase text-slate-900 tracking-tighter">Vault Empty</h3>
-                                <p className="text-slate-400 mt-3 text-base font-medium max-w-sm mx-auto">No assets matched your current category filter. Try broadening your search.</p>
+                                <h3 className="text-3xl font-black uppercase text-slate-900 tracking-tighter">{t("Vault Empty")}</h3>
+                                <p className="text-slate-400 mt-3 text-base font-medium max-w-sm mx-auto">{t("No assets matched your current category filter. Try broadening your search.")}</p>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -280,11 +272,11 @@ const PublicShop = () => {
                                 <h3 className="text-3xl font-black uppercase tracking-tighter text-slate-900">{shopData.shopName}</h3>
                             </div>
                             <p className="text-slate-500 text-lg font-medium max-w-md leading-relaxed">
-                                Professional retail distribution network powered by StockSaathi OS. Authenticity and real-time synchronization guaranteed.
+                                {t("Professional retail distribution network powered by StockSaathi OS. Authenticity and real-time synchronization guaranteed.")}
                             </p>
                         </div>
                         <div className="lg:col-span-3 space-y-6">
-                            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-500">Contact Protocol</h4>
+                            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-500">{t("Contact Protocol")}</h4>
                             <div className="space-y-4">
                                 <div className="flex items-center gap-4 group cursor-pointer">
                                     <div className="w-10 h-10 rounded-[1.25rem] bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-all">
@@ -296,29 +288,29 @@ const PublicShop = () => {
                                     <div className="w-10 h-10 rounded-[1.25rem] bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-all">
                                         <MapPin size={16} />
                                     </div>
-                                    <p className="text-slate-600 text-xs font-bold leading-tight">{shopData.address || 'Global Distribution Center'}</p>
+                                    <p className="text-slate-600 text-xs font-bold leading-tight">{shopData.address || t('Global Distribution Center')}</p>
                                 </div>
                             </div>
                         </div>
                         <div className="lg:col-span-3 space-y-6">
-                            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-500">Infrastructure</h4>
+                            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-500">{t("Infrastructure")}</h4>
                             <div className="p-6 bg-slate-50 rounded-[1.25rem] border border-slate-100 flex flex-col items-center text-center">
                                 <div className="w-10 h-10 bg-indigo-600 rounded-[1.25rem] flex items-center justify-center text-white mb-4 shadow-lg shadow-indigo-600/20">
                                     <ShieldCheck size={20} />
                                 </div>
-                                <p className="text-xs font-black uppercase tracking-tight text-slate-900">StockSaathi Retail OS</p>
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">Verified Digital Asset</p>
+                                <p className="text-xs font-black uppercase tracking-tight text-slate-900">{t("StockSaathi Retail OS")}</p>
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">{t("Verified Digital Asset")}</p>
                             </div>
                         </div>
                     </div>
                     
                     <div className="pt-12 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="flex items-center gap-6">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer">Integrity</span>
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer">Protocol</span>
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer">Privacy</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer">{t("Integrity")}</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer">{t("Protocol")}</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer">{t("Privacy")}</span>
                         </div>
-                        <p className="text-slate-300 text-[10px] font-black uppercase tracking-widest">© {new Date().getFullYear()} Intelligent Retail Matrix</p>
+                        <p className="text-slate-300 text-[10px] font-black uppercase tracking-widest">© {new Date().getFullYear()} {t("Intelligent Retail Matrix")}</p>
                     </div>
                 </div>
             </footer>

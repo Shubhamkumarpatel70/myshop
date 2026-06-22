@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Loader2, Lock, Mail, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const Login = () => {
     const [loginMethod, setLoginMethod] = useState('password');
@@ -13,6 +15,7 @@ const Login = () => {
     const [failedAttempts, setFailedAttempts] = useState(0);
     const [timeLeft, setTimeLeft] = React.useState(0);
     const { login } = useAuth();
+    const { t } = useLanguage();
     const navigate = useNavigate();
 
     // Check for existing lockout on mount
@@ -50,9 +53,6 @@ const Login = () => {
                     setTimeLeft(serverSeconds);
                     setFailedAttempts(3);
                 } else if (res.data.success && !res.data.isLocked) {
-                    // If not locked on server, and we have a local timer, clear it
-                    // But only if it was for THIS email (we'd need more logic for that, 
-                    // so for now just clear if server says no lockout)
                     if (timeLeft > 0) setTimeLeft(0);
                 }
             } catch (err) {
@@ -94,12 +94,11 @@ const Login = () => {
             const result = await login(formData.email, formData.password, mpinValue);
             
             if (result.success) {
-                toast.success('Login successful');
+                toast.success(t('Login successful'));
                 localStorage.removeItem('loginLockout');
                 setFailedAttempts(0);
                 navigate('/dashboard');
             } else {
-                // If backend says account is locked (status 429)
                 if (result.isLocked) {
                     const serverSeconds = result.remainingSeconds || 300;
                     const serverLockout = result.lockoutUntil || (Date.now() + serverSeconds * 1000);
@@ -107,39 +106,38 @@ const Login = () => {
                     localStorage.setItem('loginLockout', serverLockout.toString());
                     setTimeLeft(serverSeconds);
                     setFailedAttempts(3);
-                    toast.error(result.message || 'Account locked');
+                    toast.error(result.message || t('Account locked'));
                 } else {
-                    // Update local attempts from backend source of truth
                     const remaining = result.attemptsLeft !== undefined ? result.attemptsLeft : 3 - (failedAttempts + 1);
                     setFailedAttempts(3 - remaining);
-                    toast.error(result.message || `Invalid credentials. ${remaining} attempts left`);
+                    toast.error(result.message || `${t('Invalid credentials')}. ${remaining} ${t('attempts left')}`);
                 }
             }
         } catch {
-            toast.error('Unable to login right now');
+            toast.error(t('Unable to login right now'));
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-100/60 px-4 py-8 text-slate-900 sm:px-6">
-            <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-5xl items-center gap-8 rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8 lg:grid-cols-2 lg:p-10">
-                <section className="rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-sky-600 p-6 text-white sm:p-8">
+        <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-6">
+            <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-5xl items-center gap-8 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-8 lg:grid-cols-2 lg:p-10">
+                <section className="rounded-2xl bg-indigo-600 p-6 text-white sm:p-8">
                     <Link to="/" className="inline-flex items-center gap-3 text-white">
                         <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
                             <ShoppingBag size={20} />
                         </span>
                         <span className="font-outfit text-xl font-extrabold tracking-tight">StockSaathi</span>
                     </Link>
-                    <h1 className="mt-8 font-outfit text-3xl font-bold leading-tight sm:text-4xl">Welcome back</h1>
+                    <h1 className="mt-8 font-outfit text-3xl font-bold leading-tight sm:text-4xl">{t('Welcome back')}</h1>
                     <p className="mt-3 text-sm leading-relaxed text-indigo-100 sm:text-base">
-                        Securely access your dashboard to manage billing, stock, and team operations.
+                        {t('Securely access your dashboard to manage billing, stock, and team operations.')}
                     </p>
                     <ul className="mt-8 space-y-2 text-sm text-indigo-100">
-                        <li>Role-based access for staff and owners</li>
-                        <li>Fast checkout and live stock sync</li>
-                        <li>Reports and daily business insights</li>
+                        <li>{t('Role-based access for staff and owners')}</li>
+                        <li>{t('Fast checkout and live stock sync')}</li>
+                        <li>{t('Reports and daily business insights')}</li>
                     </ul>
                 </section>
 
@@ -150,7 +148,7 @@ const Login = () => {
                             onClick={() => setLoginMethod('password')}
                             className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${loginMethod === 'password' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
                         >
-                            Password
+                            {t('Password')}
                         </button>
                         <button
                             type="button"
@@ -163,7 +161,7 @@ const Login = () => {
 
                     <motion.form onSubmit={handleSubmit} className="space-y-4" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                            <label className="mb-1 block text-sm font-medium text-slate-700">{t('Email Address')}</label>
                             <div className="relative">
                                 <Mail size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                 <input
@@ -179,7 +177,7 @@ const Login = () => {
 
                         {loginMethod === 'password' ? (
                             <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
+                                <label className="mb-1 block text-sm font-medium text-slate-700">{t('Password')}</label>
                                 <div className="relative">
                                     <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                                     <input
@@ -187,14 +185,14 @@ const Login = () => {
                                         required
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        placeholder="Enter password"
+                                        placeholder={t('Enter password')}
                                         className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-500"
                                     />
                                 </div>
                             </div>
                         ) : (
                             <div>
-                                <label className="mb-2 block text-sm font-medium text-slate-700">4-digit mPIN</label>
+                                <label className="mb-2 block text-sm font-medium text-slate-700">{t('4-digit mPIN')}</label>
                                 <div className="flex justify-between gap-2 sm:gap-3">
                                     {mpin.map((digit, index) => (
                                         <input
@@ -220,25 +218,25 @@ const Login = () => {
                             className={`mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[1.25rem] text-sm font-black uppercase tracking-widest text-white transition-all shadow-lg disabled:opacity-60 group border border-transparent ${
                                 timeLeft > 0 
                                 ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-200' 
-                                : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-200 dark:hover:shadow-none hover:border-indigo-400/30'
+                                : 'bg-indigo-600 hover:bg-indigo-700'
                             }`}
                         >
                             {isSubmitting ? (
                                 <Loader2 size={18} className="animate-spin" />
                             ) : timeLeft > 0 ? (
-                                `Locked: ${formatTime(timeLeft)}`
+                                `${t('Locked')}: ${formatTime(timeLeft)}`
                             ) : (
                                 <>
-                                    Login Access <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                    {t('Login')} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
                         </button>
                     </motion.form>
 
                     <p className="mt-4 text-center text-sm text-slate-500">
-                        New to StockSaathi?{' '}
+                        {t("Don't have an account?")}{' '}
                         <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-700">
-                            Create account
+                            {t('Register here')}
                         </Link>
                     </p>
                 </section>

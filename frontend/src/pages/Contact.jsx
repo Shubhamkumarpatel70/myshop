@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { Mail, MapPin, Phone, Send, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const Contact = () => {
     const [loading, setLoading] = useState(false);
+    const { t } = useLanguage();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -16,11 +18,11 @@ const Contact = () => {
         try {
             const res = await api.post('/queries', data);
             if (res.data.success) {
-                toast.success('Message sent. Our team will contact you soon.');
+                toast.success(t('Message sent. Our team will contact you soon.'));
                 e.target.reset();
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send message');
+            toast.error(error.response?.data?.message || t('Failed to send message'));
         } finally {
             setLoading(false);
         }
@@ -40,7 +42,7 @@ const Contact = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="inline-flex rounded-full border border-indigo-100 bg-white px-4 py-2 text-xs font-semibold text-indigo-700 shadow-sm dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200"
                     >
-                        Contact Us
+                        {t('Contact Us')}
                     </motion.p>
                     <motion.h1
                         initial={{ opacity: 0, y: 14 }}
@@ -48,7 +50,7 @@ const Contact = () => {
                         transition={{ delay: 0.1 }}
                         className="mt-5 font-outfit text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl"
                     >
-                        Reach our support and sales team
+                        {t('Reach our support and sales team')}
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0, y: 14 }}
@@ -56,16 +58,16 @@ const Contact = () => {
                         transition={{ delay: 0.2 }}
                         className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300"
                     >
-                        Tell us about your requirement, and we will help you with onboarding, pricing, or product setup.
+                        {t('Tell us about your requirement, and we will help you with onboarding, pricing, or product setup.')}
                     </motion.p>
                 </div>
 
                 <div className="mt-14 grid gap-6 lg:grid-cols-12">
                     <div className="space-y-4 lg:col-span-5">
                         {[
-                            { icon: <Mail className="h-5 w-5 text-indigo-600" />, title: 'Email', value: 'support@stocksaathi.com' },
-                            { icon: <Phone className="h-5 w-5 text-indigo-600" />, title: 'Phone', value: '+91 90000 00000' },
-                            { icon: <MapPin className="h-5 w-5 text-indigo-600" />, title: 'Address', value: 'Mumbai, India' },
+                            { icon: <Mail className="h-5 w-5 text-indigo-600" />, title: t('Email'), value: 'support@stocksaathi.com' },
+                            { icon: <Phone className="h-5 w-5 text-indigo-600" />, title: t('Phone'), value: '+91 90000 00000' },
+                            { icon: <MapPin className="h-5 w-5 text-indigo-600" />, title: t('Address'), value: 'Mumbai, India' },
                         ].map((item) => (
                             <div key={item.title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
                                 <div className="mb-3 inline-flex rounded-xl bg-indigo-50 p-2.5 dark:bg-indigo-500/15">{item.icon}</div>
@@ -87,17 +89,17 @@ const Contact = () => {
                         >
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Name</label>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{t('Name')}</label>
                                     <input
                                         type="text"
                                         name="name"
                                         required
                                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                        placeholder="Your name"
+                                        placeholder={t('Your name')}
                                     />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{t('Email')}</label>
                                     <input
                                         type="email"
                                         name="email"
@@ -109,24 +111,24 @@ const Contact = () => {
                             </div>
 
                             <div className="mt-4">
-                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Subject</label>
+                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{t('Subject')}</label>
                                 <input
                                     type="text"
                                     name="subject"
                                     required
                                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    placeholder="What can we help with?"
+                                    placeholder={t('What can we help with?')}
                                 />
                             </div>
 
                             <div className="mt-4">
-                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Message</label>
+                                <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{t('Message')}</label>
                                 <textarea
                                     name="message"
                                     required
                                     rows={6}
                                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                                    placeholder="Share your requirements..."
+                                    placeholder={t('Share your requirements...')}
                                 />
                             </div>
 
@@ -138,11 +140,11 @@ const Contact = () => {
                                 {loading ? (
                                     <>
                                         <Loader2 size={16} className="animate-spin" />
-                                        Sending...
+                                        {t('Sending...')}
                                     </>
                                 ) : (
                                     <>
-                                        Send Message
+                                        {t('Send Message')}
                                         <Send size={16} />
                                     </>
                                 )}
