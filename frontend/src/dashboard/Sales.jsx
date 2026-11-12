@@ -826,7 +826,7 @@ const Sales = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     {['Cash', 'UPI', 'Card', 'Scan & Pay'].map(method => (
-                                        <button key={method} onClick={() => setCustomerInfo({ ...customerInfo, paymentMethod: method })} className={`p-6 rounded-[1.25rem] border-2 flex flex-col items-center gap-3 transition-all ${customerInfo.paymentMethod === method ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 shadow-lg shadow-indigo-500/5' : 'border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200'}`}>
+                                        <button key={method} onClick={() => { setCustomerInfo({ ...customerInfo, paymentMethod: method }); if (secondPaymentMethod === method) setSecondPaymentMethod(method === 'Cash' ? 'UPI' : 'Cash'); }} className={`p-6 rounded-[1.25rem] border-2 flex flex-col items-center gap-3 transition-all ${customerInfo.paymentMethod === method ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 shadow-lg shadow-indigo-500/5' : 'border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200'}`}>
                                             <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center ${customerInfo.paymentMethod === method ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}>
                                                 {method === 'Cash' ? <Wallet size={20} /> : method === 'UPI' ? <Zap size={20} /> : method === 'Card' ? <CreditCard size={20} /> : <QrCode size={20} />}
                                             </div>
