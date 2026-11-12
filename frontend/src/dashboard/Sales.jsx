@@ -227,7 +227,7 @@ const Sales = () => {
         if (foundProduct) {
             addToCart(foundProduct);
         } else {
-            toast.error("Unknown product identified");
+            toast.error("Product not found. Add it to your inventory first.");
         }
     };
 
