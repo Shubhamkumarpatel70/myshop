@@ -16,11 +16,13 @@ import BarcodeScanner from '../components/BarcodeScanner';
 import { posStore } from '../utils/posStore';
 import Skeleton from '../components/Skeleton';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const escapeHtml = (value) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 
 const Sales = () => {
     const { t } = useLanguage();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [sales, setSales] = useState([]);
     const [products, setProducts] = useState([]);
@@ -236,7 +238,8 @@ const Sales = () => {
                 price: product.price,
                 quantity: 1,
                 mrp: product.price,
-                discount: 0
+                discount: 0,
+                taxRate: Number(product.taxRate) || 0
             }]);
         }
         toast.success((t) => (
@@ -278,7 +281,11 @@ const Sales = () => {
     };
 
     const calculateTotal = () => {
-        return cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        return cart.reduce((acc, item) => {
+            const base = Number(item.price) * Number(item.quantity);
+            const rate = user?.gstEnabled ? Math.max(0, Number(item.taxRate) || 0) : 0;
+            return acc + base + (base * rate / 100);
+        }, 0);
     };
 
     const handleCheckout = async () => {
@@ -374,7 +381,7 @@ const Sales = () => {
             if (item.isReturned) {
                 returnsTotal += itemTotal;
             } else {
-                subtotal += itemTotal;
+                subtotal += Number(item.taxableAmount ?? itemTotal);
             }
 
             return `
