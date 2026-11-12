@@ -253,7 +253,7 @@ exports.createSubscriptionOrder = async (req, res) => {
         }
         amount = Number(amount.toFixed(2));
         if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, message: 'The selected plan has no payable balance after applying your remaining plan credit.' });
-        const phone = String(user.phone || '').replace(/\\D/g, '').slice(-10);
+        const phone = String(user.phone || '').replace(/\D/g, '').slice(-10);
         if (phone.length !== 10) return res.status(400).json({ success: false, message: 'A valid 10-digit mobile number is required.' });
 
         const paymentId = `SSPAY_${user._id}_${Date.now()}`;
@@ -269,7 +269,7 @@ exports.createSubscriptionOrder = async (req, res) => {
                 customer_phone: phone
             },
             order_meta: {
-                return_url: `${(process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\\/$/, '')}/dashboard/pricing?order_id={order_id}`,
+                return_url: `${(process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/dashboard/pricing?order_id={order_id}`,
                 ...(process.env.BACKEND_URL ? { notify_url: `${process.env.BACKEND_URL.replace(/\\/$/, '')}/api/payments/cashfree/webhook` } : {})
             },
             order_note: `Stock Saathi ${plan.name} subscription`
