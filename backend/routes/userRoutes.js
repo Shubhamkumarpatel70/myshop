@@ -3,7 +3,7 @@ const router = express.Router();
 const { 
     updateProfile, addStaff, getStaff, 
     getStaffStats, getPublicUser, toggleUserSuspension,
-    getPublicShops, getPublicShopDetails
+    getPublicShops, getPublicShopDetails, updatePrinterStatus
 } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
 const { checkStaffLimit } = require('../middleware/limitMiddleware');
@@ -12,6 +12,7 @@ router.get('/public/shops', getPublicShops);
 router.get('/public/shops/:id', getPublicShopDetails);
 router.get('/public/:shopSlug', getPublicUser);
 router.put('/profile', protect, updateProfile);
+router.put('/printer-status', protect, updatePrinterStatus);
 router.post('/staff', protect, checkStaffLimit, addStaff);
 router.get('/staff', protect, getStaff);
 router.get('/staff/:id/stats', protect, getStaffStats);
