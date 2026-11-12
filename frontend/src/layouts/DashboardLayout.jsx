@@ -42,6 +42,7 @@ import toast from 'react-hot-toast';
 import NotificationDropdown from '../components/NotificationDropdown';
 import RegistrationPayment from '../components/RegistrationPayment';
 import UserTour from '../components/UserTour';
+import Footer from '../components/Footer';
 
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -545,6 +546,9 @@ const DashboardLayout = () => {
                         </AnimatePresence>
                     </div>
                 </main>
+                <div className={`lg:ml-0 ${isSidebarOpen ? 'lg:ml-72' : 'lg:ml-24'}`}>
+                    <Footer />
+                </div>
 
                 {mobileBottomItems.length > 0 && (
                     <nav className="ss-mobile-bottom fixed bottom-6 left-6 right-6 z-40 rounded-[2rem] border border-white/20 bg-white/80 px-2.5 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/80 lg:hidden ring-1 ring-black/5">
