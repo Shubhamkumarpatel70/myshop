@@ -43,7 +43,7 @@ const Overview = () => {
                     totalOwners: d.totalOwners || 0,
                     totalProducts: d.totalProducts || 0,
                     totalRevenue: d.totalRevenue || 0,
-                    totalProfit: d.totalRevenue * 0.15,
+                    totalProfit: null,
                     todayRevenue: d.todayRevenue || 0,
                     todayCount: d.todayCount || 0,
                     activeShifts: d.activeShifts || 0,
@@ -87,7 +87,7 @@ const Overview = () => {
     }, [user?.role, period]);
 
     const currentRole = user?.role || 'shop_owner';
-    const stockHealth = stats ? Math.round(((stats.totalProducts - stats.lowStockProducts) / (stats.totalProducts || 1)) * 100) : 0;
+    const stockHealth = stats && currentRole !== 'super_admin' ? Math.max(0, Math.min(100, Math.round(((stats.totalProducts - stats.lowStockProducts) / (stats.totalProducts || 1)) * 100))) : 0;
 
     const metrics = useMemo(() => {
         if (!stats) return [];
@@ -95,7 +95,7 @@ const Overview = () => {
             return [
                 { label: t('Total Shops'), value: stats.totalOwners || 0, icon: <Store size={20} />, color: 'indigo', hint: t('Registered partners') },
                 { label: t('Network Items'), value: stats.totalProducts || 0, icon: <Package size={20} />, color: 'emerald', hint: t('Across all shops') },
-                { label: t('Net Profit'), value: `₹${Number(stats.totalProfit || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'violet', hint: t('Platform earnings') },
+                { label: t('Total Revenue'), value: `₹${Number(stats.totalRevenue || 0).toLocaleString()}`, icon: <TrendingUp size={20} />, color: 'violet', hint: t('Recorded platform sales') },
                 { label: t('Low Stock Shops'), value: stats.lowStockProducts || 0, icon: <AlertTriangle size={20} />, color: 'rose', hint: t('Action required') },
             ];
         }
@@ -129,7 +129,7 @@ const Overview = () => {
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 flex items-center gap-2 w-full sm:w-auto justify-center">
                             <Activity size={16} className="text-emerald-500" />
-                            <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-300 tracking-wider">{t("Systems Nominal")}</span>
+                            <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-300 tracking-wider">{t("Dashboard data")}</span>
                         </div>
                     </div>
                 </div>
@@ -237,7 +237,7 @@ const Overview = () => {
                             </div>
                             <h3 className="text-2xl font-black uppercase tracking-tight leading-tight">{t("Optimization Engine Active")}</h3>
                             <p className="mt-4 text-indigo-100 text-sm font-medium leading-relaxed">
-                                {t("System indicates healthy net margins. Focus on clearing high-risk items from the watchlist below.")}
+                                {t("Review recorded sales, inventory signals, and operational activity to decide what needs attention next.")}
                             </p>
                         </div>
                         <div className="mt-10 pt-8 border-t border-white/10 grid grid-cols-2 gap-4">
