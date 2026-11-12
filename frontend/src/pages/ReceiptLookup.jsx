@@ -153,12 +153,17 @@ const ReceiptLookup = () => {
             doc.setTextColor(79, 70, 229);
             doc.setFont("helvetica", "bold");
             doc.text("GRAND TOTAL:", 135, finalY + 22);
-            const netTotal = receipt.items.reduce((sum, item) => {
+            const grossNetTotal = receipt.items.reduce((sum, item) => {
                 const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
                 const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
                 const itemTotal = Number(item.total || (item.price * item.quantity));
                 return sum + itemTotal * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
             }, 0);
+            const discountAmount = Number(receipt.discountAmount || 0);
+            const netTotal = Math.max(0, grossNetTotal - discountAmount);
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            doc.text(discountAmount > 0 ? (receipt.discountType === 'percentage' ? `Discount (${receipt.discountValue}%): -Rs. ${discountAmount.toFixed(2)}` : `Discount: -Rs. ${discountAmount.toFixed(2)}`) : 'Discount: N/A', 135, finalY + 17, { align: 'left' });
             doc.text(`Rs. ${netTotal.toFixed(2)}`, 185, finalY + 22, { align: 'right' });
 
             // Terms and Footer
@@ -316,14 +321,15 @@ const ReceiptLookup = () => {
                                             </p>
                                         )}
 
+                                        <p className="text-sm font-semibold text-emerald-600">Discount: {Number(receipt.discountAmount || 0) > 0 ? `- ₹${Number(receipt.discountAmount).toFixed(2)}${receipt.discountType === 'percentage' ? ` (${receipt.discountValue}%)` : ''}` : 'N/A'}</p>
                                         <div className="flex items-center justify-end gap-2 text-4xl font-black text-indigo-600">
                                             <IndianRupee size={32} />
-                                            {receipt.items.reduce((acc, item) => {
+                                            {Math.max(0, receipt.items.reduce((acc, item) => {
                                                 const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
                                                 const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
                                                 const itemTotal = Number(item.total || (item.price * item.quantity));
                                                 return acc + itemTotal * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
-                                            }, 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                                            }, 0) - Number(receipt.discountAmount || 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                                         </div>
                                         <p className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">
                                             {receipt.items.some(i => i.isReturned || Number(i.returnedQuantity || 0) > 0) ? 'Returns recorded' : `Paid via ${receipt.paymentMethod}`}

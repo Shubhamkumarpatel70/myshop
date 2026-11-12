@@ -118,7 +118,14 @@ export const printThermalReceipt = async (sale, columns = 32) => {
     if (igst) lines.push(padRow('IGST', money(igst), width));
     if (!cgst && !sgst && !igst && taxTotal) lines.push(padRow('TAX', money(taxTotal), width));
     lines.push(divider);
-    lines.push(padRow('TOTAL', money(netTotal), width));
+    const discountAmount = Number(sale.discountAmount || 0);
+    if (discountAmount > 0) {
+        const discountLabel = sale.discountType === 'percentage' ? `DISCOUNT (${Number(sale.discountValue)}%)` : 'DISCOUNT';
+        lines.push(padRow(discountLabel, `- ${money(discountAmount)}`, width));
+    } else {
+        lines.push(padRow('DISCOUNT', 'N/A', width));
+    }
+    lines.push(padRow('TOTAL', money(Number(sale.totalAmount ?? Math.max(0, netTotal - discountAmount))), width));
     add(`Payment: ${sale.paymentMethod || 'N/A'}`);
     if (Array.isArray(sale.payments) && sale.payments.length > 1) {
         for (const payment of sale.payments) add(`${payment.mode}: ${money(payment.amount)}`);

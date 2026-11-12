@@ -125,17 +125,32 @@ exports.createSale = async (req, res) => {
             });
         }
 
+        const subtotalAmount = Number(totalAmount.toFixed(2));
+        const requestedDiscountType = ['amount', 'percentage'].includes(req.body.discountType) ? req.body.discountType : 'none';
+        const requestedDiscountValue = Number(req.body.discountValue || 0);
+        if (!Number.isFinite(requestedDiscountValue) || requestedDiscountValue < 0 || (requestedDiscountType === 'percentage' && requestedDiscountValue > 100)) {
+            return res.status(400).json({ success: false, message: 'Enter a valid discount amount or percentage.' });
+        }
+        const discountAmount = requestedDiscountType === 'percentage'
+            ? Number((subtotalAmount * requestedDiscountValue / 100).toFixed(2))
+            : Number(Math.min(subtotalAmount, requestedDiscountValue).toFixed(2));
+        const finalDiscountType = discountAmount > 0 ? requestedDiscountType : 'none';
+        const totalPayable = Number(Math.max(0, subtotalAmount - discountAmount).toFixed(2));
         const paymentParts = Array.isArray(req.body.payments) && req.body.payments.length
             ? req.body.payments.map(payment => ({ mode: payment.mode, amount: Number(payment.amount) }))
-            : [{ mode: paymentMethod || 'Cash', amount: Number(totalAmount.toFixed(2)) }];
+            : [{ mode: paymentMethod || 'Cash', amount: totalPayable }];
         const paymentTotal = paymentParts.reduce((sum, payment) => sum + payment.amount, 0);
-        if (paymentParts.some(payment => !Number.isFinite(payment.amount) || payment.amount <= 0) || Math.abs(paymentTotal - totalAmount) > 0.01) {
+        if (paymentParts.some(payment => !Number.isFinite(payment.amount) || payment.amount < 0) || Math.abs(paymentTotal - totalPayable) > 0.01) {
             return res.status(400).json({ success: false, message: 'Payment split amounts must add up to the total payable amount.' });
         }
 
         const sale = await Sale.create({
             items: processedItems,
-            totalAmount: Number(totalAmount.toFixed(2)),
+            totalAmount: totalPayable,
+            subtotalAmount,
+            discountType: finalDiscountType,
+            discountValue: finalDiscountType === 'none' ? 0 : requestedDiscountValue,
+            discountAmount,
             taxableAmount: Number(processedItems.reduce((sum, item) => sum + (item.taxableAmount || 0), 0).toFixed(2)),
             taxAmount: Number(processedItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0).toFixed(2)),
             taxType: !gstEnabled ? 'none' : (isInterState ? 'inter-state' : 'intra-state'),
@@ -173,7 +188,7 @@ exports.createSale = async (req, res) => {
                     { phone: customerPhone, user: req.shopOwnerId },
                     { 
                         $set: { name: customerName, lastPurchase: new Date() },
-                        $inc: { totalSpent: totalAmount, orderCount: 1 }
+                        $inc: { totalSpent: totalPayable, orderCount: 1 }
                     },
                     { upsert: true }
                 );
@@ -183,7 +198,7 @@ exports.createSale = async (req, res) => {
         }
 
         // Update Active Shift Totals
-        activeShift.totalSales += totalAmount;
+        activeShift.totalSales += totalPayable;
         activeShift.totalTransactions += 1;
         paymentParts.forEach(payment => {
             if (payment.mode === 'Cash') {
