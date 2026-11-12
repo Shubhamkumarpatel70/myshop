@@ -166,7 +166,7 @@ const ReceiptLookup = () => {
             doc.setTextColor(148, 163, 184);
             doc.setFont("helvetica", "normal");
             doc.text("Terms & Conditions:", 20, finalY + 40);
-            doc.text("1. Items once sold cannot be returned or exchanged.", 20, finalY + 45);
+            doc.text("1. Returns are subject to the shop return policy.", 20, finalY + 45);
             doc.text("2. This is a computer generated digital invoice and does not require a physical signature.", 20, finalY + 50);
 
             doc.setDrawColor(241, 245, 249);
