@@ -42,6 +42,9 @@ exports.updateApprovalStatus = async (req, res) => {
         shop.approvalStatus = status;
         if (status === 'Approved') {
             const settings = await GlobalSettings.findOne();
+            if (settings?.isPaymentRequired && (settings.paymentVerificationMode || 'manual') === 'cashfree' && !shop.isPaymentDone) {
+                return res.status(400).json({ success: false, message: 'Cashfree payment must be successfully verified before shop approval.' });
+            }
             if (settings?.isPaymentRequired && (settings.paymentVerificationMode || 'manual') === 'manual') {
                 if (!shop.paymentScreenshot) return res.status(400).json({ success: false, message: 'Manual payment screenshot is required before approval.' });
                 shop.isPaymentDone = true;
