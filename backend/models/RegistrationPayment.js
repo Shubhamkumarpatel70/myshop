@@ -4,6 +4,7 @@ const registrationPaymentSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     orderId: { type: String, required: true, unique: true, index: true },
     cfOrderId: { type: String, default: '' },
+    paymentMethod: { type: String, enum: ['cashfree'], default: 'cashfree' },
     cfPaymentId: { type: String, default: '' },
     paymentSessionId: { type: String, required: true },
     amount: { type: Number, required: true, min: 0.01 },
