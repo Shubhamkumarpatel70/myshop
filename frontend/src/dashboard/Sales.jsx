@@ -612,9 +612,13 @@ const Sales = () => {
                         ${totalIgst > 0 ? `<div class="summary-row"><span>IGST</span><span>₹${totalIgst.toFixed(2)}</span></div>` : ''}
                         ${totalCgst > 0 ? `<div class="summary-row"><span>CGST</span><span>₹${totalCgst.toFixed(2)}</span></div>` : ''}
                         ${totalSgst > 0 ? `<div class="summary-row"><span>SGST</span><span>₹${totalSgst.toFixed(2)}</span></div>` : ''}
+                        <div class="summary-row">
+                            <span>Discount${Number(sale.discountAmount || 0) > 0 && sale.discountType === 'percentage' ? ' (' + Number(sale.discountValue) + '%)' : ''}</span>
+                            <span>${Number(sale.discountAmount || 0) > 0 ? '-' : ''}₹${Number(sale.discountAmount || 0).toFixed(2)}</span>
+                        </div>
                         <div class="summary-row total">
                             <span>TOTAL</span>
-                            <span>₹${Number((subtotal + totalTax).toFixed(2)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                            <span>₹${Number(sale.totalAmount ?? (subtotal + totalTax)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                         </div>
                         <div style="font-size: 7pt; text-align: center; color: #64748b; margin-top: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                             Payment: ${sale.paymentMethod}
