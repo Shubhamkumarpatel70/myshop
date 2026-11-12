@@ -22,6 +22,9 @@ const SplashScreen = () => {
                 >
                     StockSaathi
                 </motion.h1>
+                <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-2 text-[10px] font-bold uppercase tracking-[0.28em] text-white/70">
+                    An ASKC Technologies product
+                </motion.p>
                 <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: "100px" }}

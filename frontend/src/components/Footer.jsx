@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Mail, MapPin, Phone, ShoppingBag } from 'lucide-react';
+import { ArrowRight, ExternalLink, ShoppingBag } from 'lucide-react';
 import packageJson from '../../package.json';
 
 const Footer = () => {
@@ -20,8 +20,9 @@ const Footer = () => {
                         <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.35)]">
                             <ShoppingBag size={20} />
                         </span>
-                        <span className="font-outfit text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                            Stock<span className="text-indigo-600">Saathi</span>
+                        <span className="flex flex-col leading-none">
+                            <span className="font-outfit text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Stock<span className="text-indigo-600">Saathi</span></span>
+                            <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">An ASKC Technologies product</span>
                         </span>
                     </Link>
                     <p className="mt-5 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-300">
@@ -59,27 +60,19 @@ const Footer = () => {
 
                 <div className="lg:col-span-3">
                     <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Contact</h4>
-                    <ul className="mt-4 space-y-3 text-sm">
-                        <li className="flex items-start gap-2">
-                            <Mail size={16} className="mt-0.5 text-indigo-600" />
-                            <span>support@stocksaathi.com</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <Phone size={16} className="mt-0.5 text-indigo-600" />
-                            <span>+91 90000 00000</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <MapPin size={16} className="mt-0.5 text-indigo-600" />
-                            <span>Mumbai, India</span>
-                        </li>
-                    </ul>
+                    <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                        Product design and technology by <span className="font-bold text-slate-900 dark:text-white">ASKC Technologies</span>.
+                    </p>
+                    <a href="https://askctechnologies.in" target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 transition-colors hover:text-indigo-700 dark:text-indigo-400">
+                        askctechnologies.in <ExternalLink size={14} />
+                    </a>
                 </div>
             </div>
 
             <div className="border-t border-slate-200/80 py-5 dark:border-slate-800">
                 <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 text-xs text-slate-500 sm:flex-row sm:px-6">
                     <p>© {year} StockSaathi. All rights reserved. <span className="ml-2 font-bold opacity-30 tracking-tighter">v{version}</span></p>
-                    <p>Built for modern retail operations.</p>
+                    <p>Built with care by <a href="https://askctechnologies.in" target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">ASKC Technologies</a>.</p>
                 </div>
             </div>
         </footer>

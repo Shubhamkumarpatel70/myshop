@@ -78,11 +78,12 @@ const Navbar = () => {
                 ].join(' ')}
             >
                 <Link to="/" className="flex items-center gap-3 group">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-[1.25rem] bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.3)] group-hover:scale-105 transition-transform">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-[0_8px_20px_rgba(79,70,229,0.28)] transition-transform group-hover:scale-105">
                         <ShoppingBag size={20} />
                     </span>
-                    <span className="font-outfit text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                        Stock<span className="text-indigo-600">Saathi</span>
+                    <span className="flex flex-col leading-none">
+                        <span className="font-outfit text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Stock<span className="text-indigo-600">Saathi</span></span>
+                        <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">An ASKC Technologies product</span>
                     </span>
                 </Link>
 

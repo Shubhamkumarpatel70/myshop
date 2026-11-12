@@ -576,7 +576,10 @@ const DashboardLayout = () => {
                                     <span className="flex h-9 w-9 items-center justify-center rounded-[1.25rem] bg-indigo-600 text-white">
                                         <ShoppingBag size={18} />
                                     </span>
-                                    <span className="font-outfit text-xl font-extrabold text-slate-900 dark:text-white">StockSaathi</span>
+                                    <span className="flex flex-col leading-none">
+                                        <span className="font-outfit text-xl font-extrabold text-slate-900 dark:text-white">StockSaathi</span>
+                                        <span className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-slate-400">by ASKC Technologies</span>
+                                    </span>
                                 </div>
                                 <button
                                     onClick={() => setIsMobileMenuOpen(false)}

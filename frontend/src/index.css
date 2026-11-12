@@ -158,3 +158,24 @@
 .privacy-blur {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ASKC Technologies · StockSaathi design system refresh */
+:root {
+  color-scheme: light;
+  --primary: #4f46e5;
+  --primary-glow: rgba(79, 70, 229, 0.22);
+  --primary-hover: #4338ca;
+  --bg-main: #f6f7fb;
+  --card-bg: #ffffff;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+}
+html { scroll-behavior: smooth; }
+body { background-color: var(--bg-main); text-rendering: optimizeLegibility; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(99, 102, 241, 0.55); outline-offset: 3px; }
+::selection { background: rgba(99, 102, 241, 0.18); }
+img { max-width: 100%; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
