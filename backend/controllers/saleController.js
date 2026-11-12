@@ -228,6 +228,9 @@ exports.returnProduct = async (req, res) => {
 
         if (!item) return res.status(400).json({ success: false, message: 'Item not found or already returned' });
 
+        const product = await Product.findById(productId);
+        if (!product) return res.status(404).json({ success: false, message: 'Product no longer exists in inventory.' });
+
         const alreadyReturned = Number(item.returnedQuantity || 0);
         const remainingQty = Number(item.quantity || 0) - alreadyReturned;
         const returnQty = Number(quantity || remainingQty);
@@ -241,37 +244,44 @@ exports.returnProduct = async (req, res) => {
 
         await sale.save();
 
-        const product = await Product.findById(productId);
-        if (product) {
-            const oldQuantity = product.quantity;
-            product.quantity += returnQty;
-
-            // Add back to the first available batch or create one if none exist
-            if (product.batches && product.batches.length > 0) {
-                product.batches[0].quantity += returnQty;
-            } else {
-                product.batches = [{
-                    quantity: returnQty,
-                    expiryDate: product.expiryDate || new Date(),
-                    price: product.price
-                }];
-            }
-
-            await product.save();
-
-            await InventoryLog.create({
-                product: product._id,
-                user: req.user._id,
-                shop: req.shopOwnerId,
-                action: 'Return',
-                previousQuantity: oldQuantity,
-                newQuantity: product.quantity,
-                batchNumber: item.batchNumber || 'Return',
+        const oldQuantity = product.quantity;
+        product.quantity += returnQty;
+        const matchingBatch = product.batches?.find(batch => batch.batchNumber && batch.batchNumber === item.batchNumber);
+        if (matchingBatch) {
+            matchingBatch.quantity += returnQty;
+        } else if (product.batches && product.batches.length > 0 && item.batchNumber) {
+            product.batches.push({
+                batchNumber: item.batchNumber,
+                quantity: returnQty,
+                expiryDate: item.expiryDate || product.expiryDate || new Date(),
                 price: item.price,
-                reason: `Returned from sale. Reason: ${returnReason || 'No reason provided'}`,
-                transactionId: sale.transactionId
+                purchasePrice: item.purchasePrice || product.purchasePrice || 0
             });
+        } else if (product.batches && product.batches.length > 0) {
+            product.batches[0].quantity += returnQty;
+        } else {
+            product.batches = [{
+                batchNumber: item.batchNumber || 'RETURN',
+                quantity: returnQty,
+                expiryDate: item.expiryDate || product.expiryDate || new Date(),
+                price: item.price || product.price,
+                purchasePrice: item.purchasePrice || product.purchasePrice || 0
+            }];
         }
+        await product.save();
+        await sale.save();
+        await InventoryLog.create({
+            product: product._id,
+            user: req.user._id,
+            shop: req.shopOwnerId,
+            action: 'Return',
+            previousQuantity: oldQuantity,
+            newQuantity: product.quantity,
+            batchNumber: item.batchNumber || 'Return',
+            price: item.price,
+            reason: `Returned from sale. Reason: ${returnReason || 'No reason provided'}`,
+            transactionId: sale.transactionId
+        });
 
         res.json({ success: true, message: 'Product returned and inventory updated' });
     } catch (error) {
