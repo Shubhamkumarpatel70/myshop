@@ -351,18 +351,9 @@ exports.getSubscriptionPayments = async (req, res) => {
 };
 
 
-const ensureDefaultAddons = async () => {
-    const defaults = [
-        { name: 'Barcode Booster', description: 'Unlimited barcode generation and priority registry access for your entire inventory.', price: 499, billingLabel: 'One-time payment', features: ['Unlimited Identifiers', 'Lifetime Validity'], activationKey: 'barcode', isActive: true },
-        { name: 'Team Expansion', description: 'Scale your team infrastructure. Instantly unlock 5 additional staff slots with advanced role-based permissions.', price: 999, billingLabel: 'One-time payment', features: ['+5 Permanent Staff Slots', 'Advanced Access Control'], activationKey: 'team', isActive: true }
-    ];
-    await Promise.all(defaults.map(item => Addon.updateOne({ name: item.name }, { $setOnInsert: item }, { upsert: true })));
-};
-
 // @desc Admin: Manage standalone add-ons
 exports.getAddons = async (req, res) => {
     try {
-        await ensureDefaultAddons();
         const addons = await Addon.find().sort({ createdAt: -1 }).lean();
         res.json({ success: true, data: addons });
     } catch (error) {
@@ -409,9 +400,9 @@ exports.upsertAddon = async (req, res) => {
 
 exports.deleteAddon = async (req, res) => {
     try {
-        const addon = await Addon.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+        const addon = await Addon.findByIdAndDelete(req.params.id);
         if (!addon) return res.status(404).json({ success: false, message: 'Add-on not found.' });
-        res.json({ success: true, message: 'Add-on hidden from the shop pricing page.' });
+        res.json({ success: true, message: 'Add-on permanently deleted.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
