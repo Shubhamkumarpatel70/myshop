@@ -40,10 +40,13 @@ export const loadCashfreeSdk = () => {
 
         script.src = CASHFREE_SDK_URL;
         script.async = true;
-        script.crossOrigin = 'anonymous';
         script.dataset.cashfreeSdk = 'true';
         script.onload = () => finish();
-        script.onerror = () => finish(new Error('Could not load Cashfree. Your browser or network may be blocking sdk.cashfree.com.'));
+        script.onerror = () => finish(new Error(
+            navigator.onLine
+                ? 'Cashfree could not be reached. Check whether your browser, Private DNS, VPN, or content blocker is blocking sdk.cashfree.com, then retry.'
+                : 'You appear to be offline. Reconnect to the internet and retry Cashfree checkout.'
+        ));
         document.head.appendChild(script);
     }).catch(error => {
         cashfreeSdkPromise = null;

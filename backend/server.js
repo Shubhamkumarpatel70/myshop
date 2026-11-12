@@ -71,8 +71,10 @@ app.use(helmet({
             ...helmet.contentSecurityPolicy.getDefaultDirectives(),
             "img-src": ["'self'", "data:", "blob:", "res.cloudinary.com", "*.cloudinary.com", "api.qrserver.com"],
             "script-src": ["'self'", "https://sdk.cashfree.com"],
-            "connect-src": ["'self'", "res.cloudinary.com", "*.cloudinary.com", "api.qrserver.com", "https://*.cashfree.com"],
-            "frame-src": ["'self'", "https://*.cashfree.com"],
+            // Cashfree checkout uses its SDK plus API and hosted payment frames.
+            // Keep the official hosts explicitly allowed for browsers enforcing CSP.
+            "connect-src": ["'self'", "res.cloudinary.com", "*.cloudinary.com", "api.qrserver.com", "https://api.cashfree.com", "https://sandbox.cashfree.com", "https://*.cashfree.com"],
+            "frame-src": ["'self'", "https://sdk.cashfree.com", "https://api.cashfree.com", "https://sandbox.cashfree.com", "https://payments.cashfree.com", "https://payments-test.cashfree.com", "https://*.cashfree.com"],
             // Cashfree's hosted checkout may submit a form to its payment
             // domain before redirecting. Without form-action, Helmet's
             // default-src policy blocks the hand-off even when the SDK loads.
