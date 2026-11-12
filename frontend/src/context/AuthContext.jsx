@@ -4,16 +4,23 @@ import api from '../utils/api';
 
 const AuthContext = createContext();
 
+const getStoredUser = () => {
+    try {
+        return JSON.parse(localStorage.getItem('user') || 'null');
+    } catch {
+        return null;
+    }
+};
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadUser = async () => {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
+            const parsedUser = getStoredUser();
+            if (parsedUser) {
                 try {
-                    let parsedUser = JSON.parse(storedUser);
                     
                     // Set token for the initial request
                     if (parsedUser.token) {
@@ -49,7 +56,8 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const hashMPin = async (email, mPin) => {
-        const msgUint8 = new TextEncoder().encode(email + mPin);
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+        const msgUint8 = new TextEncoder().encode(normalizedEmail + mPin);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -58,7 +66,7 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password, mPin) => {
         // Offline Login Logic
         if (!navigator.onLine && mPin) {
-            const cachedUser = JSON.parse(localStorage.getItem('user'));
+            const cachedUser = getStoredUser();
             if (cachedUser && cachedUser.email === email && cachedUser.offlineHash) {
                 const inputHash = await hashMPin(email, mPin);
                 if (inputHash === cachedUser.offlineHash) {
