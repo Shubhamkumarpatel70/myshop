@@ -15,8 +15,9 @@ exports.bulkImportProducts = async (req, res) => {
   const planLimits = {Free:50,Professional:5000,Enterprise:Infinity};
   const productLimit = planLimits[owner.subscriptionPlan || 'Free'] ?? 50;
   const startingCount = await Product.countDocuments({user:req.shopOwnerId});
-  const categories = await Category.find({user:req.shopOwnerId}).select('_id');
-  const validCategories = new Set(categories.map(item => String(item._id)));
+  const categories = await Category.find({user:req.shopOwnerId}).select('_id name');
+  const categoryMap = new Map();
+  categories.forEach(item => { categoryMap.set(String(item._id), String(item._id)); categoryMap.set(String(item.name).trim().toLowerCase(), String(item._id)); });
   const results = []; let imported = 0; let created = 0;
   for (let i=0; i<rows.length; i+=1) {
    const row=rows[i] || {}; const rowNumber=i+2;
@@ -26,7 +27,8 @@ exports.bulkImportProducts = async (req, res) => {
    const purchasePrice=Number(row.purchasePrice ?? row['Purchase Price'] ?? 0); const taxRate=Number(row.taxRate ?? row['GST Rate (%)'] ?? 0);
    const threshold=Number(row.lowStockThreshold ?? row['Low Stock Threshold'] ?? 10); const errors=[];
    if(!name) errors.push('Product name is required.');
-   if(!validCategories.has(categoryId)) errors.push('Category ID is invalid for this shop.');
+   const resolvedCategoryId = categoryMap.get(categoryId) || categoryMap.get(categoryId.toLowerCase());
+   if(!resolvedCategoryId) errors.push('Category must match a category name or ID in this shop.');
    if(!Number.isFinite(quantity)||quantity<0) errors.push('Quantity must be zero or greater.');
    if(!Number.isFinite(price)||price<0) errors.push('Selling price must be zero or greater.');
    if(!Number.isFinite(purchasePrice)||purchasePrice<0) errors.push('Purchase price must be zero or greater.');
@@ -39,7 +41,7 @@ exports.bulkImportProducts = async (req, res) => {
     else existing=await Product.findOne({user:req.shopOwnerId,productName:name});
     if(!existing && startingCount+created>=productLimit){results.push({row:rowNumber,productName:name,status:'failed',errors:['Product plan limit reached.']});continue;}
     if(existing){existing.quantity=Number(existing.quantity||0)+quantity;existing.price=price;existing.purchasePrice=purchasePrice;existing.taxRate=taxRate;existing.lowStockThreshold=threshold;await existing.save();results.push({row:rowNumber,productName:name,status:'updated',productId:existing._id});}
-    else {const product=await Product.create({productName:name.slice(0,160),category:categoryId,quantity,price,purchasePrice,taxRate,lowStockThreshold:threshold,barcode:barcode||undefined,supplier:String(row.supplier||row.Supplier||'').slice(0,160),description:String(row.description||row.Description||'').slice(0,2000),user:req.shopOwnerId,batches:quantity>0?[{quantity,price,purchasePrice}]:[]});created+=1;results.push({row:rowNumber,productName:name,status:'created',productId:product._id});}
+    else {const product=await Product.create({productName:name.slice(0,160),category:resolvedCategoryId,quantity,price,purchasePrice,taxRate,lowStockThreshold:threshold,barcode:barcode||undefined,supplier:String(row.supplier||row.Supplier||'').slice(0,160),description:String(row.description||row.Description||'').slice(0,2000),user:req.shopOwnerId,batches:quantity>0?[{quantity,price,purchasePrice}]:[]});created+=1;results.push({row:rowNumber,productName:name,status:'created',productId:product._id});}
     imported+=1;
    } catch(error){results.push({row:rowNumber,productName:name,status:'failed',errors:[error.message]});}
   }
