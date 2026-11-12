@@ -23,7 +23,9 @@ exports.getProducts = async (req, res) => {
 exports.createProduct = async (req, res) => {
     try {
         const { productName, barcode, category, quantity, price, purchasePrice, expiryDate, supplier, description, lowStockThreshold, batchNumber } = req.body;
-        
+        const cleanBatchNumber = String(batchNumber || '').trim();
+        if (!cleanBatchNumber) return res.status(400).json({ success: false, message: 'Batch number is required.' });
+
         let product = await Product.findOne({ 
             user: req.shopOwnerId,
             $or: [
@@ -34,16 +36,15 @@ exports.createProduct = async (req, res) => {
 
         if (product) {
             // Check if this batch already exists (same batch number AND same expiry)
-            const existingBatchIndex = product.batches.findIndex(b => 
-                (batchNumber && b.batchNumber === batchNumber) ||
-                (b.expiryDate && expiryDate && new Date(b.expiryDate).toDateString() === new Date(expiryDate).toDateString())
+            const existingBatchIndex = product.batches.findIndex(b =>
+                String(b.batchNumber || '').trim().toLowerCase() === cleanBatchNumber.toLowerCase()
             );
 
             if (existingBatchIndex > -1) {
                 product.batches[existingBatchIndex].quantity += quantity;
                 product.batches[existingBatchIndex].purchasePrice = purchasePrice || product.batches[existingBatchIndex].purchasePrice;
             } else {
-                product.batches.push({ batchNumber, expiryDate, quantity, price, purchasePrice, supplier });
+                product.batches.push({ batchNumber: cleanBatchNumber, expiryDate, quantity, price, purchasePrice, supplier });
             }
 
             const oldQuantity = product.quantity;
@@ -63,16 +64,16 @@ exports.createProduct = async (req, res) => {
                 action: 'Restock',
                 previousQuantity: oldQuantity,
                 newQuantity: product.quantity,
-                batchNumber: batchNumber || 'N/A',
+                batchNumber: cleanBatchNumber,
                 expiryDate: expiryDate,
                 price: price || product.price,
-                reason: 'Added new batch: ' + (batchNumber || 'N/A')
+                reason: 'Added new batch: ' + cleanBatchNumber
             });
         } else {
             product = await Product.create({
                 ...req.body,
                 user: req.shopOwnerId,
-                batches: [{ batchNumber, expiryDate, quantity, price, purchasePrice, supplier }]
+                batches: [{ batchNumber: cleanBatchNumber, expiryDate, quantity, price, purchasePrice, supplier }]
             });
 
             await InventoryLog.create({
@@ -82,7 +83,7 @@ exports.createProduct = async (req, res) => {
                 action: 'Add',
                 previousQuantity: 0,
                 newQuantity: product.quantity,
-                batchNumber: batchNumber || 'Initial',
+                batchNumber: cleanBatchNumber,
                 expiryDate: expiryDate,
                 price: price,
                 reason: 'Initial stock'
