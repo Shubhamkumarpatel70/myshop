@@ -82,6 +82,30 @@ app.use('/api', limiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
+// Lightweight operational health endpoint for platform administrators.
+app.get('/api/health', async (req, res) => {
+    const startedAt = Date.now();
+    try {
+        const mongoose = require('mongoose');
+        const dbState = mongoose.connection.readyState;
+        const database = dbState === 1 ? 'connected' : dbState === 2 ? 'connecting' : dbState === 3 ? 'disconnecting' : 'disconnected';
+        const healthy = dbState === 1;
+        res.status(healthy ? 200 : 503).json({
+            success: healthy,
+            data: {
+                status: healthy ? 'healthy' : 'degraded',
+                database,
+                apiResponseMs: Date.now() - startedAt,
+                uptimeSeconds: Math.floor(process.uptime()),
+                checkedAt: new Date().toISOString(),
+                lastBackupAt: null
+            }
+        });
+    } catch (error) {
+        res.status(503).json({ success: false, message: 'Health check failed.' });
+    }
+});
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
