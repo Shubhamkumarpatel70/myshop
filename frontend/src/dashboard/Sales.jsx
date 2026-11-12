@@ -86,7 +86,7 @@ const Sales = () => {
         if (!navigator.onLine || isSyncing || offlineSales.length === 0) return;
 
         setIsSyncing(true);
-        const toastId = toast.loading(`Uplinking ${offlineSales.length} cached transactions...`);
+        const toastId = toast.loading(`Syncing ${offlineSales.length} saved sales...`);
         for (const sale of offlineSales) {
             try {
                 const { id, ...saleData } = sale;
@@ -177,14 +177,14 @@ const Sales = () => {
                 setProducts(cachedProducts);
                 toast.success("Inventory sync");
             } else {
-                toast.error("Cloud connection required for initialization");
+                toast.error("Connect to the internet to start.");
             }
         }
     };
 
     const handleReturn = async () => {
         if (!itemToReturn || !returnReasonInput) {
-            toast.error("Protocol Error: Reason required");
+            toast.error("Please enter a return reason.");
             return;
         }
 
@@ -197,7 +197,7 @@ const Sales = () => {
             });
 
             if (res.data.success) {
-                toast.success("Registry Adjusted: Product Returned");
+                toast.success("Product returned. Stock has been updated.");
                 setIsReturnModalOpen(false);
                 setReturnReasonInput('');
                 setReturnQuantity('1');
@@ -207,7 +207,7 @@ const Sales = () => {
                 setIsViewModalOpen(false);
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || "Return Protocol Failed");
+            toast.error(error.response?.data?.message || "Could not process the return.");
         }
     };
 
@@ -358,7 +358,7 @@ const Sales = () => {
             } catch (printError) {
                 console.error('Sale saved, but receipt printing failed:', printError);
                 if (receiptWindow && !receiptWindow.closed) receiptWindow.close();
-                toast.error('Sale saved, but the receipt could not be printed. You can print it from Registry Details.');
+                toast.error('Sale saved, but the receipt could not be printed. You can print it from Sale Details.');
             }
             setCart([]);
             setCustomerInfo({ name: 'Guest', phone: '', paymentMethod: 'Cash' });
@@ -380,9 +380,9 @@ const Sales = () => {
             if (receiptWindow && !receiptWindow.closed) receiptWindow.close();
             if (error.response?.status === 403 && error.response?.data?.message?.toLowerCase().includes('shift')) {
                 setIsShiftModalOpen(true);
-                toast.error("Shift Required to committing transaction");
+                toast.error("Please open a shift before completing a sale.");
             } else {
-                toast.error(error.response?.data?.message || "Protocol Failure");
+                toast.error(error.response?.data?.message || "Something went wrong. Please try again.");
             }
         }
     };
@@ -638,13 +638,13 @@ const Sales = () => {
                                     {!isOnline ? <Globe size={18} /> : <RefreshCcw size={18} className={isSyncing ? 'animate-spin' : ''} />}
                                 </div>
                                 <div>
-                                    <p className="text-xs font-black uppercase tracking-widest">{!isOnline ? 'Offline Active' : 'Synchronization Pending'}</p>
+                                    <p className="text-xs font-black uppercase tracking-widest">{!isOnline ? 'Working offline' : 'Sales waiting to sync'}</p>
                                     <p className="text-[10px] font-bold opacity-90 uppercase tracking-tight">{pendingSyncCount} transaction(s) queued in local registry.</p>
                                 </div>
                             </div>
                             {isOnline && pendingSyncCount > 0 && (
                                 <button onClick={syncOfflineSales} disabled={isSyncing} className="px-4 py-2 bg-white text-indigo-600 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50">
-                                    {isSyncing ? 'Uplinking...' : 'Sync Now'}
+                                    {isSyncing ? 'Syncing...' : 'Sync Now'}
                                 </button>
                             )}
                         </div>
@@ -658,10 +658,10 @@ const Sales = () => {
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <div className="h-1 w-8 bg-indigo-400 rounded-[1.25rem]"></div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">Checkout Terminal</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">New Sale</span>
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white uppercase">POS <span className="text-indigo-600">Terminal</span></h1>
-                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">High-performance transaction engine for your retail ecosystem.</p>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Create sales, take payments, and print receipts.</p>
                     </div>
                     <button onClick={() => { setPosStep(1); setIsSaleModalOpen(true); }} className="h-14 px-10 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
                         <Plus size={20} /> New Sale
@@ -669,11 +669,11 @@ const Sales = () => {
                 </div>
             </div>
 
-            {/* Tactical Control Bar */}
+            {/* Sales Filters */}
             <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Registry Period</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Month</span>
                         <div className="relative group">
                             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-600 group-focus-within:scale-110 transition-transform pointer-events-none" size={16} />
                             <input type="month" className="h-11 w-full sm:w-44 pl-11 pr-3 rounded-[1.25rem] border border-slate-300 bg-white text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-600 dark:bg-slate-950 dark:border-white/5 dark:text-white shadow-sm transition-all" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} />
@@ -681,7 +681,7 @@ const Sales = () => {
                     </div>
                     <form onSubmit={handleTransactionSearch} className="flex gap-2 lg:w-80">
                         <div className="flex flex-col gap-1.5 flex-1">
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Archive Search</span>
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Search Sales</span>
                             <div className="relative group">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
                                 <input type="text" placeholder="ID, Name, or Mobile..." className="h-11 w-full rounded-[1.25rem] border border-slate-300 bg-white pl-11 pr-3 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 shadow-sm" value={transactionSearch} onChange={(e) => setTransactionSearch(e.target.value)} />
@@ -692,16 +692,16 @@ const Sales = () => {
                 </div>
             </div>
 
-            {/* Sales Registry */}
+            {/* Sales History */}
             <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                 <div className="overflow-x-auto">
                     <table className="min-w-[980px] w-full text-left">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-800/50">
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Transaction ID</th>
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Client</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Receipt Number</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Customer</th>
                                 <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">Qty</th>
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Settlement</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Payment</th>
                                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
                                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
                             </tr>
@@ -760,7 +760,7 @@ const Sales = () => {
                         <span className={posStep === 1 ? 'text-indigo-600' : ''}>Catalog</span>
                         <span className={posStep === 2 ? 'text-indigo-600' : ''}>Cart Items</span>
                         <span className={posStep === 3 ? 'text-indigo-600' : ''}>Customer</span>
-                        <span className={posStep === 4 ? 'text-indigo-600' : ''}>Settlement</span>
+                        <span className={posStep === 4 ? 'text-indigo-600' : ''}>Payment</span>
                     </div>
 
                     <AnimatePresence mode="wait">
@@ -866,7 +866,7 @@ const Sales = () => {
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Client Full Name</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Customer Full Name</label>
                                         <div className="relative">
                                             <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                             <input type="text" className="w-full h-16 pl-14 pr-6 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] font-black text-lg outline-none transition-all dark:text-white" value={customerInfo.name} onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })} placeholder="Walk-in Guest" />
@@ -926,7 +926,7 @@ const Sales = () => {
                                     )}
                                 </div>
                                 <div className="flex justify-between gap-4 pt-4">
-                                    <button onClick={() => setPosStep(3)} className="h-14 flex-1 bg-slate-100 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px]">Review Client</button>
+                                    <button onClick={() => setPosStep(3)} className="h-14 flex-1 bg-slate-100 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px]">Review Customer</button>
                                     <button onClick={handleCheckout} className="h-14 flex-[2] bg-emerald-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">Confirm Payment &amp; Print Receipt <ShieldCheck size={18} /></button>
                                 </div>
                             </motion.div>
@@ -936,7 +936,7 @@ const Sales = () => {
             </Modal>
 
             {/* Existing View Modal */}
-            <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Registry Details" className="max-w-2xl">
+            <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Sale Details" className="max-w-2xl">
                 {viewingSale && (
                     <div className="space-y-8">
                         <div className="flex justify-between items-start">
@@ -1000,11 +1000,11 @@ const Sales = () => {
 
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                             <div className="text-center sm:text-left">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Settlement Mode')}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Payment Mode')}</p>
                                 <p className="text-sm font-black text-emerald-600 uppercase tracking-widest">{t(viewingSale.paymentMethod)}</p>
                             </div>
                             <div className="text-center sm:text-right">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Total Settlement')}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Total Payment')}</p>
                                 <p className="text-3xl font-black text-slate-900 dark:text-white">₹{viewingSale.items.reduce((sum, item) => {
                                     const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
                                     const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
@@ -1036,11 +1036,11 @@ const Sales = () => {
             </Modal>
 
             {/* Return & Scanner Modals */}
-            <Modal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} title={t('Registry Adjustment')} className="max-w-md">
+            <Modal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} title={t('Return Product')} className="max-w-md">
                 <div className="py-6 space-y-8 text-center">
                     <div className="w-24 h-24 bg-rose-100 text-rose-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl shadow-rose-500/10"><Undo2 size={40} /></div>
                     <div className="space-y-2">
-                        <h4 className="text-2xl font-black uppercase tracking-tight">{t('Initiate Return?')}</h4>
+                        <h4 className="text-2xl font-black uppercase tracking-tight">{t('Return this product?')}</h4>
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('Returned items will be added back to stock and recorded in inventory history.')}</p>
                     </div>
                     <div className="space-y-3 text-left">
@@ -1056,10 +1056,10 @@ const Sales = () => {
                 </div>
             </Modal>
 
-            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Optical Scan Terminal" className="max-w-lg">
+            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" className="max-w-lg">
                 <div className="p-4">
                     <BarcodeScanner isOpen={isScannerOpen} onScanSuccess={handleScanSuccess} onScanError={(err) => console.error(err)} />
-                    <p className="mt-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Position barcode within the frame</p>
+                    <p className="mt-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Place the barcode inside the frame.</p>
                 </div>
             </Modal>
 
