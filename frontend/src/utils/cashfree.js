@@ -11,35 +11,40 @@ export const loadCashfreeSdk = () => {
     if (cashfreeSdkPromise) return cashfreeSdkPromise;
 
     cashfreeSdkPromise = new Promise((resolve, reject) => {
-        let script = document.querySelector('script[data-cashfree-sdk="true"]');
+        // A previous failed attempt may have left a script element whose load/error
+        // event has already fired. Reuse only the live global, not a stale tag.
+        document.querySelectorAll('script[data-cashfree-sdk="true"]').forEach(node => node.remove());
+
+        const script = document.createElement('script');
         let settled = false;
-        const timeout = window.setTimeout(() => finish(new Error('Cashfree checkout could not load. Check your internet connection and retry.')), 15000);
+        const cleanup = () => {
+            window.clearTimeout(timeout);
+            script.onload = null;
+            script.onerror = null;
+        };
         const finish = (error) => {
             if (settled) return;
             settled = true;
-            window.clearTimeout(timeout);
+            cleanup();
             if (error || typeof window.Cashfree !== 'function') {
+                script.remove();
                 cashfreeSdkPromise = null;
-                reject(error || new Error('Cashfree SDK loaded, but checkout is unavailable. Please retry.'));
+                reject(error || new Error('Cashfree SDK loaded but checkout is unavailable. Please retry.'));
                 return;
             }
             resolve(window.Cashfree);
         };
+        const timeout = window.setTimeout(() => {
+            finish(new Error('Cashfree is taking too long to load. Check your connection or allow sdk.cashfree.com, then tap Retry.'));
+        }, 10000);
 
-        if (!script) {
-            script = document.createElement('script');
-            script.src = CASHFREE_SDK_URL;
-            script.async = true;
-            script.dataset.cashfreeSdk = 'true';
-            script.onload = () => finish();
-            script.onerror = () => finish(new Error('Unable to load Cashfree checkout. Your browser or network may be blocking sdk.cashfree.com.'));
-            document.head.appendChild(script);
-            return;
-        }
-
-        if (typeof window.Cashfree === 'function') return finish();
-        script.addEventListener('load', () => finish(), { once: true });
-        script.addEventListener('error', () => finish(new Error('Unable to load Cashfree checkout.')), { once: true });
+        script.src = CASHFREE_SDK_URL;
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        script.dataset.cashfreeSdk = 'true';
+        script.onload = () => finish();
+        script.onerror = () => finish(new Error('Could not load Cashfree. Your browser or network may be blocking sdk.cashfree.com.'));
+        document.head.appendChild(script);
     }).catch(error => {
         cashfreeSdkPromise = null;
         throw error;
@@ -48,8 +53,8 @@ export const loadCashfreeSdk = () => {
     return cashfreeSdkPromise;
 };
 
-// Prepare the SDK before the customer taps Pay. This preserves the browser's
-// user-activation context when checkout() is called from the actual click.
+// Initialize the SDK before the user taps Pay so mobile browsers retain the
+// user-activation context required for the checkout redirect.
 export const prepareCashfreeCheckout = async ({ environment }) => {
     const Cashfree = await loadCashfreeSdk();
     const mode = String(environment || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
@@ -57,21 +62,20 @@ export const prepareCashfreeCheckout = async ({ environment }) => {
     if (!instance) {
         instance = Cashfree({ mode });
         if (!instance || typeof instance.checkout !== 'function') {
-            throw new Error('Cashfree checkout could not be initialized. Please refresh and retry.');
+            throw new Error('Cashfree loaded, but secure checkout could not be initialized. Please retry.');
         }
         cashfreeInstanceCache.set(mode, instance);
     }
     return instance;
 };
 
-// Intentionally not async: invoke Cashfree synchronously inside the user's click
-// handler so mobile browsers do not block the checkout redirect/popup.
+// Invoke checkout synchronously from the actual user click.
 export const openCashfreeCheckout = ({ cashfree, paymentSessionId }) => {
     if (!paymentSessionId || typeof paymentSessionId !== 'string' || !paymentSessionId.trim()) {
         throw new Error('Cashfree did not return a valid payment session. Please create a new payment order.');
     }
     if (!cashfree || typeof cashfree.checkout !== 'function') {
-        throw new Error('Cashfree is still loading. Please wait a moment and try again.');
+        throw new Error('Cashfree is not ready yet. Please wait and retry.');
     }
 
     const result = cashfree.checkout({
@@ -87,5 +91,3 @@ export const openCashfreeCheckout = ({ cashfree, paymentSessionId }) => {
         return response;
     });
 };
-
-export const preloadCashfreeSdk = () => loadCashfreeSdk().catch(() => null);
