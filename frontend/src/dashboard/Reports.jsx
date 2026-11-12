@@ -74,10 +74,10 @@ const Reports = () => {
         
         // Header
         doc.setFontSize(22);
-        doc.text("Strategic Business Audit", 14, 22);
+        doc.text("Business Report", 14, 22);
         doc.setFontSize(10);
         doc.setTextColor(100);
-        const filterText = dateFilter ? `Date: ${dateFilter}` : monthFilter ? `Month: ${monthFilter}` : 'All Time (Last 30D)';
+        const filterText = dateFilter ? `Date: ${dateFilter}` : monthFilter ? `Month: ${monthFilter}` : 'Last 30 days';
         doc.text(`Generated on: ${new Date().toLocaleString()} | ${filterText}`, 14, 30);
         
         // Metrics Table
@@ -86,7 +86,7 @@ const Reports = () => {
             ["Total Revenue", `Rs. ${stats.totalRevenue.toLocaleString()}`, "Active"],
             ["Net Profit", `Rs. ${stats.totalProfit.toLocaleString()}`, "Stable"],
             ["Net Margin", `${stats.netMargin}%`, parseFloat(stats.netMargin) > 20 ? "Optimal" : "Healthy"],
-            ["Order Volume", stats.totalSalesCount, "Consistent"],
+            ["Total Orders", stats.totalSalesCount, "Consistent"],
             ["Growth Rate", `${stats.growthRate}%`, parseFloat(stats.growthRate) >= 0 ? "Positive" : "Critical"]
         ];
 
@@ -102,13 +102,13 @@ const Reports = () => {
         const finalY = doc.lastAutoTable.finalY + 15;
         doc.setFontSize(16);
         doc.setTextColor(0);
-        doc.text("Executive Insights", 14, finalY);
+        doc.text("Key Insights", 14, finalY);
         doc.setFontSize(11);
         doc.text([
-            `• Peak Traffic Window: ${insights.peakTime}`,
-            `• Busiest Day of Week: ${insights.busiestDay}`,
-            `• Top Payment Method: ${insights.topPayment}`,
-            `• Inventory Status: ${insights.lowStockRisk}`
+            `• Busiest Time: ${insights.peakTime}`,
+            `• Busiest Day: ${insights.busiestDay}`,
+            `• Top Payment Type: ${insights.topPayment}`,
+            `• Stock Status: ${insights.lowStockRisk}`
         ], 14, finalY + 10);
 
         doc.save(`audit_report_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -134,8 +134,8 @@ const Reports = () => {
             <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
                 <Activity size={40} />
             </div>
-            <h3 className="text-xl font-black uppercase tracking-tight">No Strategic Data</h3>
-            <p className="text-slate-500 max-w-xs">We need more transactions to generate your business intelligence reports.</p>
+            <h3 className="text-xl font-black uppercase tracking-tight">No Report Data</h3>
+            <p className="text-slate-500 max-w-xs">Add some sales to see your business report.</p>
         </div>
     );
 
@@ -153,13 +153,13 @@ const Reports = () => {
         { 
             label: 'Revenue', 
             value: `₹${stats.totalRevenue.toLocaleString()}`, 
-            sub: stats.revenueGrowth === 'New' ? 'New Performance' : `${stats.revenueGrowth}% Growth`,
+            sub: stats.revenueGrowth === 'New' ? 'First Sales' : `${stats.revenueGrowth}% Growth`,
             icon: <Zap size={20} />, 
             color: 'text-emerald-600', 
             bg: 'bg-emerald-50 dark:bg-emerald-500/10' 
         },
         { 
-            label: 'Order Volume', 
+            label: 'Total Orders', 
             value: stats.totalSalesCount, 
             sub: 'Processed',
             icon: <BarChart3 size={20} />, 
@@ -169,7 +169,7 @@ const Reports = () => {
         { 
             label: 'AOV', 
             value: `₹${stats.avgTicketSize.toLocaleString()}`, 
-            sub: 'Avg. Ticket',
+            sub: 'Average Order Value',
             icon: <Target size={20} />, 
             color: 'text-rose-600', 
             bg: 'bg-rose-50 dark:bg-rose-500/10' 
@@ -182,13 +182,13 @@ const Reports = () => {
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-indigo-600 font-black uppercase text-[10px] tracking-[0.3em]">
-                        <FileText size={14} /> Analytics Portal
+                        <FileText size={14} /> Reports
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
                         Business <span className="text-indigo-600">Audit</span>
                     </h1>
                     <p className="text-slate-500 font-medium max-w-2xl text-lg leading-relaxed">
-                        A detailed breakdown of your storefront's financial performance and operational efficiency.
+                        See your sales, profit and stock performance in one place.
                     </p>
                 </div>
                 
@@ -262,7 +262,7 @@ const Reports = () => {
                         onClick={handleExportPDF}
                         className="flex-1 xl:flex-none h-14 px-8 rounded-[1.25rem] bg-indigo-600 text-white text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3"
                     >
-                        <Download size={18} /> Export Audit
+                        <Download size={18} /> Download Report
                     </button>
                 </div>
             </div>
@@ -306,14 +306,14 @@ const Reports = () => {
                             <ShieldCheck size={24} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black uppercase tracking-tight">Strategic Audit Insights</h2>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Automated Intelligence Report</p>
+                            <h2 className="text-2xl font-black uppercase tracking-tight">Quick Insights</h2>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Based on your sales</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                         <div className="space-y-4">
-                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Peak Performance</p>
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Busiest Day</p>
                             <div className="space-y-1">
                                 <h4 className="text-2xl font-black text-emerald-400">High: {insights?.busiestDay || 'Calculating...'}</h4>
                                 <p className="text-xs font-medium text-slate-400">This day consistently generates maximum footfall and transaction volume.</p>
@@ -321,7 +321,7 @@ const Reports = () => {
                         </div>
 
                         <div className="space-y-4">
-                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Growth Opportunity</p>
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Slowest Day</p>
                             <div className="space-y-1">
                                 <h4 className="text-2xl font-black text-rose-400">Low: {insights?.slowestDay || 'Calculating...'}</h4>
                                 <p className="text-xs font-medium text-slate-400">Target this day with special discounts or loyalty rewards to boost engagement.</p>
@@ -329,7 +329,7 @@ const Reports = () => {
                         </div>
 
                         <div className="space-y-4">
-                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Traffic Window</p>
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Busiest Time</p>
                             <div className="space-y-1">
                                 <h4 className="text-2xl font-black text-indigo-400">{insights?.peakTime || '24h Cycle'}</h4>
                                 <p className="text-xs font-medium text-slate-400">Ensure maximum staff availability during this critical hour window.</p>
@@ -337,7 +337,7 @@ const Reports = () => {
                         </div>
 
                         <div className="space-y-4">
-                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Top Channel</p>
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Top Payment Type</p>
                             <div className="space-y-1">
                                 <h4 className="text-2xl font-black text-amber-400">{insights?.topPayment || 'Mixed'}</h4>
                                 <p className="text-xs font-medium text-slate-400">Preferred customer payment method for settlements and checkout speed.</p>
@@ -359,7 +359,7 @@ const Reports = () => {
                     className="card p-8 lg:p-10 rounded-[3rem]"
                 >
                     <div className="flex justify-between items-center mb-6 md:mb-10">
-                        <h3 className="text-lg md:text-xl font-black uppercase tracking-tight">Revenue Velocity</h3>
+                        <h3 className="text-lg md:text-xl font-black uppercase tracking-tight">Sales Over Time</h3>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 md:w-3 h-2 md:h-3 rounded-full bg-indigo-600"></div>
@@ -396,7 +396,7 @@ const Reports = () => {
                     transition={{ delay: 0.2 }}
                     className="card p-8 lg:p-10 rounded-[3rem]"
                 >
-                    <h3 className="text-lg md:text-xl font-black uppercase tracking-tight mb-6 md:mb-10">Transaction Intensity</h3>
+                    <h3 className="text-lg md:text-xl font-black uppercase tracking-tight mb-6 md:mb-10">Daily Orders</h3>
                     <div className="h-[250px] md:h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={dailySales}>
