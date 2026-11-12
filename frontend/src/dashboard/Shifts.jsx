@@ -23,6 +23,7 @@ const Shifts = () => {
     const [openingCash, setOpeningCash] = useState('');
     const [closingCash, setClosingCash] = useState('');
     const [notes, setNotes] = useState('');
+    const liveCashChange = closingCash === '' ? null : Number(closingCash) - Number(currentShift?.openingCash || 0);
     const [selectedMonth, setSelectedMonth] = useState((() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; })()); // YYYY-MM
 
     useEffect(() => {
@@ -198,13 +199,14 @@ const Shifts = () => {
                                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("Staff & Time")}</th>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">{t("Starting Cash")}</th>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">{t("Cash at Close")}</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">{t("Cash Change")}</th>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">{t("Sales Total")}</th>
                                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">{t("Cash Difference")}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                             {shifts.length === 0 && (
-                                <tr><td colSpan="5" className="px-6 py-10 text-center text-sm text-slate-500">No shifts found for this month.</td></tr>
+                                <tr><td colSpan="6" className="px-6 py-10 text-center text-sm text-slate-500">No shifts found for this month.</td></tr>
                             )}
                             {shifts.map((shift) => {
                                 const reco = getReconciliationStatus(shift);
@@ -229,6 +231,16 @@ const Shifts = () => {
                                         </td>
                                         <td className="px-6 py-6 text-center">
                                             <p className="text-xs font-black text-slate-900 dark:text-white">₹{shift.closingCash?.toLocaleString() || '---'}</p>
+                                        </td>
+                                        <td className="px-6 py-6 text-center">
+                                            {shift.status === 'Closed' ? (
+                                                <div className="inline-flex flex-col items-center">
+                                                    <p className={`text-sm font-black ${Number(shift.cashChange ?? (Number(shift.closingCash || 0) - Number(shift.openingCash || 0))) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        {Number(shift.cashChange ?? (Number(shift.closingCash || 0) - Number(shift.openingCash || 0))) >= 0 ? '+' : '-'}₹{Math.abs(Number(shift.cashChange ?? (Number(shift.closingCash || 0) - Number(shift.openingCash || 0)))).toLocaleString()}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400">Close − Start</p>
+                                                </div>
+                                            ) : <span className="text-slate-400">—</span>}
                                         </td>
                                         <td className="px-6 py-6 text-center">
                                             <div className="inline-flex flex-col items-center">
@@ -296,8 +308,17 @@ const Shifts = () => {
                                         <label className="text-sm font-medium text-slate-500 ml-1">{t("Cash Counted (₹)")}</label>
                                         <div className="relative">
                                             <div className="absolute left-6 top-1/2 -translate-y-1/2 text-rose-600 font-black text-2xl">₹</div>
-                                            <input type="number" required value={closingCash} onChange={(e) => setClosingCash(e.target.value)} placeholder="0.00" className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl py-6 pl-14 pr-8 text-3xl font-black outline-none focus:ring-2 focus:ring-rose-500 transition-all tabular-nums dark:text-white" />
+                                            <input type="number" min="0" step="0.01" required value={closingCash} onChange={(e) => setClosingCash(e.target.value)} placeholder="0.00" className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl py-6 pl-14 pr-8 text-3xl font-black outline-none focus:ring-2 focus:ring-rose-500 transition-all tabular-nums dark:text-white" />
                                         </div>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4 space-y-3">
+                                        <div className="flex justify-between text-sm"><span className="text-slate-500">{t("Starting Cash")}</span><strong className="text-slate-900 dark:text-white">₹{Number(currentShift?.openingCash || 0).toLocaleString()}</strong></div>
+                                        <div className="flex justify-between text-sm"><span className="text-slate-500">{t("Expected Cash")}</span><strong className="text-slate-900 dark:text-white">₹{Number(currentShift?.expectedCash || currentShift?.openingCash || 0).toLocaleString()}</strong></div>
+                                        <div className="border-t border-slate-200 dark:border-slate-700 pt-3 flex justify-between items-center gap-3">
+                                            <div><p className="font-bold text-slate-800 dark:text-white">{t("Cash Change")}</p><p className="text-[11px] text-slate-500">{t("Closing cash minus starting cash")}</p></div>
+                                            <strong className={`text-lg tabular-nums ${liveCashChange === null ? 'text-slate-400' : liveCashChange >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{liveCashChange === null ? '—' : `${liveCashChange >= 0 ? '+' : '-'}₹${Math.abs(liveCashChange).toLocaleString()}`}</strong>
+                                        </div>
+                                        <p className="text-[11px] leading-5 text-slate-500">{t("Cash change is not the same as business profit. Profit also depends on product costs and expenses.")}</p>
                                     </div>
                                     <div className="space-y-4">
                                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">{t("Notes (Optional)")}</label>
