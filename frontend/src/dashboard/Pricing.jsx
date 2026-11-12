@@ -94,7 +94,7 @@ const Pricing = () => {
         if (!selectedPlan?._id) return toast.error('Select a valid plan.');
         setCashfreePaying(true);
         try {
-            const response = await api.post('/payments/cashfree/subscription/order', { planId: selectedPlan._id });
+            const response = await api.post('/payments/cashfree/subscription/order', selectedPlan.isAddon ? { addonName: selectedPlan.name } : { planId: selectedPlan._id });
             const { order_id: orderId, payment_session_id: paymentSessionId } = response.data.data || {};
             if (!orderId || !paymentSessionId) throw new Error('Cashfree did not return a valid payment order.');
             setIsUpgradeModalOpen(false);
@@ -502,7 +502,7 @@ const Pricing = () => {
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
                         <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 shrink-0 text-emerald-600" size={21} /><div><p className="font-bold text-emerald-800 dark:text-emerald-300">Automatic payment verification</p><p className="mt-1 text-sm leading-6 text-emerald-700 dark:text-emerald-400">After Cashfree confirms your payment, StockSaathi verifies it with the server and activates the subscription automatically. No screenshot or admin approval is required.</p></div></div>
                     </div>
-                    <button type="button" onClick={startCashfreePayment} disabled={cashfreePaying || cashfreeVerifying || !selectedPlan?._id} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-5 py-4 font-extrabold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
+                    <button type="button" onClick={startCashfreePayment} disabled={cashfreePaying || cashfreeVerifying || (!selectedPlan?._id && !selectedPlan?.isAddon)} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-5 py-4 font-extrabold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
                         <ShieldCheck size={19} />{cashfreePaying ? "Creating secure payment…" : cashfreeVerifying ? "Verifying payment…" : "Continue to Cashfree"}
                     </button>
                     <p className="text-center text-xs leading-5 text-slate-500">You will be redirected to Cashfree’s secure checkout. Your plan is activated only after successful server-side payment verification.</p>
