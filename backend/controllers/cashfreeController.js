@@ -169,6 +169,36 @@ exports.verifyRegistrationOrder = async (req, res) => {
     }
 };
 
+const classifyCashfreeEvent = (eventType = '') => {
+    const type = String(eventType).toUpperCase();
+    if (type.includes('PAYMENT')) return 'payment';
+    if (type.includes('REFUND')) return 'refund';
+    if (type.includes('DISPUTE')) return 'dispute';
+    if (type.includes('SETTLEMENT')) return 'settlement';
+    if (type.includes('VENDOR') || type.includes('VBA') || type.includes('INSTRUMENT')) return 'payout';
+    if (type.includes('INCIDENT')) return 'incident';
+    return 'other';
+};
+
+const updateFailedPaymentFromWebhook = async (orderId, paymentData = {}) => {
+    const status = String(paymentData.payment_status || '').toUpperCase();
+    if (!['FAILED', 'USER_DROPPED'].includes(status)) return;
+    if (String(orderId).startsWith('SSPAY_')) {
+        const payment = await Payment.findOne({ cashfreeOrderId: orderId });
+        if (!payment || payment.status === 'SUCCESS') return;
+        payment.status = status;
+        payment.cashfreePaymentId = String(paymentData.cf_payment_id || payment.cashfreePaymentId || '');
+        payment.gatewayResponse = paymentData;
+        await payment.save();
+        return;
+    }
+    const registration = await RegistrationPayment.findOne({ orderId, paymentMethod: 'cashfree' });
+    if (!registration || registration.status === 'SUCCESS') return;
+    registration.status = status;
+    registration.cfPaymentId = String(paymentData.cf_payment_id || registration.cfPaymentId || '');
+    await registration.save();
+};
+
 exports.handleCashfreeWebhook = async (req, res) => {
     let webhookEventId = null;
     try {
@@ -176,34 +206,68 @@ exports.handleCashfreeWebhook = async (req, res) => {
         const timestamp = req.headers['x-webhook-timestamp'];
         if (!signature || !timestamp || !Buffer.isBuffer(req.body)) return res.status(400).send('Invalid webhook request');
         const { clientSecret } = credentials();
-        const expected = crypto.createHmac('sha256', clientSecret).update(timestamp + req.body.toString('utf8')).digest('base64');
+        const rawBody = req.body.toString('utf8');
+        const expected = crypto.createHmac('sha256', clientSecret).update(timestamp + rawBody).digest('base64');
         const receivedBuffer = Buffer.from(String(signature));
         const expectedBuffer = Buffer.from(expected);
         if (receivedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)) {
             return res.status(401).send('Invalid webhook signature');
         }
-        const event = JSON.parse(req.body.toString('utf8'));
-        const orderId = event?.data?.order?.order_id;
-        const paymentId = event?.data?.payment?.cf_payment_id || 'no-payment-id';
+
+        const event = JSON.parse(rawBody);
+        const orderId = event?.data?.order?.order_id || event?.data?.order_id || null;
+        const paymentData = event?.data?.payment || {};
+        const paymentId = paymentData.cf_payment_id || event?.data?.refund?.cf_refund_id || 'no-reference';
         const eventType = event?.type || event?.event_type || 'UNKNOWN';
+        const category = classifyCashfreeEvent(eventType);
         webhookEventId = [orderId || 'no-order', paymentId, eventType, timestamp].join(':');
         const log = await WebhookLog.findOneAndUpdate(
             { eventId: webhookEventId },
-            { $setOnInsert: { eventId: webhookEventId, orderId, eventType, payload: event, status: 'RECEIVED' } },
+            { $setOnInsert: {
+                eventId: webhookEventId, orderId, eventType, category,
+                summary: `${category} event received`, payload: event, status: 'RECEIVED'
+            } },
             { upsert: true, new: true }
         );
         if (log.status === 'PROCESSED') return res.status(200).json({ success: true, duplicate: true });
 
-        if (orderId && event?.data?.payment?.payment_status === 'SUCCESS') {
+        if (orderId && String(paymentData.payment_status || '').toUpperCase() === 'SUCCESS') {
             if (String(orderId).startsWith('SSPAY_')) await activatePaidPlan(orderId);
             else await markRegistrationPaid(orderId);
+        } else if (orderId) {
+            await updateFailedPaymentFromWebhook(orderId, paymentData);
         }
-        await WebhookLog.updateOne({ eventId: webhookEventId }, { $set: { status: 'PROCESSED', processedAt: new Date() } });
-        return res.status(200).json({ success: true });
+
+        const refundStatus = event?.data?.refund?.refund_status;
+        const summary = category === 'payment'
+            ? `Payment ${String(paymentData.payment_status || 'updated').toLowerCase()}`
+            : category === 'refund'
+                ? `Refund ${String(refundStatus || 'update').toLowerCase()}`
+                : category === 'settlement' ? 'Settlement update received'
+                    : category === 'dispute' ? 'Dispute update received'
+                        : `${category} event received`;
+
+        await WebhookLog.updateOne({ eventId: webhookEventId }, { $set: { status: 'PROCESSED', summary, processedAt: new Date() } });
+        return res.status(200).json({ success: true, received: true, category });
     } catch (error) {
         if (webhookEventId) await WebhookLog.updateOne({ eventId: webhookEventId }, { $set: { status: 'FAILED' } }).catch(() => {});
         console.error('Cashfree webhook processing failed:', error.message);
         return res.status(500).send('Webhook processing failed');
+    }
+};
+
+exports.getCashfreeWebhookEvents = async (req, res) => {
+    try {
+        const [events, total, failed, pending] = await Promise.all([
+            WebhookLog.find().sort({ createdAt: -1 }).limit(100).select('eventId orderId eventType category summary status createdAt processedAt').lean(),
+            WebhookLog.countDocuments(),
+            WebhookLog.countDocuments({ status: 'FAILED' }),
+            WebhookLog.countDocuments({ status: 'RECEIVED' })
+        ]);
+        res.json({ success: true, data: events, summary: { total, failed, pending, processed: Math.max(0, total - failed - pending) } });
+    } catch (error) {
+        console.error('Cashfree webhook event list failed:', error.message);
+        res.status(500).json({ success: false, message: 'Unable to load Cashfree webhook events.' });
     }
 };
 
