@@ -803,25 +803,25 @@ const Sales = () => {
 
                         {posStep === 2 && (
                             <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="space-y-3 max-h-[42vh] sm:max-h-[50vh] overflow-y-auto overscroll-contain touch-pan-y pr-1 sm:pr-2 custom-scrollbar">
                                     {cart.length === 0 ? (
                                         <div className="py-20 text-center space-y-4">
                                             <div className="w-20 h-20 bg-slate-50 rounded-[1.25rem] flex items-center justify-center mx-auto text-slate-300"><ShoppingCart size={40} /></div>
                                             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Your cart is currently empty</p>
                                         </div>
                                     ) : cart.map(item => (
-                                        <div key={item.product} className="p-5 bg-slate-50 dark:bg-slate-950 rounded-[1.25rem] flex items-center justify-between border border-transparent hover:border-indigo-100 transition-all">
-                                            <div className="flex-1 min-w-0 pr-4">
+                                        <div key={item.product} className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-950 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-slate-100 dark:border-slate-800 hover:border-indigo-100 transition-all min-w-0">
+                                            <div className="w-full sm:flex-1 min-w-0 sm:pr-4">
                                                 <p className="text-sm font-black text-slate-900 dark:text-white uppercase truncate">{item.productName}</p>
                                                 <p className="text-xs text-indigo-600 font-black mt-1">₹{item.price.toLocaleString()} / unit</p>
                                             </div>
-                                            <div className="flex items-center gap-6">
-                                                <div className="flex items-center bg-white dark:bg-slate-900 rounded-[1.25rem] p-1.5 border border-slate-200 dark:border-slate-800 shadow-sm">
+                                            <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-2 sm:gap-4 flex-wrap">
+                                                <div className="flex shrink-0 items-center bg-white dark:bg-slate-900 rounded-xl p-1.5 border border-slate-200 dark:border-slate-800 shadow-sm">
                                                     <button onClick={() => updateCartQty(item.product, -1)} className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-[1.25rem] transition-colors"><Minus size={14} /></button>
                                                     <span className="w-12 text-center text-sm font-black text-slate-900 dark:text-white">{item.quantity}</span>
                                                     <button onClick={() => updateCartQty(item.product, 1)} className="p-1.5 hover:bg-emerald-50 text-emerald-500 rounded-[1.25rem] transition-colors"><Plus size={14} /></button>
                                                 </div>
-                                                <div className="text-right min-w-[80px]">
+                                                <div className="text-right min-w-[72px] sm:min-w-[80px] ml-auto">
                                                     <p className="text-sm font-black text-slate-900 dark:text-white">₹{(item.price * item.quantity).toLocaleString()}</p>
                                                 </div>
                                                 <button onClick={() => removeFromCart(item.product)} className="text-slate-300 hover:text-rose-500 transition-colors p-2"><Trash2 size={18} /></button>
@@ -829,13 +829,13 @@ const Sales = () => {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="flex justify-between items-center p-6 bg-slate-900 rounded-[1.25rem] text-white">
+                                <div className="flex flex-wrap justify-between items-center gap-3 p-4 sm:p-6 bg-slate-900 rounded-xl text-white">
                                     <span className="text-xs font-black uppercase tracking-widest opacity-60">Cart Subtotal</span>
                                     <span className="text-2xl font-black">₹{calculateTotal().toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between gap-4 pt-4">
-                                    <button onClick={() => setPosStep(1)} className="h-14 flex-1 bg-slate-100 dark:bg-slate-800 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all">Add More</button>
-                                    <button onClick={() => setPosStep(3)} disabled={cart.length === 0} className="h-14 flex-[2] bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">Customer Details <ChevronRight size={16} /></button>
+                                <div className="flex flex-col sm:flex-row justify-between gap-3 pt-2 sm:pt-4">
+                                    <button onClick={() => setPosStep(1)} className="h-12 sm:h-14 w-full sm:flex-1 bg-slate-100 dark:bg-slate-800 rounded-xl font-semibold uppercase tracking-wide text-xs hover:bg-slate-200 transition-all">Add More</button>
+                                    <button onClick={() => setPosStep(3)} disabled={cart.length === 0} className="h-12 sm:h-14 w-full sm:flex-[2] bg-indigo-600 text-white rounded-xl font-semibold uppercase tracking-wide text-xs shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">Customer Details <ChevronRight size={16} /></button>
                                 </div>
                             </motion.div>
                         )}
@@ -954,8 +954,8 @@ const Sales = () => {
                             </div>
                         </div>
 
-                        <div className="bg-slate-50 dark:bg-slate-950 rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-800">
-                            <table className="w-full text-left text-sm">
+                        <div className="bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800 max-h-[46vh] overflow-y-auto overflow-x-auto overscroll-contain touch-pan-y custom-scrollbar">
+                            <table className="w-full min-w-[560px] text-left text-sm">
                                 <thead>
                                     <tr className="bg-slate-100/50 dark:bg-slate-800/50">
                                         <th className="px-6 py-4 font-black uppercase text-[10px] text-slate-400 tracking-widest">Product</th>
