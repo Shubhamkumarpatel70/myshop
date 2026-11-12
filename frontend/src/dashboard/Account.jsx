@@ -4,6 +4,7 @@ import { Calendar, Copy, Mail, MapPin, Phone, ShieldCheck, Store, User } from 'l
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { subscribeInstallPrompt, triggerInstallPrompt } from '../utils/pwaInstall';
 
 const Account = () => {
     const { user, updateUser } = useAuth();
@@ -13,20 +14,11 @@ const Account = () => {
     const [savingTax, setSavingTax] = useState(false);
     const [installPrompt, setInstallPrompt] = useState(null);
 
-    useEffect(() => {
-        const captureInstallPrompt = (event) => {
-            event.preventDefault();
-            setInstallPrompt(event);
-        };
-        window.addEventListener('beforeinstallprompt', captureInstallPrompt);
-        return () => window.removeEventListener('beforeinstallprompt', captureInstallPrompt);
-    }, []);
+    useEffect(() => subscribeInstallPrompt(setInstallPrompt), []);
 
     const installApp = async () => {
-        if (!installPrompt) return;
-        installPrompt.prompt();
-        await installPrompt.userChoice;
-        setInstallPrompt(null);
+        await triggerInstallPrompt();
+        setInstallPrompt(false);
     };
 
     useEffect(() => {
