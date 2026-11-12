@@ -1,82 +1,144 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { Camera, CameraOff, CheckCircle2, RefreshCw, ScanLine, Keyboard, AlertCircle, X } from 'lucide-react';
+import { Camera, CameraOff, CheckCircle2, RefreshCw, ScanLine, Keyboard, AlertCircle } from 'lucide-react';
 
 const SCAN_REGION_ID = 'stocksaathi-barcode-reader';
-
-const scannerConfig = {
-    // Retail barcode scanning: a smaller decode window and moderate FPS reduce
-    // CPU load on mid-range Android phones without making the scan feel sluggish.
-    fps: 8,
-    qrbox: (width, height) => ({
-        width: Math.max(220, Math.min(Math.floor(width * 0.78), 360)),
-        height: Math.max(90, Math.min(Math.floor(height * 0.34), 140))
-    }),
-    aspectRatio: 1.777,
-    disableFlip: true,
-    formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.ITF
-    ]
-};
+const RETAIL_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf'];
+const FALLBACK_FORMATS = [
+    Html5QrcodeSupportedFormats.EAN_13,
+    Html5QrcodeSupportedFormats.EAN_8,
+    Html5QrcodeSupportedFormats.UPC_A,
+    Html5QrcodeSupportedFormats.UPC_E,
+    Html5QrcodeSupportedFormats.CODE_128,
+    Html5QrcodeSupportedFormats.CODE_39,
+    Html5QrcodeSupportedFormats.ITF
+];
 
 const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
+    const videoRef = useRef(null);
+    const streamRef = useRef(null);
     const scannerRef = useRef(null);
+    const detectorRef = useRef(null);
+    const rafRef = useRef(0);
+    const scanBusyRef = useRef(false);
     const activeRef = useRef(false);
+    const generationRef = useRef(0);
     const successRef = useRef(onScanSuccess);
     const errorRef = useRef(onScanError);
+
     const [status, setStatus] = useState('starting');
     const [errorMessage, setErrorMessage] = useState('');
     const [cameras, setCameras] = useState([]);
     const [cameraId, setCameraId] = useState('');
     const [manualCode, setManualCode] = useState('');
     const [isManualOpen, setIsManualOpen] = useState(false);
+    const [usingNativeScanner, setUsingNativeScanner] = useState(false);
 
     useEffect(() => { successRef.current = onScanSuccess; }, [onScanSuccess]);
     useEffect(() => { errorRef.current = onScanError; }, [onScanError]);
-
-    const stopScanner = useCallback(async () => {
-        const scanner = scannerRef.current;
-        if (!scanner) return;
-        try {
-            if (scanner.isScanning) await scanner.stop();
-        } catch (error) {
-            console.debug('Barcode camera already stopped.', error);
-        }
-        try { scanner.clear(); } catch (error) {
-            console.debug('Barcode scanner cleanup skipped.', error);
-        }
-        if (scannerRef.current === scanner) scannerRef.current = null;
-    }, []);
 
     const describeCameraError = (error) => {
         const name = error?.name || '';
         const message = String(error?.message || error || '');
         if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || /permission denied|notallowederror/i.test(message)) {
-            return 'Camera permission is blocked. Allow Camera access for this website in your browser settings, then tap Try Again.';
+            return 'Camera permission is blocked. Allow Camera access for this website in browser settings, then tap Try Again.';
         }
         if (name === 'NotFoundError' || /no camera|device not found/i.test(message)) {
-            return 'No camera was found on this device. You can enter the barcode manually below.';
+            return 'No camera was found. You can enter the barcode manually below.';
         }
         if (name === 'NotReadableError' || /could not start video source/i.test(message)) {
             return 'Your camera may be in use by another app. Close other camera apps and try again.';
         }
-        if (!window.isSecureContext) {
-            return 'Camera access requires a secure HTTPS connection. Open this page using its HTTPS address.';
-        }
-        return 'The camera could not be started. Check browser permissions and try again, or enter the barcode manually.';
+        if (!window.isSecureContext) return 'Camera access requires a secure HTTPS connection.';
+        return 'The camera could not start. Check browser permissions and try again.';
     };
+
+    const stopScanner = useCallback(async () => {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = 0;
+        detectorRef.current = null;
+        scanBusyRef.current = false;
+
+        const stream = streamRef.current;
+        streamRef.current = null;
+        if (stream) stream.getTracks().forEach(track => track.stop());
+
+        const scanner = scannerRef.current;
+        scannerRef.current = null;
+        if (scanner) {
+            try {
+                if (scanner.isScanning) await scanner.stop();
+            } catch (error) {
+                console.debug('Barcode scanner stop skipped.', error);
+            }
+            try { scanner.clear(); } catch { /* already cleared */ }
+        }
+
+        if (videoRef.current) {
+            videoRef.current.pause();
+            videoRef.current.srcObject = null;
+        }
+    }, []);
+
+    const finishScan = useCallback(async (decodedText, decodedResult) => {
+        if (!activeRef.current) return;
+        activeRef.current = false;
+        generationRef.current += 1;
+        setStatus('success');
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+                const audio = new AudioContextClass();
+                const oscillator = audio.createOscillator();
+                const gain = audio.createGain();
+                oscillator.connect(gain);
+                gain.connect(audio.destination);
+                oscillator.frequency.value = 880;
+                gain.gain.value = 0.07;
+                oscillator.start();
+                oscillator.stop(audio.currentTime + 0.1);
+                oscillator.onended = () => audio.close();
+            }
+        } catch { /* sound is optional */ }
+        await stopScanner();
+        successRef.current?.(decodedText, decodedResult);
+    }, [stopScanner]);
+
+    const startNativeDetection = useCallback((detector, generation) => {
+        const scanFrame = async () => {
+            if (!activeRef.current || generationRef.current !== generation) return;
+            const video = videoRef.current;
+            if (video && video.readyState >= 2 && !scanBusyRef.current) {
+                scanBusyRef.current = true;
+                try {
+                    const results = await detector.detect(video);
+                    if (results?.length && activeRef.current && generationRef.current === generation) {
+                        await finishScan(results[0].rawValue, results[0]);
+                        return;
+                    }
+                } catch {
+                    // A frame may be temporarily undecodable; continue with the next frame.
+                } finally {
+                    scanBusyRef.current = false;
+                }
+            }
+            if (activeRef.current && generationRef.current === generation) {
+                rafRef.current = requestAnimationFrame(() => {
+                    // Throttle detection to roughly 8-10 attempts per second on mobile.
+                    window.setTimeout(scanFrame, 110);
+                });
+            }
+        };
+        rafRef.current = requestAnimationFrame(scanFrame);
+    }, [finishScan]);
 
     const startScanner = useCallback(async (selectedCameraId = '') => {
         if (!isOpen || !activeRef.current) return;
+        const generation = ++generationRef.current;
         setStatus('starting');
         setErrorMessage('');
         await stopScanner();
+        if (!activeRef.current || generationRef.current !== generation) return;
 
         if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
             setStatus('error');
@@ -84,84 +146,122 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
             return;
         }
 
-        const scanner = new Html5Qrcode(SCAN_REGION_ID, { verbose: false });
-        scannerRef.current = scanner;
         try {
-            const cameraSource = selectedCameraId || { facingMode: 'environment' };
-            await scanner.start(
-                cameraSource,
-                scannerConfig,
-                async (decodedText, decodedResult) => {
-                    if (!activeRef.current) return;
-                    activeRef.current = false;
-                    setStatus('success');
-                    try {
-                        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                        if (AudioContextClass) {
-                            const audio = new AudioContextClass();
-                            const oscillator = audio.createOscillator();
-                            const gain = audio.createGain();
-                            oscillator.connect(gain);
-                            gain.connect(audio.destination);
-                            oscillator.frequency.value = 880;
-                            gain.gain.value = 0.08;
-                            oscillator.start();
-                            oscillator.stop(audio.currentTime + 0.12);
-                            oscillator.onended = () => audio.close();
-                        }
-                    } catch (audioError) {
-                        console.debug('Scan beep unavailable.', audioError);
-                    }
-                    await stopScanner();
-                    successRef.current?.(decodedText, decodedResult);
-                },
-                () => {
-                    // Per-frame decode misses are normal while the barcode is being aligned.
-                }
-            );
-            if (!activeRef.current) {
-                await stopScanner();
+            // Request the rear camera directly. Avoid a preliminary camera-list
+            // permission prompt/query, which adds noticeable startup delay on Android.
+            const videoConstraints = selectedCameraId
+                ? { deviceId: { exact: selectedCameraId }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 } }
+                : { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 } };
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
+            if (!activeRef.current || generationRef.current !== generation) {
+                stream.getTracks().forEach(track => track.stop());
                 return;
             }
-            setStatus('ready');
-            if (selectedCameraId) setCameraId(selectedCameraId);
-            // Load alternate camera choices in the background; don't delay live preview.
-            Html5Qrcode.getCameras()
-                .then(available => {
-                    if (activeRef.current && available?.length) {
-                        setCameras(available);
-                        const preferred = selectedCameraId || available.find(camera => /back|rear|environment/i.test(camera.label))?.id || available[0].id;
-                        setCameraId(preferred);
+            streamRef.current = stream;
+            const video = videoRef.current;
+            if (!video) throw new Error('Camera preview is not ready');
+            video.srcObject = stream;
+            await video.play();
+
+            // Native BarcodeDetector is hardware/browser optimized and avoids
+            // html5-qrcode's heavier canvas decoder on supported Android browsers.
+            if ('BarcodeDetector' in window) {
+                try {
+                    const supported = await window.BarcodeDetector.getSupportedFormats();
+                    const formats = RETAIL_FORMATS.filter(format => supported.includes(format));
+                    if (formats.length) {
+                        const detector = new window.BarcodeDetector({ formats });
+                        detectorRef.current = detector;
+                        setUsingNativeScanner(true);
+                        setStatus('ready');
+                        const track = stream.getVideoTracks()[0];
+                        if (track) {
+                            const settings = track.getSettings();
+                            if (settings.deviceId) setCameraId(settings.deviceId);
+                        }
+                        startNativeDetection(detector, generation);
+                    } else {
+                        throw new Error('Retail barcode detection is not supported');
                     }
-                })
-                .catch(() => {
-                    // Device labels may be unavailable on browsers with restricted permissions.
-                });
-        } catch (error) {
-            if (scannerRef.current === scanner) {
-                try { scanner.clear(); } catch { /* already cleared */ }
-                scannerRef.current = null;
+                } catch (nativeError) {
+                    console.debug('Native barcode detection unavailable; using fallback.', nativeError);
+                    await startHtml5Fallback(stream, generation);
+                }
+            } else {
+                await startHtml5Fallback(stream, generation);
             }
-            if (!activeRef.current) return;
+
+            // Populate the camera picker after the preview is already running.
+            navigator.mediaDevices.enumerateDevices?.().then(devices => {
+                if (!activeRef.current || generationRef.current !== generation) return;
+                const available = devices.filter(device => device.kind === 'videoinput');
+                setCameras(available.map((device, index) => ({
+                    id: device.deviceId,
+                    label: device.label || `Camera ${index + 1}`
+                })));
+            }).catch(() => {});
+        } catch (error) {
+            if (generationRef.current !== generation || !activeRef.current) return;
+            await stopScanner();
             setStatus('error');
             setErrorMessage(describeCameraError(error));
             errorRef.current?.(error);
-            // Do not repeatedly enumerate devices after a failed camera start.
-            // The rear-camera default and manual entry remain available.
         }
-    }, [isOpen, stopScanner]);
+    }, [isOpen, stopScanner, startNativeDetection]);
+
+    const startHtml5Fallback = async (stream, generation) => {
+        // Older browsers without BarcodeDetector use html5-qrcode as a fallback.
+        // Reuse the already-granted camera device to avoid a second permission flow.
+        const track = stream.getVideoTracks()[0];
+        const deviceId = track?.getSettings()?.deviceId;
+        if (!deviceId) throw new Error('Unable to identify the active camera');
+        if (videoRef.current) {
+            videoRef.current.pause();
+            videoRef.current.srcObject = null;
+        }
+        stream.getTracks().forEach(trackItem => trackItem.stop());
+        if (streamRef.current === stream) streamRef.current = null;
+        const scanner = new Html5Qrcode(SCAN_REGION_ID, { verbose: false });
+        scannerRef.current = scanner;
+        await scanner.start(
+            deviceId,
+            {
+                fps: 8,
+                qrbox: (width, height) => ({
+                    width: Math.max(220, Math.min(Math.floor(width * 0.78), 360)),
+                    height: Math.max(90, Math.min(Math.floor(height * 0.34), 140))
+                }),
+                disableFlip: true,
+                formatsToSupport: FALLBACK_FORMATS
+            },
+            (decodedText, decodedResult) => {
+                if (generationRef.current === generation) finishScan(decodedText, decodedResult);
+            },
+            () => {}
+        );
+        if (!activeRef.current || generationRef.current !== generation) {
+            try { await scanner.stop(); } catch {}
+            try { scanner.clear(); } catch {}
+            return;
+        }
+        setUsingNativeScanner(false);
+        setStatus('ready');
+        setCameraId(deviceId);
+    };
 
     useEffect(() => {
         if (!isOpen) {
             activeRef.current = false;
+            generationRef.current += 1;
             stopScanner();
             return undefined;
         }
         activeRef.current = true;
-        const timer = window.setTimeout(() => startScanner(), 180);
+        // Start immediately when the modal opens; no artificial startup delay.
+        startScanner();
         return () => {
-            window.clearTimeout(timer);
             activeRef.current = false;
+            generationRef.current += 1;
             stopScanner();
         };
     }, [isOpen, startScanner, stopScanner]);
@@ -171,14 +271,15 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
         const value = manualCode.trim();
         if (!value) return;
         activeRef.current = false;
+        generationRef.current += 1;
         stopScanner();
         successRef.current?.(value, null);
     };
 
-    const changeCamera = async (event) => {
+    const changeCamera = (event) => {
         const nextCamera = event.target.value;
         setCameraId(nextCamera);
-        await startScanner(nextCamera);
+        startScanner(nextCamera);
     };
 
     return (
@@ -189,24 +290,32 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
                         {status === 'error' ? <CameraOff size={18} /> : status === 'success' ? <CheckCircle2 size={18} /> : <Camera size={18} />}
                     </span>
                     <div>
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">{status === 'ready' ? 'Camera ready' : status === 'starting' ? 'Starting camera…' : status === 'success' ? 'Barcode detected' : 'Camera unavailable'}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Use the rear camera and keep the barcode steady</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{status === 'ready' ? 'Camera ready' : status === 'starting' ? 'Opening camera…' : status === 'success' ? 'Barcode detected' : 'Camera unavailable'}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Rear camera starts automatically for faster scanning</p>
                     </div>
                 </div>
                 {cameras.length > 1 && (
                     <select value={cameraId} onChange={changeCamera} className="max-w-[180px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                        {cameras.map((camera, index) => <option key={camera.id} value={camera.id}>{camera.label || `Camera ${index + 1}`}</option>)}
+                        {cameras.map((camera, index) => <option key={camera.id || index} value={camera.id}>{camera.label}</option>)}
                     </select>
                 )}
             </div>
 
             <div className="relative overflow-hidden rounded-2xl border border-slate-300 bg-slate-950 shadow-inner dark:border-slate-700">
-                <div id={SCAN_REGION_ID} className="barcode-reader w-full min-h-[260px] sm:min-h-[320px]" />
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full min-h-[260px] sm:min-h-[320px] max-h-[420px] object-cover"
+                    style={{ display: usingNativeScanner || status === 'starting' ? 'block' : 'none' }}
+                />
+                <div id={SCAN_REGION_ID} className="barcode-reader w-full min-h-[260px] sm:min-h-[320px]" style={{ display: usingNativeScanner || status === 'starting' ? 'none' : 'block' }} />
                 {status === 'starting' && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950 px-5 text-center">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/80 px-5 text-center">
                         <span className="h-9 w-9 animate-spin rounded-full border-4 border-white/20 border-t-indigo-400" />
                         <p className="text-sm font-semibold text-white">Opening your camera…</p>
-                        <p className="text-xs text-slate-300">Please allow camera access when your browser asks</p>
+                        <p className="text-xs text-slate-300">Connecting to the rear camera</p>
                     </div>
                 )}
                 {status === 'error' && (
@@ -237,7 +346,7 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
                 </button>
                 {isManualOpen && (
                     <form onSubmit={submitManualCode} className="mt-3 flex flex-col gap-2 sm:flex-row">
-                        <input autoComplete="off" inputMode="numeric" value={manualCode} onChange={event => setManualCode(event.target.value)} placeholder="Enter or scan barcode number" className="h-12 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:ring-indigo-900" />
+                        <input autoComplete="off" inputMode="numeric" value={manualCode} onChange={event => setManualCode(event.target.value)} placeholder="Enter barcode number" className="h-12 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:ring-indigo-900" />
                         <button type="submit" disabled={!manualCode.trim()} className="h-12 rounded-xl bg-indigo-600 px-5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">Use Barcode</button>
                     </form>
                 )}
@@ -251,7 +360,6 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
                 #${SCAN_REGION_ID}__dashboard_section_csr button, #${SCAN_REGION_ID}__dashboard_section_csr select { color: #f8fafc !important; background: #334155 !important; border: 1px solid #64748b !important; border-radius: 0.65rem !important; padding: 0.5rem 0.75rem !important; }
                 #${SCAN_REGION_ID} img { display: none !important; }
                 #${SCAN_REGION_ID} a { color: #a5b4fc !important; }
-                #${SCAN_REGION_ID} span, #${SCAN_REGION_ID} div { max-width: 100%; }
             `}</style>
         </div>
     );
