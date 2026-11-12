@@ -585,6 +585,8 @@ const Sales = () => {
                         <div style="font-size: 7pt; text-align: center; color: #64748b; margin-top: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                             Payment: ${sale.paymentMethod}
                         </div>
+                        ${Array.isArray(sale.payments) && sale.payments.length > 1 ? sale.payments.map(payment => `<div class="summary-row"><span>${escapeHtml(payment.mode)} paid</span><span>₹${Number(payment.amount || 0).toFixed(2)}</span></div>`).join('') : ''}
+                        ${sale.customerGSTIN ? `<div style="font-size:7pt;margin-top:6px;">Customer GSTIN: ${escapeHtml(sale.customerGSTIN)}</div>` : ''}
                     </div>
 
                     <div class="footer">
@@ -1017,7 +1019,7 @@ const Sales = () => {
                     <div className="w-24 h-24 bg-rose-100 text-rose-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl shadow-rose-500/10"><Undo2 size={40} /></div>
                     <div className="space-y-2">
                         <h4 className="text-2xl font-black uppercase tracking-tight">{t('Initiate Return?')}</h4>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('This will restock inventory and record a refund.')}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('Returned items will be added back to stock and recorded in inventory history.')}</p>
                     </div>
                     <div className="space-y-3 text-left">
                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Return quantity (max {Math.max(0, Number(itemToReturn?.quantity || 0) - Number(itemToReturn?.returnedQuantity || 0))})</label>
