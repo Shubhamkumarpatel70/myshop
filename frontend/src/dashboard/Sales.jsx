@@ -43,6 +43,8 @@ const Sales = () => {
     const [secondPaymentMethod, setSecondPaymentMethod] = useState('UPI');
     const [secondPaymentAmount, setSecondPaymentAmount] = useState('');
     const [cart, setCart] = useState([]);
+    const [discountType, setDiscountType] = useState('amount');
+    const [discountValue, setDiscountValue] = useState('');
     const [customerInfo, setCustomerInfo] = useState({ name: 'Guest', phone: '', address: '', gstin: '', paymentMethod: 'Cash' });
     const [customerMatches, setCustomerMatches] = useState([]);
     const [customerSearchTerm, setCustomerSearchTerm] = useState('');
@@ -297,6 +299,15 @@ const Sales = () => {
             return acc + base + (base * rate / 100);
         }, 0);
     };
+    const calculateDiscount = () => {
+        const subtotal = Number(calculateTotal().toFixed(2));
+        const value = Math.max(0, Number(discountValue) || 0);
+        if (!value || !subtotal) return 0;
+        const requested = discountType === 'percentage' ? subtotal * Math.min(100, value) / 100 : value;
+        return Number(Math.min(subtotal, requested).toFixed(2));
+    };
+    const calculatePayable = () => Number(Math.max(0, calculateTotal() - calculateDiscount()).toFixed(2));
+
 
     const handleCheckout = async () => {
         if (cart.length === 0) {
@@ -307,7 +318,7 @@ const Sales = () => {
             toast.error("Security ID (UTR) Required");
             return;
         }
-        const payableAmount = Number(calculateTotal().toFixed(2));
+        const payableAmount = calculatePayable();
         let payments = [{ mode: customerInfo.paymentMethod, amount: payableAmount }];
         if (splitPaymentEnabled) {
             const secondAmount = Number(secondPaymentAmount);
@@ -334,7 +345,9 @@ const Sales = () => {
                 customerPhone: customerInfo.phone,
                 paymentMethod: customerInfo.paymentMethod,
                 utrNumber: utrNumber,
-                customerGSTIN: customerInfo.gstin
+                customerGSTIN: customerInfo.gstin,
+                discountType: calculateDiscount() > 0 ? discountType : 'none',
+                discountValue: calculateDiscount() > 0 ? Number(discountValue) : 0
             };
             let completedSale;
             if (!navigator.onLine) {
@@ -345,6 +358,10 @@ const Sales = () => {
                     transactionId: `OFFLINE-${Date.now()}`,
                     createdAt: new Date().toISOString(),
                     totalAmount: payableAmount,
+                    subtotalAmount: Number(calculateTotal().toFixed(2)),
+                    discountType: saleData.discountType,
+                    discountValue: saleData.discountValue,
+                    discountAmount: calculateDiscount(),
                     items: cart.map(item => ({ ...item, total: Number((Number(item.price) * Number(item.quantity) * (1 + (user?.gstEnabled ? Number(item.taxRate || 0) / 100 : 0))).toFixed(2)) })),
                     user
                 };
@@ -363,6 +380,8 @@ const Sales = () => {
                 toast.error('Sale saved, but the receipt could not be printed. You can print it from Sale Details.');
             }
             setCart([]);
+            setDiscountType('amount');
+            setDiscountValue('');
             setCustomerInfo({ name: 'Guest', phone: '', paymentMethod: 'Cash' });
             setUtrNumber('');
             setSplitPaymentEnabled(false);
@@ -829,9 +848,18 @@ const Sales = () => {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="flex flex-wrap justify-between items-center gap-3 p-4 sm:p-6 bg-slate-900 rounded-xl text-white">
-                                    <span className="text-xs font-black uppercase tracking-widest opacity-60">Cart Subtotal</span>
-                                    <span className="text-2xl font-black">₹{calculateTotal().toLocaleString()}</span>
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                                    <div className="flex items-center justify-between gap-2"><div><p className="text-sm font-bold text-slate-900 dark:text-white">Discount</p><p className="text-xs text-slate-500">Choose rupees or percent.</p></div><span className="text-sm font-bold text-emerald-600">- ₹{calculateDiscount().toFixed(2)}</span></div>
+                                    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-3">
+                                        <select aria-label="Discount type" value={discountType} onChange={event => setDiscountType(event.target.value)} className="h-12 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold dark:border-slate-700 dark:bg-slate-900 dark:text-white"><option value="amount">Rupees (₹)</option><option value="percentage">Percent (%)</option></select>
+                                        <input aria-label="Discount value" type="number" min="0" max={discountType === 'percentage' ? 100 : calculateTotal()} step="0.01" value={discountValue} onChange={event => setDiscountValue(event.target.value)} placeholder={discountType === 'percentage' ? 'Enter percent' : 'Enter rupees'} className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
+                                    </div>
+                                    {Number(discountValue) > (discountType === 'percentage' ? 100 : calculateTotal()) && <p className="text-xs text-rose-600">Discount cannot exceed the bill amount.</p>}
+                                </div>
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-2">
+                                    <div className="flex justify-between text-sm text-slate-500"><span>Cart subtotal</span><span>₹{calculateTotal().toFixed(2)}</span></div>
+                                    <div className="flex justify-between text-sm font-semibold text-emerald-600"><span>Discount</span><span>- ₹{calculateDiscount().toFixed(2)}</span></div>
+                                    <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-3"><span className="text-sm font-bold text-slate-900 dark:text-white">Total payable</span><span className="text-2xl font-black text-slate-900 dark:text-white">₹{calculatePayable().toFixed(2)}</span></div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row justify-between gap-3 pt-2 sm:pt-4">
                                     <button onClick={() => setPosStep(1)} className="h-12 sm:h-14 w-full sm:flex-1 bg-slate-100 dark:bg-slate-800 rounded-xl font-semibold uppercase tracking-wide text-xs hover:bg-slate-200 transition-all">Add More</button>
@@ -897,7 +925,7 @@ const Sales = () => {
                             <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
                                 <div className="p-8 bg-indigo-600 rounded-[1.25rem] text-white text-center space-y-3 shadow-2xl shadow-indigo-500/30">
                                     <p className="text-xs font-black uppercase tracking-[0.3em] opacity-60">Total Payable Amount</p>
-                                    <h3 className="text-5xl font-black tabular-nums">₹{calculateTotal().toLocaleString()}</h3>
+                                    <h3 className="text-5xl font-black tabular-nums">₹{calculatePayable().toLocaleString("en-IN", { maximumFractionDigits: 2 })}</h3><div className="text-sm opacity-90">Subtotal ₹{calculateTotal().toFixed(2)} · Discount ₹{calculateDiscount().toFixed(2)}</div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     {['Cash', 'UPI', 'Card', 'Scan & Pay'].map(method => (
@@ -922,7 +950,7 @@ const Sales = () => {
                                                 </select>
                                             </label>
                                             <label className="text-xs font-semibold text-slate-500">Amount from second method (₹)
-                                                <input type="number" min="0.01" max={calculateTotal() - 0.01} step="0.01" value={secondPaymentAmount} onChange={event => setSecondPaymentAmount(event.target.value)} placeholder="Enter amount" className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+                                                <input type="number" min="0.01" max={calculatePayable() - 0.01} step="0.01" value={secondPaymentAmount} onChange={event => setSecondPaymentAmount(event.target.value)} placeholder="Enter amount" className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
                                             </label>
                                         </div>
                                     )}
