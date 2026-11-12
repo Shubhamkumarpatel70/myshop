@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import { openCashfreeCheckout } from '../utils/cashfree';
 import Modal from '../components/Modal';
 
 const Pricing = () => {
@@ -95,19 +96,7 @@ const Pricing = () => {
             const response = await api.post('/payments/cashfree/subscription/order', { planId: selectedPlan._id });
             const { payment_session_id: paymentSessionId, environment } = response.data.data || {};
             if (!paymentSessionId) throw new Error('Cashfree did not return a payment session.');
-            const sdkUrl = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-            if (!window.Cashfree) {
-                await new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    script.src = sdkUrl;
-                    script.async = true;
-                    script.onload = resolve;
-                    script.onerror = () => reject(new Error('Unable to load Cashfree checkout.'));
-                    document.head.appendChild(script);
-                });
-            }
-            const cashfree = window.Cashfree({ mode: environment === 'production' ? 'production' : 'sandbox' });
-            await cashfree.checkout({ paymentSessionId, redirectTarget: '_self' });
+            await openCashfreeCheckout({ paymentSessionId, environment });
         } catch (error) {
             toast.error(error.response?.data?.message || error.message || 'Unable to start secure payment.');
         } finally {

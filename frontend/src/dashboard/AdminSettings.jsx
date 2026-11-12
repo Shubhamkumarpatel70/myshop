@@ -21,6 +21,7 @@ const AdminSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [duration, setDuration] = useState('15');
+    const [cashfreeStatus, setCashfreeStatus] = useState(null);
 
     useEffect(() => {
         fetchSettings();
@@ -30,6 +31,12 @@ const AdminSettings = () => {
         try {
             const res = await api.get('/admin/settings');
             setSettings(res.data.data);
+            try {
+                const gateway = await api.get('/payments/cashfree/status');
+                setCashfreeStatus(gateway.data?.data || null);
+            } catch {
+                setCashfreeStatus({ configured: false, missing: ['CASHFREE_CLIENT_ID', 'CASHFREE_CLIENT_SECRET'] });
+            }
         } catch (error) {
             toast.error("Failed to fetch settings");
         } finally {
@@ -162,6 +169,14 @@ const AdminSettings = () => {
                                 </button>
                             </div>
                             <p className="text-xs text-slate-500">Changing this setting affects new registration payments. Existing Cashfree orders remain verifiable.</p>
+                            {settings.paymentVerificationMode === 'cashfree' && (
+                                <div className={`rounded-xl border p-4 text-sm ${cashfreeStatus?.configured ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300' : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'}`}>
+                                    <p className="font-bold">{cashfreeStatus?.configured ? 'Cashfree credentials detected' : 'Cashfree credentials missing'}</p>
+                                    <p className="mt-1 text-xs leading-5">{cashfreeStatus?.configured
+                                        ? `Server credentials are present. Environment: ${cashfreeStatus.environment || 'sandbox'} · API version: ${cashfreeStatus.apiVersion || '2023-08-01'}.`
+                                        : `Add these private variables in Render: ${(cashfreeStatus?.missing || ['CASHFREE_CLIENT_ID', 'CASHFREE_CLIENT_SECRET']).join(', ')}. Never add the secret key to frontend code.`}</p>
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Fee Amount (₹)</label>

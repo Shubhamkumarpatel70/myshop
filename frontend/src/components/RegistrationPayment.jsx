@@ -3,24 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
 import { CreditCard, ShieldCheck, CheckCircle2, Clock3, LockKeyhole, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-const CASHFREE_SDK_URL = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-
-const loadCashfreeSdk = () => new Promise((resolve, reject) => {
-    if (window.Cashfree) return resolve();
-    const existing = document.querySelector(`script[src="${CASHFREE_SDK_URL}"]`);
-    if (existing) {
-        existing.addEventListener('load', resolve, { once: true });
-        existing.addEventListener('error', reject, { once: true });
-        return;
-    }
-    const script = document.createElement('script');
-    script.src = CASHFREE_SDK_URL;
-    script.async = true;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('Unable to load secure Cashfree checkout.'));
-    document.head.appendChild(script);
-});
+import { openCashfreeCheckout } from '../utils/cashfree';
 
 const RegistrationPayment = ({ user, onPaymentSuccess }) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -111,9 +94,7 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
             const response = await api.post('/payments/registration/order');
             const { payment_session_id: paymentSessionId, environment } = response.data.data || {};
             if (!paymentSessionId) throw new Error('Cashfree did not return a payment session.');
-            await loadCashfreeSdk();
-            const cashfree = window.Cashfree({ mode: environment === 'production' ? 'production' : 'sandbox' });
-            await cashfree.checkout({ paymentSessionId, redirectTarget: '_self' });
+            await openCashfreeCheckout({ paymentSessionId, environment });
         } catch (error) {
             toast.error(error.response?.data?.message || error.message || 'Unable to start payment. Please try again.');
         } finally {

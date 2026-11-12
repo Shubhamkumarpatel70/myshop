@@ -8,6 +8,24 @@ const API_VERSION = process.env.CASHFREE_API_VERSION || '2023-08-01';
 const isProduction = () => String(process.env.CASHFREE_ENV || 'sandbox').toLowerCase() === 'production';
 const apiBase = () => isProduction() ? 'https://api.cashfree.com/pg' : 'https://sandbox.cashfree.com/pg';
 
+exports.getCashfreeStatus = async (req, res) => {
+    if (req.user?.role !== 'super_admin') {
+        return res.status(403).json({ success: false, message: 'Admin access is required.' });
+    }
+    const missing = [];
+    if (!process.env.CASHFREE_CLIENT_ID) missing.push('CASHFREE_CLIENT_ID');
+    if (!process.env.CASHFREE_CLIENT_SECRET) missing.push('CASHFREE_CLIENT_SECRET');
+    res.json({
+        success: true,
+        data: {
+            configured: missing.length === 0,
+            environment: isProduction() ? 'production' : 'sandbox',
+            apiVersion: API_VERSION,
+            missing
+        }
+    });
+};
+
 const credentials = () => {
     const clientId = process.env.CASHFREE_CLIENT_ID;
     const clientSecret = process.env.CASHFREE_CLIENT_SECRET;
@@ -87,7 +105,7 @@ exports.createRegistrationOrder = async (req, res) => {
 
         const orderId = `SSREG_${String(user._id)}_${Date.now()}`;
         const frontendUrl = (process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '');
-        const backendUrl = (process.env.BACKEND_URL || '').replace(/\/$/, '');
+        const backendUrl = (process.env.BACKEND_URL || frontendUrl || 'https://myshop-53hn.onrender.com').replace(/\/$/, '');
         const orderPayload = {
             order_id: orderId,
             order_amount: amount,
@@ -104,7 +122,11 @@ exports.createRegistrationOrder = async (req, res) => {
             },
             order_note: 'StockSaathi shop registration'
         };
-        const order = await cashfreeRequest('/orders', { method: 'POST', body: JSON.stringify(orderPayload) });
+        const order = await cashfreeRequest('/orders', {
+            method: 'POST',
+            headers: { 'x-idempotency-key': crypto.randomUUID() },
+            body: JSON.stringify(orderPayload)
+        });
         await RegistrationPayment.create({
             user: user._id,
             orderId,
@@ -284,7 +306,7 @@ exports.createSubscriptionOrder = async (req, res) => {
             },
             order_meta: {
                 return_url: `${(process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/dashboard/pricing?order_id={order_id}`,
-                ...(process.env.BACKEND_URL ? { notify_url: `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/payments/cashfree/webhook` } : {})
+                notify_url: `${(process.env.BACKEND_URL || process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/api/payments/cashfree/webhook`
             },
             order_note: `Stock Saathi ${plan.name} subscription`
         };
