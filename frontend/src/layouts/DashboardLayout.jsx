@@ -217,10 +217,11 @@ const DashboardLayout = () => {
         return merged.slice(0, 4);
     }, [navItems]);
 
-    const currentNavItem = navItems.find((item) => {
-        if (item.path === '/dashboard') return location.pathname === '/dashboard';
-        return location.pathname.startsWith(item.path);
-    });
+    const currentNavItem = navItems
+        .filter((item) => item.path === '/dashboard'
+            ? location.pathname === '/dashboard'
+            : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`))
+        .sort((a, b) => b.path.length - a.path.length)[0];
 
     const handleNavigationSearch = (event) => {
         if (event.key !== 'Enter') return;
