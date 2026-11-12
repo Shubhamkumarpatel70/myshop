@@ -41,7 +41,7 @@ const cashfreeRequest = async (path, options = {}) => {
 
 const markRegistrationPaid = async (orderId) => {
     const record = await RegistrationPayment.findOne({ orderId });
-    if (!record) return { paid: false, reason: 'Unknown order' };
+    if (!record || record.paymentMethod !== 'cashfree') return { paid: false, reason: 'Unknown Cashfree order' };
     if (record.status === 'SUCCESS') return { paid: true, record };
 
     const payments = await cashfreeRequest(`/orders/${encodeURIComponent(orderId)}/payments`, { method: 'GET' });
@@ -78,6 +78,7 @@ exports.createRegistrationOrder = async (req, res) => {
         if (user.isPaymentDone) return res.status(409).json({ success: false, message: 'Registration payment is already complete.' });
         const settings = await GlobalSettings.findOne();
         if (!settings || !settings.isPaymentRequired) return res.status(400).json({ success: false, message: 'Registration payment is currently disabled.' });
+        if ((settings.paymentVerificationMode || 'manual') !== 'cashfree') return res.status(409).json({ success: false, message: 'Cashfree checkout is disabled. Manual verification is currently selected.' });
         const amount = Number(settings.regFee);
         if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, message: 'Registration fee is not configured correctly.' });
         const phone = String(user.phone || '').replace(/\D/g, '').slice(-10);
@@ -110,6 +111,7 @@ exports.createRegistrationOrder = async (req, res) => {
             amount,
             currency: 'INR',
             paymentSessionId: order.payment_session_id,
+            paymentMethod: 'cashfree',
             status: 'ACTIVE',
             environment: isProduction() ? 'production' : 'sandbox'
         });
@@ -134,7 +136,7 @@ exports.verifyRegistrationOrder = async (req, res) => {
     try {
         const { order_id: orderId } = req.query;
         if (!orderId) return res.status(400).json({ success: false, message: 'order_id is required.' });
-        const record = await RegistrationPayment.findOne({ orderId, user: req.user._id });
+        const record = await RegistrationPayment.findOne({ orderId, user: req.user._id, paymentMethod: 'cashfree' });
         if (!record) return res.status(404).json({ success: false, message: 'Registration payment order not found for this account.' });
         const result = await markRegistrationPaid(orderId);
         res.json({ success: true, data: { paid: result.paid, status: result.record?.status || result.status || record.status } });
