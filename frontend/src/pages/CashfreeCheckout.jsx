@@ -57,15 +57,31 @@ const CashfreeCheckout = () => {
     }, [orderId]);
 
     useEffect(() => {
-        if (!order?.environment || ['SUCCESS', 'PAID'].includes(String(order.status || '').toUpperCase())) return undefined;
+        if (!order || ['SUCCESS', 'PAID'].includes(String(order.status || '').toUpperCase())) return undefined;
         let active = true;
         setCashfreeInstance(null);
         setSdkError('');
-        prepareCashfreeCheckout({ environment: order.environment })
-            .then(instance => { if (active) setCashfreeInstance(instance); })
-            .catch(error => { if (active) setSdkError(error.message || 'Unable to prepare secure checkout.'); });
+
+        const initializeCheckout = async () => {
+            try {
+                let environment = order.environment;
+                // Older payment records may not contain an environment value.
+                // Ask the authenticated server configuration instead of leaving
+                // the Pay button disabled forever.
+                if (!environment) {
+                    const statusResponse = await api.get('/payments/cashfree/status');
+                    environment = statusResponse.data?.data?.environment || 'sandbox';
+                }
+                const instance = await prepareCashfreeCheckout({ environment });
+                if (active) setCashfreeInstance(instance);
+            } catch (error) {
+                if (active) setSdkError(error.message || 'Unable to load Cashfree secure checkout.');
+            }
+        };
+
+        initializeCheckout();
         return () => { active = false; };
-    }, [order?.environment, order?.status]);
+    }, [order?.order_id, order?.environment, order?.status]);
 
     const verifyPayment = useCallback(async (showToast = true) => {
         if (!orderId) return;
@@ -135,10 +151,16 @@ const CashfreeCheckout = () => {
         setSdkError('');
         setCashfreeInstance(null);
         try {
-            const instance = await prepareCashfreeCheckout({ environment: order?.environment });
+            let environment = order?.environment;
+            if (!environment) {
+                const statusResponse = await api.get('/payments/cashfree/status');
+                environment = statusResponse.data?.data?.environment || 'sandbox';
+            }
+            const instance = await prepareCashfreeCheckout({ environment });
             setCashfreeInstance(instance);
+            toast.success('Secure checkout is ready. You can continue with payment.');
         } catch (error) {
-            setSdkError(error.message || 'Unable to prepare secure checkout.');
+            setSdkError(error.message || 'Unable to load Cashfree secure checkout.');
             toast.error(error.message || 'Unable to load Cashfree. Check your internet and retry.');
         }
     };
@@ -230,7 +252,8 @@ const CashfreeCheckout = () => {
                                     {opening ? <><RefreshCw size={18} className="animate-spin" /> Opening Cashfree…</> : !cashfreeInstance ? <><RefreshCw size={18} className="animate-spin" /> Preparing secure payment…</> : <><LockKeyhole size={18} /> Continue to secure payment</>}
                                 </button>
                                 {!order.payment_session_id && <p className="text-center text-xs font-semibold text-rose-600">Payment session is unavailable. Please start a fresh payment from your dashboard.</p>}
-                                {sdkError && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300"><p>{sdkError}</p><button type="button" onClick={retryCashfreeSdk} className="mt-2 font-bold underline">Retry loading Cashfree</button></div>}
+                                {sdkError && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300"><p className="font-bold">Secure payment could not load</p><p className="mt-1">{sdkError}</p><button type="button" onClick={retryCashfreeSdk} className="mt-3 inline-flex min-h-10 items-center rounded-lg bg-rose-600 px-4 py-2 font-bold text-white">Retry loading Cashfree</button></div>}
+                                {!cashfreeInstance && !sdkError && <p role="status" className="text-center text-xs text-slate-500">Connecting to Cashfree… This usually takes a few seconds. If it does not load, an error and retry option will appear.</p>}
                             </>
                         )}
 
