@@ -29,36 +29,36 @@ const AdminRevenue = () => {
         }
     };
 
-    if (loading) return <div className="p-10 text-center">{t("Initializing Financial Core...")}</div>;
+    if (loading) return <div className="p-10 text-center">{t("Loading revenue data...")}</div>;
 
     const cards = [
         { 
             title: t('Total Revenue'), 
             value: `₹${stats.totalEarnings.toLocaleString()}`, 
             icon: <IndianRupee className="text-emerald-500" />,
-            desc: t('Total lifetime platform earnings')
+            desc: t('All money earned from subscriptions')
         },
         { 
             title: t('Active Subscriptions'), 
             value: stats.activeSubscriptions, 
             icon: <Zap className="text-amber-500" />,
-            desc: t('Pro & Enterprise accounts')
+            desc: t('Paid shop plans')
         },
         { 
             title: t('Total Merchants'), 
             value: stats.totalShops, 
             icon: <Store className="text-indigo-500" />,
-            desc: t('Global shop network')
+            desc: t('All registered shops')
         }
     ];
 
     return (
         <div className="space-y-8 pb-10 font-jakarta">
             <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">{t("Financial Hub")}</p>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">{t("Revenue Reconciliation")}</h1>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">{t("Revenue")}</p>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">{t("Platform Revenue")}</h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {t("Real-time audit of platform revenue, subscription performance, and growth metrics.")}
+                    {t("See total earnings, active plans and shop accounts.")}
                 </p>
             </div>
 
@@ -123,10 +123,10 @@ const AdminRevenue = () => {
                             <div className="p-2.5 bg-white/10 text-white rounded-xl">
                                 <TrendingUp size={20} />
                             </div>
-                            <h3 className="text-lg font-bold">{t("Growth Momentum")}</h3>
+                            <h3 className="text-lg font-bold">{t("Shop Growth")}</h3>
                         </div>
                         <p className="text-4xl font-black">74%</p>
-                        <p className="text-sm text-indigo-200 mt-2 font-medium">{t("Retention rate of Pro users")}</p>
+                        <p className="text-sm text-indigo-200 mt-2 font-medium">{t("Pro plan renewal rate")}</p>
                         
                         <div className="mt-12 grid grid-cols-2 gap-4">
                             <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
@@ -134,7 +134,7 @@ const AdminRevenue = () => {
                                 <p className="text-xl font-bold mt-1">₹1,490</p>
                             </div>
                             <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">{t("Churn Rate")}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">{t("Cancelled Plans")}</p>
                                 <p className="text-xl font-bold mt-1">2.4%</p>
                             </div>
                         </div>
