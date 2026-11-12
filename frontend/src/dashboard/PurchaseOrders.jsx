@@ -18,6 +18,7 @@ const PurchaseOrders = () => {
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
     const [editingPO, setEditingPO] = useState(null);
     const navigate = useNavigate();
 
@@ -43,7 +44,7 @@ const PurchaseOrders = () => {
             setPos(Array.isArray(poRes.data?.data) ? poRes.data.data : []);
             setProducts(Array.isArray(prodRes.data?.data) ? prodRes.data.data : []);
         } catch (error) {
-            toast.error("Failed to load data");
+            toast.error(error.response?.data?.message || "Could not load purchase orders.");
         } finally {
             setLoading(false);
         }
@@ -99,10 +100,10 @@ const PurchaseOrders = () => {
     const updateStatus = async (id, newStatus) => {
         try {
             await api.patch(`/purchase-orders/${id}/status`, { status: newStatus });
-            toast.success(`PO marked as ${newStatus}`);
+            toast.success(`Order status updated to ${newStatus}`);
             fetchInitialData();
         } catch (error) {
-            toast.error("Failed to update status");
+            toast.error(error.response?.data?.message || "Could not update order status.");
         }
     };
 
@@ -263,19 +264,28 @@ const PurchaseOrders = () => {
         toast.success("PO Downloaded");
     };
 
+    const filteredPOs = pos.filter(po => {
+        const term = searchTerm.trim().toLowerCase();
+        const matchesSearch = !term || [po.poNumber, po.supplierName, po.supplier?.name, ...(po.items || []).map(item => item.productName)].some(value => String(value || '').toLowerCase().includes(term));
+        return matchesSearch && (statusFilter === 'All' || po.status === statusFilter);
+    });
+    const orderTotal = pos.reduce((sum, po) => sum + Number(po.totalAmount || 0), 0);
+    const pendingCount = pos.filter(po => po.status === 'Pending' || po.status === 'Sent').length;
+    const receivedCount = pos.filter(po => po.status === 'Received').length;
+
     return (
-        <div className="space-y-8 pb-20">
+        <div className="space-y-6 pb-20">
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-indigo-600 font-black uppercase text-[10px] tracking-[0.3em]">
-                        <ShoppingCart size={14} /> Procurement Manager
+                        <ShoppingCart size={14} /> Purchase Orders
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
                         Purchase <span className="text-indigo-600">Orders</span>
                     </h1>
                     <p className="text-slate-500 font-medium max-w-2xl text-lg leading-relaxed">
-                        Create professional purchase orders to send to your vendors for restocking.
+                        Create orders for your suppliers and track deliveries and stock updates.
                     </p>
                 </div>
 
@@ -287,13 +297,24 @@ const PurchaseOrders = () => {
                     }}
                     className="h-14 px-8 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
-                    <Plus size={16} /> Create New PO
+                    <Plus size={16} /> New Purchase Order
                 </button>
             </div>
 
-            {/* List */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-medium text-slate-500">All orders</p><p className="mt-1 text-2xl font-bold">{pos.length}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-medium text-slate-500">Waiting for delivery</p><p className="mt-1 text-2xl font-bold text-amber-600">{pendingCount}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-medium text-slate-500">Received orders</p><p className="mt-1 text-2xl font-bold text-emerald-600">{receivedCount}</p></div>
+            </div>
+            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:flex-row">
+                <div className="relative flex-1"><Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search order, supplier or product..." className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"/></div>
+                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm dark:border-slate-700 dark:bg-slate-950"><option>All</option><option>Pending</option><option>Sent</option><option>Received</option><option>Cancelled</option></select>
+                <div className="flex items-center px-2 text-sm font-semibold text-slate-600 dark:text-slate-300">Total value: ₹{orderTotal.toLocaleString('en-IN')}</div>
+            </div>
+
+            {/* Orders */}
             <div className="grid grid-cols-1 gap-4">
-                {pos.map((po) => (
+                {filteredPOs.map((po) => (
                     <motion.div
                         key={po._id}
                         initial={{ opacity: 0, x: -20 }}
@@ -368,12 +389,12 @@ const PurchaseOrders = () => {
                 {showAddModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 10 }} className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 10 }} className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                             {/* Modal Header */}
                             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
                                 <div>
                                     <h2 className="text-xl font-black uppercase tracking-tight">{editingPO ? 'Update' : 'Create'} Purchase Order</h2>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Procurement System</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Create and track supplier orders</p>
                                 </div>
                                 <button type="button" onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all">
                                     <X size={18} />
@@ -407,7 +428,7 @@ const PurchaseOrders = () => {
                                                 onClick={handleAutoAddLowStock}
                                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20"
                                             >
-                                                <Zap size={10} className="fill-white" /> Smart Fill
+                                                <Zap size={10} className="fill-white" /> Add Low Stock
                                             </button>
                                             <button type="button" onClick={handleAddItem} className="text-[9px] font-black text-slate-400 hover:text-indigo-600 uppercase tracking-widest border-b border-slate-200 hover:border-indigo-600 transition-all">+ Add Item</button>
                                         </div>
@@ -457,7 +478,7 @@ const PurchaseOrders = () => {
                                     <p className="text-2xl font-black text-indigo-600">₹{formData.items.reduce((acc, item) => acc + (item.quantity * item.expectedPrice), 0).toLocaleString()}</p>
                                 </div>
                                 <button type="submit" onClick={handleSubmit} className="h-12 px-8 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-500/20">
-                                    {editingPO ? 'Update PO' : 'Generate PO'}
+                                    {editingPO ? 'Save Changes' : 'Create Order'}
                                 </button>
                             </div>
                         </motion.div>
