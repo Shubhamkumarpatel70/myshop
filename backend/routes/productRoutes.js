@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { 
-    getProducts, createProduct, updateProduct, deleteProduct, 
+    getProducts, createProduct, updateProduct, deleteProduct, bulkImportProducts, 
     getPublicProducts, getPublicProductsByShop, getInventoryLogs
 } = require('../controllers/productController');
 const { protect } = require('../middleware/authMiddleware');
@@ -23,6 +23,7 @@ router.post('/upload', upload.single('image'), (req, res) => {
 });
 
 router.get('/logs', getInventoryLogs);
+router.post('/bulk-import', bulkImportProducts);
 
 router.route('/')
     .get(getProducts)
