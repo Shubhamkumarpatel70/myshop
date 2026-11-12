@@ -109,7 +109,23 @@ exports.updateProduct = async (req, res) => {
         }
 
         const oldQuantity = product.quantity;
-        product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const { batchNumber, updateReason, ...productUpdates } = req.body;
+        product = await Product.findByIdAndUpdate(req.params.id, productUpdates, { new: true });
+        if (typeof batchNumber === 'string' && batchNumber.trim()) {
+            if (product.batches && product.batches.length > 0) {
+                product.batches[product.batches.length - 1].batchNumber = batchNumber.trim();
+            } else {
+                product.batches = [{
+                    batchNumber: batchNumber.trim(),
+                    quantity: product.quantity,
+                    expiryDate: product.expiryDate,
+                    price: product.price,
+                    purchasePrice: product.purchasePrice,
+                    supplier: product.supplier
+                }];
+            }
+            await product.save();
+        }
 
         if (req.body.quantity !== undefined && req.body.quantity !== oldQuantity) {
             await InventoryLog.create({
