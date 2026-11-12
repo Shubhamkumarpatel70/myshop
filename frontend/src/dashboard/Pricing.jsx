@@ -499,9 +499,7 @@ const Pricing = () => {
                             {prorationData && user?.subscriptionPlan !== selectedPlan?.name && <p className="mt-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400">₹{prorationData.credit.toLocaleString("en-IN")} remaining-plan credit applied.</p>}
                         </div>
                     )}
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
-                        <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 shrink-0 text-emerald-600" size={21} /><div><p className="font-bold text-emerald-800 dark:text-emerald-300">Automatic payment verification</p><p className="mt-1 text-sm leading-6 text-emerald-700 dark:text-emerald-400">After Cashfree confirms your payment, StockSaathi verifies it with the server and activates the subscription automatically. No screenshot or admin approval is required.</p></div></div>
-                    </div>
+
                     <button type="button" onClick={startCashfreePayment} disabled={cashfreePaying || cashfreeVerifying || (!selectedPlan?._id && !selectedPlan?.isAddon)} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-5 py-4 font-extrabold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
                         <ShieldCheck size={19} />{cashfreePaying ? "Creating secure payment…" : cashfreeVerifying ? "Verifying payment…" : "Continue to Cashfree"}
                     </button>
