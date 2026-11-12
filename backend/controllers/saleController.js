@@ -22,7 +22,9 @@ exports.createSale = async (req, res) => {
         if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ success: false, message: 'Add at least one item before checkout.' });
         const shopSettings = await User.findById(req.shopOwnerId).select('gstEnabled gstin businessState');
         const gstEnabled = Boolean(shopSettings?.gstEnabled);
-        const isInterState = gstEnabled && Boolean(req.body.isInterState);
+        const sellerStateCode = String(shopSettings?.gstin || '').slice(0, 2);
+        const buyerStateCode = String(req.body.customerStateCode || req.body.customerGSTIN || '').slice(0, 2);
+        const isInterState = gstEnabled && (req.body.isInterState === true || Boolean(sellerStateCode && buyerStateCode && sellerStateCode !== buyerStateCode));
         
         // Enforce Shift Management
         const activeShift = await Shift.findOne({ user: req.user._id, status: 'Open' });
