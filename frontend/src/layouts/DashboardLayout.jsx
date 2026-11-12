@@ -47,7 +47,6 @@ import UserTour from '../components/UserTour';
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const [darkMode, setDarkMode] = useState(false);
     const [privacyMode, setPrivacyMode] = useState(false);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -156,6 +155,7 @@ const DashboardLayout = () => {
         { name: t('Queries'), icon: MessageSquare, path: '/dashboard/admin/queries', roles: ['super_admin'], description: t('Read and reply to questions'), group: 'admin-comms' },
         { name: t('Activity'), icon: Activity, path: '/dashboard/activity', roles: ['super_admin'], description: t('View recent platform activity'), group: 'admin-comms' },
         { name: t('Plan Settings'), icon: Zap, path: '/dashboard/admin/pricing', roles: ['super_admin'], description: t('Manage plans and pricing'), group: 'admin-system' },
+        { name: t('Printers'), icon: Printer, path: '/dashboard/admin/printers', roles: ['super_admin'], description: t('See which shops use a printer'), group: 'admin-system' },
         { name: t('Settings'), icon: Settings, path: '/dashboard/admin/settings', roles: ['super_admin'], description: t('Manage platform settings'), group: 'admin-system' },
         { name: t('Revenue'), icon: IndianRupee, path: '/dashboard/admin/revenue', roles: ['super_admin'], priority: true, description: t('View platform income'), group: 'admin-system' },
         { name: t('System Health'), icon: Activity, path: '/dashboard/admin/system-health', roles: ['super_admin'], description: t('Monitor database and API status'), group: 'admin-system' },
@@ -225,22 +225,6 @@ const DashboardLayout = () => {
             ? location.pathname === '/dashboard'
             : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`))
         .sort((a, b) => b.path.length - a.path.length)[0];
-
-    const handleNavigationSearch = (event) => {
-        if (event.key !== 'Enter') return;
-        const query = searchQuery.trim().toLowerCase();
-        if (!query) return;
-        const match = navItems.find((item) =>
-            item.name.toLowerCase().includes(query) ||
-            item.description?.toLowerCase().includes(query)
-        );
-        if (match) {
-            navigate(match.path);
-            setSearchQuery('');
-        } else {
-            toast.error('No matching page found');
-        }
-    };
 
     const handleLogout = () => {
         logout();
@@ -424,19 +408,6 @@ const DashboardLayout = () => {
                             </div>
                         </div>
 
-                        {/* Desktop Search Integration */}
-                        <div className="hidden max-w-md flex-1 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-2.5 transition-all focus-within:border-indigo-500/30 focus-within:bg-white focus-within:shadow-lg focus-within:shadow-indigo-500/5 dark:border-white/5 dark:bg-white/5 xl:flex">
-                            <Search size={16} className="text-slate-400" />
-                            <input
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={handleNavigationSearch}
-                                placeholder="Search pages and press Enter"
-                                aria-label="Search dashboard pages"
-                                className="w-full bg-transparent text-[13px] font-medium outline-none placeholder:text-slate-400"
-                            />
-                        </div>
-
                         <div className="flex items-center gap-1.5 sm:gap-2">
                             <AnimatePresence>
                                 {!isOnline && (
@@ -497,20 +468,7 @@ const DashboardLayout = () => {
                         </div>
                     </div>
 
-                    <div className="border-t border-slate-100 px-4 py-3 dark:border-slate-800 xl:hidden bg-slate-50/50 dark:bg-white/5">
-                        <div className="flex items-center gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-2 dark:border-slate-700 dark:bg-slate-900 shadow-sm transition-all focus-within:border-indigo-500/30">
-                            <Search size={14} className="text-slate-400" />
-                            <input
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={handleNavigationSearch}
-                                placeholder="Search pages and press Enter"
-                                aria-label="Search dashboard pages"
-                                className="w-full bg-transparent text-[13px] font-medium outline-none placeholder:text-slate-400"
-                            />
-                        </div>
-                    </div>
-                </header>
+                      </header>
 
                 <main className="ss-main min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 pb-28 sm:p-6 sm:pb-32 lg:pb-10">
                     <div className="w-full min-w-0">
