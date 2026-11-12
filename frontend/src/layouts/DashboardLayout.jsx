@@ -222,6 +222,22 @@ const DashboardLayout = () => {
         return location.pathname.startsWith(item.path);
     });
 
+    const handleNavigationSearch = (event) => {
+        if (event.key !== 'Enter') return;
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return;
+        const match = navItems.find((item) =>
+            item.name.toLowerCase().includes(query) ||
+            item.description?.toLowerCase().includes(query)
+        );
+        if (match) {
+            navigate(match.path);
+            setSearchQuery('');
+        } else {
+            toast.error('No matching page found');
+        }
+    };
+
     const handleLogout = () => {
         logout();
         localStorage.removeItem('is_impersonating');
@@ -410,8 +426,10 @@ const DashboardLayout = () => {
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={t('Search') + '...'}
-                                className="w-full bg-transparent text-[11px] font-black uppercase tracking-widest outline-none placeholder:text-slate-400"
+                                onKeyDown={handleNavigationSearch}
+                                placeholder="Search pages and press Enter"
+                                aria-label="Search dashboard pages"
+                                className="w-full bg-transparent text-[13px] font-medium outline-none placeholder:text-slate-400"
                             />
                         </div>
 
@@ -481,8 +499,10 @@ const DashboardLayout = () => {
                             <input
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={t('Search') + '...'}
-                                className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest outline-none placeholder:text-slate-400"
+                                onKeyDown={handleNavigationSearch}
+                                placeholder="Search pages and press Enter"
+                                aria-label="Search dashboard pages"
+                                className="w-full bg-transparent text-[13px] font-medium outline-none placeholder:text-slate-400"
                             />
                         </div>
                     </div>
