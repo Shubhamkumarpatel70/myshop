@@ -39,7 +39,7 @@ const Sales = () => {
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     const [utrNumber, setUtrNumber] = useState('');
     const [cart, setCart] = useState([]);
-    const [customerInfo, setCustomerInfo] = useState({ name: 'Guest', phone: '', address: '', paymentMethod: 'Cash' });
+    const [customerInfo, setCustomerInfo] = useState({ name: 'Guest', phone: '', address: '', gstin: '', paymentMethod: 'Cash' });
     const [customerMatches, setCustomerMatches] = useState([]);
     const [customerSearchTerm, setCustomerSearchTerm] = useState('');
     const [transactionSearch, setTransactionSearch] = useState('');
@@ -304,7 +304,8 @@ const Sales = () => {
                 customerName: customerInfo.name,
                 customerPhone: customerInfo.phone,
                 paymentMethod: customerInfo.paymentMethod,
-                utrNumber: utrNumber
+                utrNumber: utrNumber,
+                customerGSTIN: customerInfo.gstin
             };
             if (!navigator.onLine) {
                 await posStore.saveOfflineSale(saleData);
@@ -777,6 +778,10 @@ const Sales = () => {
                                             <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                             <input type="text" className="w-full h-16 pl-14 pr-6 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] font-black text-lg outline-none transition-all dark:text-white" value={customerInfo.name} onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })} placeholder="Walk-in Guest" />
                                         </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Customer GSTIN (Optional)</label>
+                                        <input type="text" maxLength={15} value={customerInfo.gstin || ''} onChange={event => setCustomerInfo({ ...customerInfo, gstin: event.target.value.toUpperCase() })} placeholder="15-character GSTIN for B2B invoices" className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] font-bold text-sm outline-none transition-all dark:text-white" />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Delivery/Billing Address (Optional)</label>
