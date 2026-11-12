@@ -288,13 +288,19 @@ const Customers = () => {
             <AnimatePresence>
                 {showAddModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)} className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white dark:bg-slate-950 w-full max-w-md rounded-[3rem] shadow-2xl relative z-10 overflow-hidden border border-white/5">
-                            <form onSubmit={handleAddCustomer} className="p-10 space-y-8">
-                                <div className="text-center">
-                                    <div className="w-20 h-20 bg-indigo-600 rounded-[1.25rem] flex items-center justify-center text-white mx-auto mb-6 shadow-2xl shadow-indigo-500/30"><Users size={32} /></div>
-                                    <h2 className="text-2xl font-black uppercase tracking-tight">{t("Register Client")}</h2>
-                                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-2">{t("Add to your loyalty database")}</p>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { if (!submitting) { setShowAddModal(false); setNewCustomer({ name: '', phone: '', email: '', address: '' }); } }} className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" />
+                        <motion.div initial={{ scale: 0.96, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0, y: 12 }} className="bg-white dark:bg-slate-950 w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl shadow-2xl relative z-10 border border-slate-200 dark:border-slate-800">
+                            <form onSubmit={handleAddCustomer} className="p-5 sm:p-7 space-y-6">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-11 h-11 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Users size={21} /></div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">MY SHOP HQ</p>
+                                            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{t("Register Customer")}</h2>
+                                            <p className="text-xs text-slate-500 mt-1">{t("Add customer details to your shop.")}</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" onClick={() => { if (!submitting) { setShowAddModal(false); setNewCustomer({ name: '', phone: '', email: '', address: '' }); } }} disabled={submitting} aria-label={t("Close registration form")} className="w-10 h-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"><X size={19} /></button>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="space-y-1.5">
@@ -310,7 +316,10 @@ const Customers = () => {
                                         <textarea className="w-full p-6 rounded-[1.25rem] bg-slate-50 dark:bg-slate-900 border-none font-bold outline-none focus:ring-2 focus:ring-indigo-500 transition-all h-24 resize-none" value={newCustomer.address} onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})} placeholder={t("Area, City...")} />
                                     </div>
                                 </div>
-                                <button disabled={submitting} type="submit" className="w-full h-16 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all">{t("Register & Enroll")}</button>
+                                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                                    <button type="button" disabled={submitting} onClick={() => { setShowAddModal(false); setNewCustomer({ name: '', phone: '', email: '', address: '' }); }} className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors disabled:opacity-50">{t("Cancel")}</button>
+                                    <button disabled={submitting} type="submit" className="flex-1 h-12 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all disabled:opacity-60">{submitting ? t("Saving...") : t("Save Customer")}</button>
+                                </div>
                             </form>
                         </motion.div>
                     </div>
