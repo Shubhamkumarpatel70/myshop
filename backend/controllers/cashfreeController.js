@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const GlobalSettings = require('../models/GlobalSettings');
 const User = require('../models/User');
 const RegistrationPayment = require('../models/RegistrationPayment');
+const WebhookLog = require('../models/WebhookLog');
 
 const API_VERSION = process.env.CASHFREE_API_VERSION || '2023-08-01';
 const isProduction = () => String(process.env.CASHFREE_ENV || 'sandbox').toLowerCase() === 'production';
@@ -147,6 +148,7 @@ exports.verifyRegistrationOrder = async (req, res) => {
 };
 
 exports.handleCashfreeWebhook = async (req, res) => {
+    let webhookEventId = null;
     try {
         const signature = req.headers['x-webhook-signature'];
         const timestamp = req.headers['x-webhook-timestamp'];
@@ -160,12 +162,163 @@ exports.handleCashfreeWebhook = async (req, res) => {
         }
         const event = JSON.parse(req.body.toString('utf8'));
         const orderId = event?.data?.order?.order_id;
+        const paymentId = event?.data?.payment?.cf_payment_id || 'no-payment-id';
+        const eventType = event?.type || event?.event_type || 'UNKNOWN';
+        webhookEventId = [orderId || 'no-order', paymentId, eventType, timestamp].join(':');
+        const log = await WebhookLog.findOneAndUpdate(
+            { eventId: webhookEventId },
+            { $setOnInsert: { eventId: webhookEventId, orderId, eventType, payload: event, status: 'RECEIVED' } },
+            { upsert: true, new: true }
+        );
+        if (log.status === 'PROCESSED') return res.status(200).json({ success: true, duplicate: true });
+
         if (orderId && event?.data?.payment?.payment_status === 'SUCCESS') {
-            await markRegistrationPaid(orderId);
+            if (String(orderId).startsWith('SSPAY_')) await activatePaidPlan(orderId);
+            else await markRegistrationPaid(orderId);
         }
+        await WebhookLog.updateOne({ eventId: webhookEventId }, { $set: { status: 'PROCESSED', processedAt: new Date() } });
         return res.status(200).json({ success: true });
     } catch (error) {
+        if (webhookEventId) await WebhookLog.updateOne({ eventId: webhookEventId }, { $set: { status: 'FAILED' } }).catch(() => {});
         console.error('Cashfree webhook processing failed:', error.message);
         return res.status(500).send('Webhook processing failed');
+    }
+};
+
+const Payment = require('../models/Payment');
+const Plan = require('../models/Plan');
+const AuditLog = require('../models/AuditLog');
+
+const activatePaidPlan = async (orderId) => {
+    const payment = await Payment.findOne({ cashfreeOrderId: orderId }).populate('plan');
+    if (!payment) return { paid: false, reason: 'Unknown subscription order' };
+    if (payment.status === 'SUCCESS') return { paid: true, payment };
+    const payments = await cashfreeRequest(`/orders/${encodeURIComponent(orderId)}/payments`, { method: 'GET' });
+    const successful = (Array.isArray(payments) ? payments : []).find(item =>
+        item.payment_status === 'SUCCESS' &&
+        Number(item.payment_amount) === Number(payment.amount) &&
+        item.payment_currency === 'INR'
+    );
+    if (!successful) {
+        const latest = Array.isArray(payments) ? payments[payments.length - 1] : null;
+        if (latest?.payment_status === 'FAILED' || latest?.payment_status === 'USER_DROPPED') {
+            payment.status = latest.payment_status;
+            payment.gatewayResponse = latest;
+            await payment.save();
+        }
+        return { paid: false, status: latest?.payment_status || payment.status };
+    }
+
+    const user = await User.findById(payment.user);
+    if (!user || !payment.plan) throw new Error('Subscription owner or plan no longer exists.');
+    const now = new Date();
+    const expiry = new Date(now);
+    if (payment.plan.duration === 'month') expiry.setMonth(expiry.getMonth() + 1);
+    else if (payment.plan.duration === 'year') expiry.setFullYear(expiry.getFullYear() + 1);
+    else if (payment.plan.duration === 'forever') expiry.setFullYear(expiry.getFullYear() + 50);
+    else expiry.setFullYear(expiry.getFullYear() + 1);
+
+    payment.status = 'SUCCESS';
+    payment.cashfreePaymentId = String(successful.cf_payment_id || '');
+    payment.paymentDate = now;
+    payment.gatewayResponse = successful;
+    await payment.save();
+
+    user.subscriptionPlan = payment.plan.name;
+    user.planActivatedAt = now;
+    user.planExpiresAt = payment.plan.duration === 'forever' ? null : expiry;
+    user.pendingSubscription.status = 'None';
+    user.pendingSubscription.rejectReason = '';
+    user.subscriptionHistory.push({
+        plan: payment.plan.name,
+        startDate: now,
+        endDate: payment.plan.duration === 'forever' ? null : expiry,
+        amount: payment.amount,
+        paymentRef: payment.cashfreePaymentId || payment.paymentId
+    });
+    await user.save();
+    await AuditLog.create({
+        user: user._id,
+        shop: user._id,
+        action: 'Subscription activated by Cashfree',
+        module: 'Subscription Payment',
+        details: { paymentId: payment.paymentId, orderId, plan: payment.plan.name, amount: payment.amount }
+    });
+    return { paid: true, payment };
+};
+
+exports.createSubscriptionOrder = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user || user.role !== 'shop_owner') return res.status(403).json({ success: false, message: 'Only shop owners can purchase a plan.' });
+        const plan = await Plan.findOne({ _id: req.body.planId, isActive: true });
+        if (!plan) return res.status(404).json({ success: false, message: 'Selected plan is unavailable.' });
+        let amount = Number(plan.price);
+        const currentPlan = await Plan.findOne({ name: user.subscriptionPlan });
+        if (currentPlan && user.planExpiresAt && new Date(user.planExpiresAt) > new Date()) {
+            const activatedAt = new Date(user.planActivatedAt || user.createdAt);
+            const expiresAt = new Date(user.planExpiresAt);
+            const duration = expiresAt - activatedAt;
+            if (duration > 0) {
+                const usedRatio = Math.min(1, Math.max(0, (Date.now() - activatedAt.getTime()) / duration));
+                const credit = Math.floor(Number(currentPlan.price || 0) * (1 - usedRatio));
+                amount = Math.max(0, amount - credit);
+            }
+        }
+        amount = Number(amount.toFixed(2));
+        if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, message: 'The selected plan has no payable balance after applying your remaining plan credit.' });
+        const phone = String(user.phone || '').replace(/\D/g, '').slice(-10);
+        if (phone.length !== 10) return res.status(400).json({ success: false, message: 'A valid 10-digit mobile number is required.' });
+
+        const paymentId = `SSPAY_${user._id}_${Date.now()}`;
+        const idempotencyKey = crypto.randomUUID();
+        const orderPayload = {
+            order_id: paymentId,
+            order_amount: amount,
+            order_currency: 'INR',
+            customer_details: {
+                customer_id: String(user._id).slice(0, 50),
+                customer_name: String(user.ownerName || 'Shop Owner').replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 100),
+                customer_email: user.email,
+                customer_phone: phone
+            },
+            order_meta: {
+                return_url: `${(process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/dashboard/pricing?order_id={order_id}`,
+                ...(process.env.BACKEND_URL ? { notify_url: `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/payments/cashfree/webhook` } : {})
+            },
+            order_note: `Stock Saathi ${plan.name} subscription`
+        };
+        const order = await cashfreeRequest('/orders', {
+            method: 'POST',
+            headers: { 'x-idempotency-key': idempotencyKey },
+            body: JSON.stringify(orderPayload)
+        });
+        await Payment.create({
+            paymentId,
+            cashfreeOrderId: paymentId,
+            user: user._id,
+            plan: plan._id,
+            amount,
+            status: 'PENDING',
+            gatewayResponse: { cf_order_id: order.cf_order_id },
+            idempotencyKey
+        });
+        res.status(201).json({ success: true, data: { order_id: paymentId, payment_session_id: order.payment_session_id, environment: isProduction() ? 'production' : 'sandbox', amount, plan: plan.name } });
+    } catch (error) {
+        console.error('Subscription Cashfree order failed:', error.message);
+        res.status(error.status || 500).json({ success: false, message: error.status === 503 ? error.message : 'Unable to create subscription payment. Please try again.' });
+    }
+};
+
+exports.verifySubscriptionOrder = async (req, res) => {
+    try {
+        const orderId = String(req.query.order_id || '');
+        if (!orderId) return res.status(400).json({ success: false, message: 'order_id is required.' });
+        const payment = await Payment.findOne({ cashfreeOrderId: orderId, user: req.user._id });
+        if (!payment) return res.status(404).json({ success: false, message: 'Subscription payment order not found.' });
+        const result = await activatePaidPlan(orderId);
+        res.json({ success: true, data: { paid: result.paid, status: result.payment?.status || result.status || payment.status } });
+    } catch (error) {
+        res.status(error.status || 502).json({ success: false, message: 'Unable to verify subscription payment right now.' });
     }
 };

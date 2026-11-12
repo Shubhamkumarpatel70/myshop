@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Papa from 'papaparse';
 import { useOutletContext, Link } from 'react-router-dom';
 import api, { BASE_URL } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,8 @@ const Inventory = () => {
     const [limitMetadata, setLimitMetadata] = useState({ type: 'product', isTrialUsed: false });
     const [editingProduct, setEditingProduct] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [importingCsv, setImportingCsv] = useState(false);
+    const [importResult, setImportResult] = useState(null);
     const [unlinkedBarcodes, setUnlinkedBarcodes] = useState([]);
     const [showBarcodePicker, setShowBarcodePicker] = useState(false);
     const [formData, setFormData] = useState({
@@ -50,7 +53,8 @@ const Inventory = () => {
         description: '',
         batchNumber: '',
         productImage: '',
-        purchasePrice: 0
+        purchasePrice: 0,
+        taxRate: 0
     });
 
     const handleImageUpload = async (e) => {
@@ -145,7 +149,9 @@ const Inventory = () => {
                 description: product.description || '',
                 batchNumber: '',
                 productImage: product.productImage || '',
-                purchasePrice: product.purchasePrice || 0
+                purchasePrice: product.purchasePrice || 0,
+                taxRate: product.taxRate || 0,
+                variants: (product.variants || []).map(v => ({ name: v.name || '', sku: v.sku || '', price: Number(v.price) || 0, quantity: Number(v.quantity) || 0, isActive: v.isActive !== false }))
             });
         } else {
             setEditingProduct(null);
@@ -161,7 +167,9 @@ const Inventory = () => {
                 description: '',
                 batchNumber: '',
                 productImage: '',
-                purchasePrice: 0
+                purchasePrice: 0,
+                taxRate: 0,
+                variants: []
             });
         }
         setIsModalOpen(true);
@@ -201,8 +209,38 @@ const Inventory = () => {
         }
     };
 
+
+    const handleImportCsv = (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setImportResult(null);
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: header => header.trim(),
+            complete: async parsed => {
+                const rows = (parsed.data || []).filter(row => Object.values(row).some(value => String(value ?? '').trim() !== ''));
+                if (parsed.errors?.length) { toast.error('CSV could not be read. Check the file format.'); return; }
+                if (!rows.length) { toast.error('The CSV file has no product rows.'); return; }
+                setImportingCsv(true);
+                try {
+                    const response = await api.post('/products/bulk-import', { rows });
+                    setImportResult(response.data?.data || null);
+                    await fetchData();
+                    toast.success(response.data?.message || 'Import completed.');
+                } catch (error) {
+                    toast.error(error.response?.data?.message || 'Unable to import products.');
+                } finally {
+                    setImportingCsv(false);
+                    event.target.value = '';
+                }
+            },
+            error: () => { toast.error('Unable to read this CSV file.'); event.target.value = ''; }
+        });
+    };
+
     const handleExport = () => {
-        const headers = ["Product Name", "Category", "Quantity", "Selling Price", "Purchase Price", "Barcode", "Expiry Date"];
+        const headers = ["Product Name", "Category", "Quantity", "Selling Price", "Purchase Price", "GST Rate (%)", "Barcode", "Expiry Date"];
         const csvRows = [
             headers.join(','),
             ...products.map(p => [
@@ -211,6 +249,7 @@ const Inventory = () => {
                 p.quantity,
                 p.price,
                 p.purchasePrice || 0,
+                p.taxRate || 0,
                 `"${p.barcode || 'N/A'}"`,
                 p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : 'N/A'
             ].join(','))
@@ -228,6 +267,7 @@ const Inventory = () => {
 
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [stockFilter, setStockFilter] = useState('all');
+    const [viewMode, setViewMode] = useState('table');
 
     const filteredProducts = products
         .filter(p => {
@@ -252,6 +292,26 @@ const Inventory = () => {
 
     return (
         <div className="space-y-8 pb-10 font-jakarta px-1">
+
+            {importResult && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div><h2 className="font-bold text-slate-900 dark:text-white">CSV Import Results</h2><p className="mt-1 text-xs text-slate-500">{importResult.imported} imported · {importResult.failed} failed · {importResult.total} rows checked</p></div>
+                        <button type="button" onClick={() => setImportResult(null)} className="text-sm font-semibold text-indigo-600">Close</button>
+                    </div>
+                    {importResult.results?.some(row => row.status === 'failed') && (
+                        <div className="mt-4 max-h-64 overflow-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                            {importResult.results.filter(row => row.status === 'failed').map(row => (
+                                <div key={row.row} className="border-b border-slate-100 p-3 text-sm last:border-0 dark:border-slate-800">
+                                    <p className="font-semibold text-slate-800 dark:text-slate-100">Row {row.row}: {row.productName || 'Unnamed product'}</p>
+                                    <p className="mt-1 text-xs text-rose-600">{(row.errors || []).join(' ')}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
+
             {/* Warehouse Intelligence Header */}
             <div className="bg-white dark:bg-slate-900 rounded-[1.25rem] p-6 sm:p-10 border border-slate-100 dark:border-slate-800 shadow-sm">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10">
@@ -268,6 +328,11 @@ const Inventory = () => {
                         </p>
                     </div>
                     <div className="flex w-full sm:w-auto gap-3 flex-wrap">
+
+                        <label className="flex-1 sm:flex-none h-14 px-6 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] border border-indigo-100 dark:border-indigo-500/20 hover:bg-indigo-100 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <Upload size={18} /> {importingCsv ? 'Importing...' : 'Import CSV'}
+                            <input type="file" accept=".csv,text/csv" className="hidden" disabled={importingCsv} onChange={handleImportCsv} />
+                        </label>
                         <button
                             onClick={handleExport}
                             className="flex-1 sm:flex-none h-14 px-6 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] border border-slate-100 dark:border-slate-800 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
@@ -295,6 +360,10 @@ const Inventory = () => {
                         />
                     </div>
                     <div className="flex items-center gap-3">
+                        <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 p-1 bg-white dark:bg-slate-900">
+                            <button type="button" onClick={() => setViewMode('table')} className={viewMode === 'table' ? 'px-3 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-3 py-2 rounded-lg text-xs font-bold text-slate-500'}>Table</button>
+                            <button type="button" onClick={() => setViewMode('cards')} className={viewMode === 'cards' ? 'px-3 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-3 py-2 rounded-lg text-xs font-bold text-slate-500'}>Cards</button>
+                        </div>
                         <div className="relative">
                             <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <select
@@ -314,7 +383,7 @@ const Inventory = () => {
             {/* Inventory Asset Grid */}
             <div className="space-y-6">
                 {/* Desktop Professional Ledger */}
-                <div className="hidden lg:block overflow-hidden rounded-[1.25rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                {viewMode === 'table' && <div className="hidden lg:block overflow-hidden rounded-[1.25rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-800/30">
@@ -397,8 +466,8 @@ const Inventory = () => {
                     </table>
                 </div>
 
-                {/* Mobile Agile View */}
-                <div className="lg:hidden grid grid-cols-1 gap-5">
+                {/* Product cards */}
+                <div className={viewMode === 'cards' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5' : 'lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-5'}>
                     {loading ? [1, 2, 3].map(i => (
                         <div key={i} className="h-52 bg-white dark:bg-slate-900 rounded-[1.25rem] animate-pulse" />
                     )) : filteredProducts.map(product => (
@@ -444,7 +513,7 @@ const Inventory = () => {
                             </div>
                         </div>
                     ))}
-                </div>
+                </div>}
             </div>
 
             {/* Product Configuration Modal */}
@@ -513,6 +582,16 @@ const Inventory = () => {
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Procurement Cost (₹)")}</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.purchasePrice} onChange={(e) => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) })} />
                         </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">GST Rate (%)</label>
+                            <select value={formData.taxRate} onChange={(e) => setFormData({ ...formData, taxRate: Number(e.target.value) })} className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white">
+                                <option value={0}>No GST</option>
+                                <option value={5}>5%</option>
+                                <option value={12}>12%</option>
+                                <option value={18}>18%</option>
+                                <option value={28}>28%</option>
+                            </select>
+                        </div>
                         <div className="space-y-2 relative">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Global Identifier (Barcode)")}</label>
                             <div className="flex gap-2">
@@ -579,6 +658,17 @@ const Inventory = () => {
                             </div>
                         </div>
                     </div>
+
+                    <section className="rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3"><div><h4 className="font-bold text-slate-900 dark:text-white">Product variants</h4><p className="text-xs text-slate-500 mt-1">Add sizes, colours or other options with separate prices and stock.</p></div>
+                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, variants: [...(prev.variants || []), { name: "", sku: "", price: Number(prev.price) || 0, quantity: 0, isActive: true }] }))} className="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold">+ Add variant</button></div>
+                        {(formData.variants || []).map((v, i) => <div key={i} className="grid grid-cols-1 sm:grid-cols-5 gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 p-3">
+                            <input aria-label="Variant name" placeholder="Size / Colour" value={v.name} onChange={e => setFormData(p => ({ ...p, variants: p.variants.map((x,n) => n === i ? { ...x, name: e.target.value } : x) }))} className="h-11 rounded-lg px-3 border dark:bg-slate-900 dark:border-slate-700" />
+                            <input aria-label="Variant SKU" placeholder="SKU" value={v.sku} onChange={e => setFormData(p => ({ ...p, variants: p.variants.map((x,n) => n === i ? { ...x, sku: e.target.value } : x) }))} className="h-11 rounded-lg px-3 border dark:bg-slate-900 dark:border-slate-700" />
+                            <input aria-label="Variant price" type="number" min="0" placeholder="Price" value={v.price} onChange={e => setFormData(p => ({ ...p, variants: p.variants.map((x,n) => n === i ? { ...x, price: Number(e.target.value) } : x) }))} className="h-11 rounded-lg px-3 border dark:bg-slate-900 dark:border-slate-700" />
+                            <input aria-label="Variant stock" type="number" min="0" placeholder="Stock" value={v.quantity} onChange={e => setFormData(p => ({ ...p, variants: p.variants.map((x,n) => n === i ? { ...x, quantity: Number(e.target.value) } : x) }))} className="h-11 rounded-lg px-3 border dark:bg-slate-900 dark:border-slate-700" />
+                            <button type="button" onClick={() => setFormData(p => ({ ...p, variants: p.variants.filter((_,n) => n !== i) }))} className="h-11 rounded-lg bg-rose-50 text-rose-600 text-xs font-bold">Remove</button></div>)}
+                    </section>
 
                     <div className="pt-6 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-4">
                         <button type="button" onClick={() => setIsModalOpen(false)} className="h-14 rounded-[1.25rem] border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">{t("Cancel Operation")}</button>

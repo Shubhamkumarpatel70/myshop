@@ -331,3 +331,36 @@ exports.getGlobalActivity = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+exports.getTaxReport = async (req, res) => {
+    try {
+        const filter = req.isAdmin ? {} : { user: req.shopOwnerId };
+        const { from, to } = req.query;
+        if (from || to) {
+            filter.createdAt = {};
+            if (from) filter.createdAt.$gte = new Date(from);
+            if (to) {
+                const end = new Date(to);
+                end.setHours(23, 59, 59, 999);
+                filter.createdAt.$lte = end;
+            }
+        }
+        const sales = await Sale.find(filter).select('items taxableAmount taxAmount taxType totalAmount createdAt');
+        const report = sales.reduce((summary, sale) => {
+            summary.taxableAmount += Number(sale.taxableAmount || 0);
+            summary.taxAmount += Number(sale.taxAmount || 0);
+            summary.cgst += sale.items.reduce((sum, item) => sum + Number(item.cgst || 0), 0);
+            summary.sgst += sale.items.reduce((sum, item) => sum + Number(item.sgst || 0), 0);
+            summary.igst += sale.items.reduce((sum, item) => sum + Number(item.igst || 0), 0);
+            summary.transactions += 1;
+            return summary;
+        }, { taxableAmount: 0, taxAmount: 0, cgst: 0, sgst: 0, igst: 0, transactions: 0 });
+        Object.keys(report).forEach(key => {
+            if (key !== 'transactions') report[key] = Number(report[key].toFixed(2));
+        });
+        res.json({ success: true, data: report });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+

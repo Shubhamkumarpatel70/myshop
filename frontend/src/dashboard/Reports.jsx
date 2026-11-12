@@ -19,6 +19,7 @@ import { posStore } from '../utils/posStore';
 
 const Reports = () => {
     const [analytics, setAnalytics] = useState(null);
+    const [taxReport, setTaxReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dateFilter, setDateFilter] = useState('');
     const [monthFilter, setMonthFilter] = useState('');
@@ -46,6 +47,19 @@ const Reports = () => {
             const res = await api.get(`${url}?${params.toString()}`);
             const reportData = res.data.data;
             setAnalytics(reportData);
+            const taxParams = {};
+            if (dateFilter) { taxParams.from = dateFilter; taxParams.to = dateFilter; }
+            else if (monthFilter) {
+                const [year, month] = monthFilter.split('-').map(Number);
+                taxParams.from = monthFilter + '-01';
+                taxParams.to = new Date(year, month, 0).toISOString().slice(0, 10);
+            } else {
+                taxParams.from = new Date(Date.now() - Number(periodFilter) * 86400000).toISOString().slice(0, 10);
+            }
+            try {
+                const taxResponse = await api.get('/reports/tax', { params: taxParams });
+                setTaxReport(taxResponse.data?.data || null);
+            } catch (taxError) { setTaxReport(null); }
             // Cache for offline
             await posStore.cacheReport(reportData);
         } catch (error) {
@@ -267,6 +281,17 @@ const Reports = () => {
                 </div>
             </div>
 
+            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div><h2 className="text-lg font-bold text-slate-900 dark:text-white">GST Tax Summary</h2><p className="text-xs text-slate-500">Recorded GST for the selected period. Older sales without tax snapshots are excluded.</p></div>
+                    <span className="text-xs font-semibold text-slate-500">{taxReport?.transactions || 0} transactions</span>
+                </div>
+                <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                    {[[ 'Taxable Sales', taxReport?.taxableAmount ], [ 'CGST', taxReport?.cgst ], [ 'SGST', taxReport?.sgst ], [ 'IGST', taxReport?.igst ], [ 'Total GST', taxReport?.taxAmount ]].map(([label, value]) => (
+                        <div key={label} className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">₹{Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p></div>
+                    ))}
+                </div>
+            </section>
             {/* Metric Scoreboard */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {reportCards.map((card, i) => (

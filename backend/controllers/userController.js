@@ -2,7 +2,7 @@ const User = require('../models/User');
 
 exports.updateProfile = async (req, res) => {
     try {
-        const { shopName, ownerName, email, phone, businessType, address } = req.body;
+        const { shopName, ownerName, email, phone, businessType, address, gstEnabled, gstin, businessState } = req.body;
         
         const user = await User.findById(req.user._id);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
@@ -13,6 +13,15 @@ exports.updateProfile = async (req, res) => {
         user.phone = phone || user.phone;
         user.businessType = businessType || user.businessType;
         user.address = address || user.address;
+        if (gstEnabled !== undefined || gstin !== undefined || businessState !== undefined) {
+            if (req.user.role !== 'shop_owner') return res.status(403).json({ success: false, message: 'Only the shop owner can change GST settings.' });
+            if (gstEnabled !== undefined) user.gstEnabled = Boolean(gstEnabled);
+            if (gstin !== undefined) user.gstin = String(gstin).trim().toUpperCase();
+            if (businessState !== undefined) user.businessState = String(businessState).trim();
+            if (user.gstEnabled && !/^[0-9A-Z]{15}$/.test(user.gstin || '')) {
+                return res.status(400).json({ success: false, message: 'Enter a valid 15-character GSTIN to enable GST.' });
+            }
+        }
 
         const updatedUser = await user.save();
         
@@ -26,6 +35,9 @@ exports.updateProfile = async (req, res) => {
                 phone: updatedUser.phone,
                 businessType: updatedUser.businessType,
                 address: updatedUser.address,
+                gstEnabled: updatedUser.gstEnabled,
+                gstin: updatedUser.gstin,
+                businessState: updatedUser.businessState,
                 shopSlug: updatedUser.shopSlug,
                 role: updatedUser.role,
                 approvalStatus: updatedUser.approvalStatus,

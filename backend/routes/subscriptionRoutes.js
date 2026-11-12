@@ -16,7 +16,8 @@ const {
     terminateSubscription,
     toggleSuspension,
     getRevenueStats,
-    deletePlan
+    deletePlan,
+    getSubscriptionPayments
 } = require('../controllers/subscriptionController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
@@ -35,6 +36,7 @@ router.post('/admin/verify', protect, adminOnly, verifySubscription);
 router.post('/admin/plans', protect, adminOnly, upsertPlan);
 router.delete('/admin/plans/:id', protect, adminOnly, deletePlan);
 router.get('/admin/all', protect, adminOnly, getSubscriptions);
+router.get('/admin/payments', protect, adminOnly, getSubscriptionPayments);
 router.post('/admin/process-cancel', protect, adminOnly, processCancellation);
 router.post('/admin/refund', protect, adminOnly, updateRefundUtr);
 router.put('/admin/update', protect, adminOnly, updateSubscription);

@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const Shift = require('../models/Shift');
 const InventoryLog = require('../models/InventoryLog');
 const Customer = require('../models/Customer');
+const User = require('../models/User');
 const { sendNotification } = require('../utils/notificationUtils');
 
 const generateTransactionId = () => {
@@ -18,6 +19,12 @@ const generateTransactionId = () => {
 exports.createSale = async (req, res) => {
     try {
         const { items, customerName, customerPhone, paymentMethod } = req.body;
+        if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ success: false, message: 'Add at least one item before checkout.' });
+        const shopSettings = await User.findById(req.shopOwnerId).select('gstEnabled gstin businessState');
+        const gstEnabled = Boolean(shopSettings?.gstEnabled);
+        const sellerStateCode = String(shopSettings?.gstin || '').slice(0, 2);
+        const buyerStateCode = String(req.body.customerStateCode || req.body.customerGSTIN || '').slice(0, 2);
+        const isInterState = gstEnabled && (req.body.isInterState === true || Boolean(sellerStateCode && buyerStateCode && sellerStateCode !== buyerStateCode));
         
         // Enforce Shift Management
         const activeShift = await Shift.findOne({ user: req.user._id, status: 'Open' });
@@ -39,7 +46,13 @@ exports.createSale = async (req, res) => {
                 return res.status(400).json({ success: false, message: `Insufficient stock for ${product.productName}` });
             }
 
-            const itemTotal = item.quantity * item.price;
+            const taxableAmount = Number((Number(item.quantity) * Number(item.price)).toFixed(2));
+            const taxRate = gstEnabled ? Math.min(100, Math.max(0, Number(product.taxRate) || 0)) : 0;
+            const taxAmount = Number((taxableAmount * taxRate / 100).toFixed(2));
+            const cgst = isInterState ? 0 : Number((taxAmount / 2).toFixed(2));
+            const sgst = isInterState ? 0 : Number((taxAmount - cgst).toFixed(2));
+            const igst = isInterState ? taxAmount : 0;
+            const itemTotal = Number((taxableAmount + taxAmount).toFixed(2));
             totalAmount += itemTotal;
 
             // Update product quantity (Deduct from earliest batches first - FIFO)
@@ -72,6 +85,12 @@ exports.createSale = async (req, res) => {
                 batchNumber: usedBatchNumber,
                 expiryDate: usedExpiryDate,
                 discount: item.discount || 0,
+                taxRate,
+                taxableAmount,
+                cgst,
+                sgst,
+                igst,
+                taxAmount,
                 total: itemTotal
             });
 
@@ -105,11 +124,24 @@ exports.createSale = async (req, res) => {
             });
         }
 
+        const paymentParts = Array.isArray(req.body.payments) && req.body.payments.length
+            ? req.body.payments.map(payment => ({ mode: payment.mode, amount: Number(payment.amount) }))
+            : [{ mode: paymentMethod || 'Cash', amount: Number(totalAmount.toFixed(2)) }];
+        const paymentTotal = paymentParts.reduce((sum, payment) => sum + payment.amount, 0);
+        if (paymentParts.some(payment => !Number.isFinite(payment.amount) || payment.amount <= 0) || Math.abs(paymentTotal - totalAmount) > 0.01) {
+            return res.status(400).json({ success: false, message: 'Payment split amounts must add up to the total payable amount.' });
+        }
+
         const sale = await Sale.create({
             items: processedItems,
-            totalAmount,
+            totalAmount: Number(totalAmount.toFixed(2)),
+            taxableAmount: Number(processedItems.reduce((sum, item) => sum + (item.taxableAmount || 0), 0).toFixed(2)),
+            taxAmount: Number(processedItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0).toFixed(2)),
+            taxType: !gstEnabled ? 'none' : (isInterState ? 'inter-state' : 'intra-state'),
+            payments: paymentParts,
             customerName,
             customerPhone,
+            customerGSTIN: String(req.body.customerGSTIN || '').trim().toUpperCase(),
             paymentMethod,
             utrNumber: req.body.utrNumber,
             transactionId: generateTransactionId(),
@@ -152,14 +184,16 @@ exports.createSale = async (req, res) => {
         // Update Active Shift Totals
         activeShift.totalSales += totalAmount;
         activeShift.totalTransactions += 1;
-        if (paymentMethod === 'Cash') {
-            activeShift.totalCashSales += totalAmount;
-            activeShift.expectedCash += totalAmount;
-        } else if (paymentMethod === 'UPI') {
-            activeShift.totalUpiSales += totalAmount;
-        } else if (paymentMethod === 'Card') {
-            activeShift.totalCardSales += totalAmount;
-        }
+        paymentParts.forEach(payment => {
+            if (payment.mode === 'Cash') {
+                activeShift.totalCashSales += payment.amount;
+                activeShift.expectedCash += payment.amount;
+            } else if (payment.mode === 'UPI' || payment.mode === 'Scan & Pay') {
+                activeShift.totalUpiSales += payment.amount;
+            } else if (payment.mode === 'Card') {
+                activeShift.totalCardSales += payment.amount;
+            }
+        });
         await activeShift.save();
 
         res.status(201).json({ success: true, data: sale });
@@ -272,7 +306,7 @@ exports.getSales = async (req, res) => {
                 select: 'productName',
                 populate: { path: 'category', select: 'name' }
             })
-            .populate('user', 'shopName')
+            .populate('user', 'shopName address phone gstEnabled gstin businessState')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -338,7 +372,7 @@ exports.getPublicSale = async (req, res) => {
             },
             {
                 path: 'user',
-                select: 'shopName address phone'
+                select: 'shopName address phone gstEnabled gstin businessState'
             }
         ];
 

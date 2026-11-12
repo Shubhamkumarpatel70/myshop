@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const Plan = require('../models/Plan');
+const { logAction } = require('../utils/auditLogger');
+const Payment = require('../models/Payment');
 
 // @desc    Get all active plans (Public)
 exports.getPublicPlans = async (req, res) => {
@@ -126,6 +128,7 @@ exports.verifySubscription = async (req, res) => {
         }
 
         await user.save();
+        await logAction(req, `Subscription ${status}`, 'Subscription', { userId, plan: user.subscriptionPlan, verificationMethod: 'manual' });
         res.json({ success: true, message: `Subscription ${status} successfully.` });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -326,6 +329,19 @@ exports.deletePlan = async (req, res) => {
         const { id } = req.params;
         await Plan.findByIdAndDelete(id);
         res.json({ success: true, message: 'Plan deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.getSubscriptionPayments = async (req, res) => {
+    try {
+        const payments = await Payment.find()
+            .populate('user', 'shopName ownerName email')
+            .populate('plan', 'name')
+            .sort({ createdAt: -1 })
+            .limit(200);
+        res.json({ success: true, data: payments });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

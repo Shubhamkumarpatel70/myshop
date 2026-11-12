@@ -5,6 +5,7 @@ const productSchema = new mongoose.Schema({
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
     quantity: { type: Number, default: 0 },
     price: { type: Number, default: 0 }, // Selling Price
+    taxRate: { type: Number, default: 0, min: 0, max: 100 }, // GST percentage, snapshotted on each sale
     purchasePrice: { type: Number, default: 0 }, // Cost Price for P&L
     barcode: { type: String },
     supplier: { type: String },
@@ -20,6 +21,7 @@ const productSchema = new mongoose.Schema({
     }],
     lowStockThreshold: { type: Number, default: 10 },
     description: { type: String },
+    variants: [{ name: { type: String, required: true, trim: true }, sku: { type: String, trim: true, default: '' }, price: { type: Number, min: 0, default: 0 }, quantity: { type: Number, min: 0, default: 0 }, isActive: { type: Boolean, default: true } }],
     productImage: { type: String, default: '' },
     isPublic: { type: Boolean, default: true },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }

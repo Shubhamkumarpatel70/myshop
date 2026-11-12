@@ -4,6 +4,7 @@ const {
     getProducts, createProduct, updateProduct, deleteProduct, 
     getPublicProducts, getPublicProductsByShop, getInventoryLogs
 } = require('../controllers/productController');
+const { bulkImportProducts } = require('../controllers/bulkImportController');
 const { protect } = require('../middleware/authMiddleware');
 const { checkProductLimit } = require('../middleware/limitMiddleware');
 
@@ -23,6 +24,7 @@ router.post('/upload', upload.single('image'), (req, res) => {
 });
 
 router.get('/logs', getInventoryLogs);
+router.post('/bulk-import', bulkImportProducts);
 
 router.route('/')
     .get(getProducts)

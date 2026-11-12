@@ -16,9 +16,14 @@ import BarcodeScanner from '../components/BarcodeScanner';
 import { posStore } from '../utils/posStore';
 import Skeleton from '../components/Skeleton';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { isThermalPrinterSupported, printThermalReceipt } from '../utils/thermalPrinter';
+
+const escapeHtml = (value) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 
 const Sales = () => {
     const { t } = useLanguage();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [sales, setSales] = useState([]);
     const [products, setProducts] = useState([]);
@@ -34,8 +39,13 @@ const Sales = () => {
     const [paymentConfig, setPaymentConfig] = useState(null);
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     const [utrNumber, setUtrNumber] = useState('');
+    const [splitPaymentEnabled, setSplitPaymentEnabled] = useState(false);
+    const [secondPaymentMethod, setSecondPaymentMethod] = useState('UPI');
+    const [secondPaymentAmount, setSecondPaymentAmount] = useState('');
     const [cart, setCart] = useState([]);
-    const [customerInfo, setCustomerInfo] = useState({ name: 'Guest', phone: '', address: '', paymentMethod: 'Cash' });
+    const [customerInfo, setCustomerInfo] = useState({ name: 'Guest', phone: '', address: '', gstin: '', paymentMethod: 'Cash' });
+    const [customerMatches, setCustomerMatches] = useState([]);
+    const [customerSearchTerm, setCustomerSearchTerm] = useState('');
     const [transactionSearch, setTransactionSearch] = useState('');
     const [searching, setSearching] = useState(false);
     const [viewingSale, setViewingSale] = useState(null);
@@ -91,6 +101,20 @@ const Sales = () => {
         setIsSyncing(false);
         fetchSales();
     };
+
+    useEffect(() => {
+        const query = String(customerSearchTerm || '').trim();
+        if (query.length < 2) { setCustomerMatches([]); return; }
+        const timer = setTimeout(async () => {
+            try {
+                const response = await api.get(`/customers/search?q=${encodeURIComponent(query)}`);
+                setCustomerMatches(Array.isArray(response.data?.data) ? response.data.data : []);
+            } catch (error) {
+                setCustomerMatches([]);
+            }
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [customerSearchTerm]);
 
     const fetchPaymentConfig = async () => {
         try {
@@ -219,7 +243,8 @@ const Sales = () => {
                 price: product.price,
                 quantity: 1,
                 mrp: product.price,
-                discount: 0
+                discount: 0,
+                taxRate: Number(product.taxRate) || 0
             }]);
         }
         toast.success((t) => (
@@ -261,7 +286,11 @@ const Sales = () => {
     };
 
     const calculateTotal = () => {
-        return cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        return cart.reduce((acc, item) => {
+            const base = Number(item.price) * Number(item.quantity);
+            const rate = user?.gstEnabled ? Math.max(0, Number(item.taxRate) || 0) : 0;
+            return acc + base + (base * rate / 100);
+        }, 0);
     };
 
     const handleCheckout = async () => {
@@ -273,13 +302,29 @@ const Sales = () => {
             toast.error("Security ID (UTR) Required");
             return;
         }
+        const payableAmount = Number(calculateTotal().toFixed(2));
+        let payments = [{ mode: customerInfo.paymentMethod, amount: payableAmount }];
+        if (splitPaymentEnabled) {
+            const secondAmount = Number(secondPaymentAmount);
+            const firstAmount = Number((payableAmount - secondAmount).toFixed(2));
+            if (!Number.isFinite(secondAmount) || secondAmount <= 0 || firstAmount <= 0 || secondAmount >= payableAmount || secondPaymentMethod === customerInfo.paymentMethod) {
+                toast.error('Enter two different payment methods and valid amounts.');
+                return;
+            }
+            payments = [
+                { mode: customerInfo.paymentMethod, amount: firstAmount },
+                { mode: secondPaymentMethod, amount: secondAmount }
+            ];
+        }
         try {
             const saleData = {
                 items: cart,
+                payments,
                 customerName: customerInfo.name,
                 customerPhone: customerInfo.phone,
                 paymentMethod: customerInfo.paymentMethod,
-                utrNumber: utrNumber
+                utrNumber: utrNumber,
+                customerGSTIN: customerInfo.gstin
             };
             if (!navigator.onLine) {
                 await posStore.saveOfflineSale(saleData);
@@ -292,6 +337,8 @@ const Sales = () => {
             setCart([]);
             setCustomerInfo({ name: 'Guest', phone: '', paymentMethod: 'Cash' });
             setUtrNumber('');
+            setSplitPaymentEnabled(false);
+            setSecondPaymentAmount('');
             setIsSaleModalOpen(false);
             setIsQrModalOpen(false);
             setPosStep(1);
@@ -343,26 +390,68 @@ const Sales = () => {
         toast.success("Opening WhatsApp...");
     };
 
+
+    useEffect(() => {
+        if (!isSaleModalOpen) return undefined;
+        const handlePosShortcut = (event) => {
+            const target = event.target;
+            const isTyping = target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+            if (event.key === 'F2') {
+                event.preventDefault();
+                document.querySelector('[data-pos-product-search]')?.focus();
+            } else if (event.key === 'F3') {
+                event.preventDefault();
+                setIsScannerOpen(true);
+            } else if (event.key === 'Escape' && isScannerOpen) {
+                setIsScannerOpen(false);
+            } else if (event.ctrlKey && event.key === 'Enter' && !isTyping) {
+                event.preventDefault();
+                if (posStep === 1 && cart.length) setPosStep(2);
+                else if (posStep === 2) setPosStep(3);
+                else if (posStep === 3) setPosStep(4);
+            }
+        };
+        window.addEventListener('keydown', handlePosShortcut);
+        return () => window.removeEventListener('keydown', handlePosShortcut);
+    }, [isSaleModalOpen, isScannerOpen, posStep, cart.length]);
+
+    const handleThermalPrint = async (sale, columns) => {
+        try {
+            await printThermalReceipt(sale, columns);
+            toast.success('Receipt sent to thermal printer.');
+        } catch (error) {
+            toast.error(error.message || 'Could not print to thermal printer.');
+        }
+    };
+
     const handlePrintInvoice = (sale) => {
         const printWindow = window.open('', '_blank');
         const shopInfo = sale.user || {};
 
         let subtotal = 0;
         let returnsTotal = 0;
+        let totalTax = 0;
+        let totalCgst = 0;
+        let totalSgst = 0;
+        let totalIgst = 0;
 
         const itemsHtml = sale.items.map(item => {
-            const itemTotal = item.price * item.quantity;
+            const itemTotal = Number(item.total ?? (item.price * item.quantity));
+            totalTax += Number(item.taxAmount || 0);
+            totalCgst += Number(item.cgst || 0);
+            totalSgst += Number(item.sgst || 0);
+            totalIgst += Number(item.igst || 0);
             if (item.isReturned) {
                 returnsTotal += itemTotal;
             } else {
-                subtotal += itemTotal;
+                subtotal += Number(item.taxableAmount ?? itemTotal);
             }
 
             return `
                 <tr style="${item.isReturned ? 'background-color: #fff1f2; opacity: 0.7;' : ''}">
                     <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">
                         <div style="font-weight: 800; color: #1e293b; font-size: 10pt; text-transform: uppercase; ${item.isReturned ? 'text-decoration: line-through;' : ''}">
-                            ${item.product?.productName || item.productName}
+                            ${escapeHtml(item.product?.productName || item.productName)}
                         </div>
                     </td>
                     <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700; color: #475569; ${item.isReturned ? 'text-decoration: line-through;' : ''}">${item.quantity}</td>
@@ -410,11 +499,11 @@ const Sales = () => {
                 </head>
                 <body onload="window.print(); window.close();">
                     <div class="header">
-                        <h1 class="shop-name">${shopInfo.shopName || 'RETAIL SAATHI'}</h1>
+                        <h1 class="shop-name">${escapeHtml(shopInfo.shopName || 'RETAIL SAATHI')}</h1>
                         <div class="shop-details">
-                            ${shopInfo.address || 'Business Address Not Set'}<br>
-                            Ph: ${shopInfo.phone || 'N/A'}<br>
-                            GSTIN: 27AAAAA0000A1Z5 (U)
+                            ${escapeHtml(shopInfo.address || 'Business Address Not Set')}<br>
+                            Ph: ${escapeHtml(shopInfo.phone || 'N/A')}<br>
+                            ${shopInfo.gstEnabled ? 'GSTIN: ' + escapeHtml(shopInfo.gstin || 'Not provided') : 'GST not enabled'}
                         </div>
                         <div class="invoice-title">TAX INVOICE</div>
                     </div>
@@ -422,11 +511,11 @@ const Sales = () => {
                     <div class="bill-info">
                         <div class="info-row">
                             <span class="label">Billed To:</span>
-                            <span class="value">${sale.customerName}</span>
+                            <span class="value">${escapeHtml(sale.customerName || 'Guest')}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Contact:</span>
-                            <span class="value">+91 ${sale.customerPhone || 'N/A'}</span>
+                            <span class="value">+91 ${escapeHtml(sale.customerPhone || 'N/A')}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Invoice No:</span>
@@ -464,13 +553,12 @@ const Sales = () => {
                             <span style="color: #64748b;">Sub-Total</span>
                             <span style="font-weight: 700;">₹${subtotal.toLocaleString()}</span>
                         </div>
-                        <div class="summary-row">
-                            <span style="color: #64748b;">GST (0%)</span>
-                            <span style="font-weight: 700;">₹0.00</span>
-                        </div>
+                        ${totalIgst > 0 ? `<div class="summary-row"><span>IGST</span><span>₹${totalIgst.toFixed(2)}</span></div>` : ''}
+                        ${totalCgst > 0 ? `<div class="summary-row"><span>CGST</span><span>₹${totalCgst.toFixed(2)}</span></div>` : ''}
+                        ${totalSgst > 0 ? `<div class="summary-row"><span>SGST</span><span>₹${totalSgst.toFixed(2)}</span></div>` : ''}
                         <div class="summary-row total">
                             <span>TOTAL</span>
-                            <span>₹${subtotal.toLocaleString()}</span>
+                            <span>₹${Number(sale.totalAmount || (subtotal + totalTax)).toLocaleString()}</span>
                         </div>
                         <div style="font-size: 7pt; text-align: center; color: #64748b; margin-top: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                             Payment: ${sale.paymentMethod}
@@ -643,7 +731,7 @@ const Sales = () => {
                                 <div className="flex gap-3">
                                     <div className="relative flex-1">
                                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input type="text" placeholder="Scan barcode or type product name..." className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] text-sm font-bold outline-none transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} autoFocus />
+                                        <input type="text" placeholder="Scan barcode or type product name..." data-pos-product-search className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] text-sm font-bold outline-none transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} autoFocus />
                                     </div>
                                     <button onClick={() => setIsScannerOpen(true)} className="p-4 bg-indigo-50 text-indigo-600 rounded-[1.25rem] hover:bg-indigo-100 transition-colors"><Scan size={24} /></button>
                                 </div>
@@ -716,6 +804,23 @@ const Sales = () => {
                             <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8 py-4">
                                 <div className="grid grid-cols-1 gap-8">
                                     <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Find Existing Customer</label>
+                                        <div className="relative">
+                                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                                            <input type="text" autoComplete="off" className="w-full h-14 pl-14 pr-6 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] font-bold text-sm outline-none transition-all dark:text-white" value={customerSearchTerm} onChange={event => setCustomerSearchTerm(event.target.value)} placeholder="Search by customer name or mobile" />
+                                            {customerMatches.length > 0 && (
+                                                <div className="absolute z-30 top-full mt-2 left-0 right-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden">
+                                                    {customerMatches.map(customer => (
+                                                        <button type="button" key={customer._id} onClick={() => { setCustomerInfo(current => ({ ...current, name: customer.name || 'Guest', phone: customer.phone || '', address: customer.address || '' })); setCustomerSearchTerm(customer.name || customer.phone || ''); setCustomerMatches([]); }} className="w-full px-4 py-3 text-left hover:bg-indigo-50 dark:hover:bg-slate-800 border-b last:border-0 border-slate-100 dark:border-slate-800">
+                                                            <span className="block text-sm font-bold text-slate-900 dark:text-white">{customer.name}</span>
+                                                            <span className="block text-xs text-slate-500">{customer.phone}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Customer Mobile Number</label>
                                         <div className="relative">
                                             <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
@@ -728,6 +833,10 @@ const Sales = () => {
                                             <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                             <input type="text" className="w-full h-16 pl-14 pr-6 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] font-black text-lg outline-none transition-all dark:text-white" value={customerInfo.name} onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })} placeholder="Walk-in Guest" />
                                         </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Customer GSTIN (Optional)</label>
+                                        <input type="text" maxLength={15} value={customerInfo.gstin || ''} onChange={event => setCustomerInfo({ ...customerInfo, gstin: event.target.value.toUpperCase() })} placeholder="15-character GSTIN for B2B invoices" className="w-full h-14 px-5 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] font-bold text-sm outline-none transition-all dark:text-white" />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Delivery/Billing Address (Optional)</label>
@@ -752,13 +861,31 @@ const Sales = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     {['Cash', 'UPI', 'Card', 'Scan & Pay'].map(method => (
-                                        <button key={method} onClick={() => setCustomerInfo({ ...customerInfo, paymentMethod: method })} className={`p-6 rounded-[1.25rem] border-2 flex flex-col items-center gap-3 transition-all ${customerInfo.paymentMethod === method ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 shadow-lg shadow-indigo-500/5' : 'border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200'}`}>
+                                        <button key={method} onClick={() => { setCustomerInfo({ ...customerInfo, paymentMethod: method }); if (secondPaymentMethod === method) setSecondPaymentMethod(method === 'Cash' ? 'UPI' : 'Cash'); }} className={`p-6 rounded-[1.25rem] border-2 flex flex-col items-center gap-3 transition-all ${customerInfo.paymentMethod === method ? 'border-indigo-600 bg-indigo-50/50 text-indigo-600 shadow-lg shadow-indigo-500/5' : 'border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:border-slate-200'}`}>
                                             <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center ${customerInfo.paymentMethod === method ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}>
                                                 {method === 'Cash' ? <Wallet size={20} /> : method === 'UPI' ? <Zap size={20} /> : method === 'Card' ? <CreditCard size={20} /> : <QrCode size={20} />}
                                             </div>
                                             <span className="text-[11px] font-black uppercase tracking-widest">{method}</span>
                                         </button>
                                     ))}
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                                    <label className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                        <span>Split this payment into two methods</span>
+                                        <input type="checkbox" checked={splitPaymentEnabled} onChange={event => setSplitPaymentEnabled(event.target.checked)} className="h-5 w-5 accent-indigo-600" />
+                                    </label>
+                                    {splitPaymentEnabled && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <label className="text-xs font-semibold text-slate-500">Second payment method
+                                                <select value={secondPaymentMethod} onChange={event => setSecondPaymentMethod(event.target.value)} className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                                                    {['Cash', 'UPI', 'Card', 'Scan & Pay', 'Udhar'].filter(method => method !== customerInfo.paymentMethod).map(method => <option key={method} value={method}>{method}</option>)}
+                                                </select>
+                                            </label>
+                                            <label className="text-xs font-semibold text-slate-500">Amount from second method (₹)
+                                                <input type="number" min="0.01" max={calculateTotal() - 0.01} step="0.01" value={secondPaymentAmount} onChange={event => setSecondPaymentAmount(event.target.value)} placeholder="Enter amount" className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex justify-between gap-4 pt-4">
                                     <button onClick={() => setPosStep(3)} className="h-14 flex-1 bg-slate-100 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px]">Review Client</button>
@@ -840,6 +967,18 @@ const Sales = () => {
                         <div className="grid grid-cols-2 gap-4 pt-4">
                             <button onClick={() => handlePrintInvoice(viewingSale)} className="h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl"><Printer size={18} /> {t('Physical Bill')}</button>
                             <button onClick={() => handleShare(viewingSale)} className="h-14 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all shadow-xl"><Share2 size={18} /> {t('Digital Bill')}</button>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <div><p className="text-sm font-bold text-slate-900 dark:text-white">Direct thermal printer</p><p className="text-xs text-slate-500 dark:text-slate-400">Serial printer support • Chrome/Edge • HTTPS</p></div>
+                                <Printer size={20} className="text-indigo-600" />
+                            </div>
+                            {isThermalPrinterSupported() ? (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={() => handleThermalPrint(viewingSale, 32)} className="rounded-xl bg-indigo-600 px-3 py-3 text-xs font-bold text-white">Print 58mm</button>
+                                    <button onClick={() => handleThermalPrint(viewingSale, 48)} className="rounded-xl bg-indigo-600 px-3 py-3 text-xs font-bold text-white">Print 80mm</button>
+                                </div>
+                            ) : <p className="text-xs text-amber-700 dark:text-amber-300">Direct serial printing is not available in this browser. Use Physical Bill with your system printer, or open Stock Saathi in Chrome/Edge on HTTPS.</p>}
                         </div>
                     </div>
                 )}

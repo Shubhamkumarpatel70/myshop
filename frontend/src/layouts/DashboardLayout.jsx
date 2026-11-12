@@ -42,6 +42,7 @@ import toast from 'react-hot-toast';
 import NotificationDropdown from '../components/NotificationDropdown';
 import RegistrationPayment from '../components/RegistrationPayment';
 import UserTour from '../components/UserTour';
+import Footer from '../components/Footer';
 
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -156,6 +157,7 @@ const DashboardLayout = () => {
         { name: t('Plan Settings'), icon: Zap, path: '/dashboard/admin/pricing', roles: ['super_admin'], description: t('Manage plans and pricing'), group: 'admin-system' },
         { name: t('Settings'), icon: Settings, path: '/dashboard/admin/settings', roles: ['super_admin'], description: t('Manage platform settings'), group: 'admin-system' },
         { name: t('Revenue'), icon: IndianRupee, path: '/dashboard/admin/revenue', roles: ['super_admin'], priority: true, description: t('View platform income'), group: 'admin-system' },
+        { name: t('System Health'), icon: Activity, path: '/dashboard/admin/system-health', roles: ['super_admin'], description: t('Monitor database and API status'), group: 'admin-system' },
     ];
 
     const navItems = useMemo(
@@ -545,6 +547,7 @@ const DashboardLayout = () => {
                         </AnimatePresence>
                     </div>
                 </main>
+                <Footer />
 
                 {mobileBottomItems.length > 0 && (
                     <nav className="ss-mobile-bottom fixed bottom-6 left-6 right-6 z-40 rounded-[2rem] border border-white/20 bg-white/80 px-2.5 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/80 lg:hidden ring-1 ring-black/5">

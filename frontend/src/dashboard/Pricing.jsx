@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -32,6 +32,7 @@ import Modal from '../components/Modal';
 const Pricing = () => {
     const { user, updateUser } = useAuth();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -43,6 +44,8 @@ const Pricing = () => {
     const [uploading, setUploading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [settings, setSettings] = useState(null);
+    const [cashfreePaying, setCashfreePaying] = useState(false);
+    const [cashfreeVerifying, setCashfreeVerifying] = useState(false);
 
     useEffect(() => {
         fetchPlans();
@@ -84,6 +87,64 @@ const Pricing = () => {
             setSubmitting(false);
         }
     };
+
+    const startCashfreePayment = async () => {
+        if (!selectedPlan?._id) return toast.error('Select a valid plan.');
+        setCashfreePaying(true);
+        try {
+            const response = await api.post('/payments/cashfree/subscription/order', { planId: selectedPlan._id });
+            const { payment_session_id: paymentSessionId, environment } = response.data.data || {};
+            if (!paymentSessionId) throw new Error('Cashfree did not return a payment session.');
+            const sdkUrl = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+            if (!window.Cashfree) {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = sdkUrl;
+                    script.async = true;
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('Unable to load Cashfree checkout.'));
+                    document.head.appendChild(script);
+                });
+            }
+            const cashfree = window.Cashfree({ mode: environment === 'production' ? 'production' : 'sandbox' });
+            await cashfree.checkout({ paymentSessionId, redirectTarget: '_self' });
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message || 'Unable to start secure payment.');
+        } finally {
+            setCashfreePaying(false);
+        }
+    };
+
+    useEffect(() => {
+        const orderId = searchParams.get('order_id');
+        if (!orderId) return;
+        let active = true;
+        const verifyPayment = async () => {
+            setCashfreeVerifying(true);
+            try {
+                const response = await api.get('/payments/cashfree/subscription/verify', { params: { order_id: orderId } });
+                if (!active) return;
+                if (response.data?.data?.paid) {
+                    const profile = await api.get('/auth/profile');
+                    if (active) {
+                        updateUser(profile.data.data);
+                        toast.success('Payment verified. Your plan is now active.');
+                        const next = new URLSearchParams(searchParams);
+                        next.delete('order_id');
+                        setSearchParams(next, { replace: true });
+                    }
+                } else {
+                    toast('Payment is still processing. Please check again shortly.');
+                }
+            } catch (error) {
+                if (active) toast.error(error.response?.data?.message || 'Payment verification is pending.');
+            } finally {
+                if (active) setCashfreeVerifying(false);
+            }
+        };
+        verifyPayment();
+        return () => { active = false; };
+    }, [searchParams, setSearchParams, updateUser]);
 
     const handleScreenshotUpload = async (e) => {
         const file = e.target.files[0];
@@ -474,6 +535,10 @@ const Pricing = () => {
                                 </div>
                             </div>
 
+                            <button type="button" onClick={startCashfreePayment} disabled={cashfreePaying || cashfreeVerifying || !selectedPlan?._id} className="w-full h-14 rounded-2xl bg-emerald-600 text-white font-bold flex items-center justify-center gap-3 hover:bg-emerald-700 disabled:opacity-60">
+                                <ShieldCheck size={18} /> {cashfreePaying ? 'Opening secure checkout...' : cashfreeVerifying ? 'Verifying payment...' : 'Pay securely with Cashfree'}
+                            </button>
+                            <p className="text-xs text-slate-500 text-center">Cashfree verifies payment automatically and activates your plan. Manual UPI proof remains available below.</p>
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em] ml-4">Payment Proof</label>
                                 <div className="relative group rounded-[1.25rem] border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-hidden min-h-[220px] transition-all hover:border-indigo-500">

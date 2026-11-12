@@ -13,6 +13,9 @@ const userSchema = new mongoose.Schema({
         enum: ['Medical Store', 'Hardware Store', 'Grocery Store', 'Electronics Store', 'Clothing Store', 'General Store', 'Custom Store']
     },
     address: { type: String, required: true },
+    gstEnabled: { type: Boolean, default: false },
+    gstin: { type: String, default: '', trim: true, uppercase: true },
+    businessState: { type: String, default: '' },
     profileImage: { type: String, default: '' },
     aadharNumber: { type: String, default: '' },
     aadharImage: { type: String, default: '' },
