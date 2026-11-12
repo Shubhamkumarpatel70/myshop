@@ -14,6 +14,7 @@ const AdminSettings = () => {
         qrCode: '',
         supportPhone: '',
         isPaymentRequired: false,
+        paymentVerificationMode: 'manual',
         isMaintenanceMode: false,
         maintenanceTime: '15 Minutes'
     });
@@ -148,6 +149,20 @@ const AdminSettings = () => {
                             </label>
                         </div>
 
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Payment Verification Method</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button type="button" onClick={() => setSettings({...settings, paymentVerificationMode: 'manual'})} className={`rounded-2xl border-2 p-4 text-left transition-all ${(settings.paymentVerificationMode || 'manual') === 'manual' ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-500/10' : 'border-slate-200 dark:border-slate-700'}`}>
+                                    <span className="block text-sm font-black">Manual Verification</span>
+                                    <span className="mt-1 block text-xs text-slate-500">UPI / QR + screenshot reviewed by admin</span>
+                                </button>
+                                <button type="button" onClick={() => setSettings({...settings, paymentVerificationMode: 'cashfree'})} className={`rounded-2xl border-2 p-4 text-left transition-all ${settings.paymentVerificationMode === 'cashfree' ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-500/10' : 'border-slate-200 dark:border-slate-700'}`}>
+                                    <span className="block text-sm font-black">Cashfree Automatic</span>
+                                    <span className="mt-1 block text-xs text-slate-500">Server-side verification via Cashfree</span>
+                                </button>
+                            </div>
+                            <p className="text-xs text-slate-500">Changing this setting affects new registration payments. Existing Cashfree orders remain verifiable.</p>
+                        </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Fee Amount (₹)</label>
                             <input 
@@ -162,6 +177,7 @@ const AdminSettings = () => {
                 </div>
 
                 {/* Payment Gateway Section */}
+                {(settings.paymentVerificationMode || 'manual') === 'manual' && settings.isPaymentRequired && (
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl space-y-6">
                     <div className="flex items-center gap-3 text-emerald-600">
                         <Smartphone size={20} />
@@ -192,6 +208,9 @@ const AdminSettings = () => {
                     </div>
                 </div>
 
+                )}
+
+                {(settings.paymentVerificationMode || 'manual') === 'manual' && settings.isPaymentRequired && (
                 {/* QR Code Section */}
                 <div className="md:col-span-2 bg-slate-950 text-white p-8 md:p-12 rounded-[3.5rem] relative overflow-hidden group">
                     <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
@@ -229,6 +248,7 @@ const AdminSettings = () => {
                     <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl group-hover:scale-110 transition-transform"></div>
                 </div>
 
+                )}
                 <div className="md:col-span-2 flex justify-end pt-6">
                     <button 
                         type="submit"
