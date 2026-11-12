@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import api from './utils/api';
 import './utils/pwaInstall';
 import PWAHandler from './components/PWAHandler';
+import OfflineSyncBanner from './components/OfflineSyncBanner';
 import Home from './pages/Home';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -141,6 +142,7 @@ const AppContent = () => {
                 </div>
             )}
             <PWAHandler />
+            <OfflineSyncBanner />
             <Suspense fallback={<SplashScreen />}>
             <Routes>
                 {/* Public Routes */}
