@@ -112,6 +112,63 @@ exports.getSalesAnalytics = async (req, res) => {
         if (paymentMethod) {
             queryFilter.paymentMethod = paymentMethod;
         }
+
+        // Always prepare today's shop report using India local time, independent of chart filters.
+        const indiaDateParts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(new Date()).reduce((parts, part) => {
+            if (part.type !== 'literal') parts[part.type] = part.value;
+            return parts;
+        }, {});
+        const todayKey = `${indiaDateParts.year}-${indiaDateParts.month}-${indiaDateParts.day}`;
+        const todayStart = new Date(`${todayKey}T00:00:00+05:30`);
+        const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+        const todaySalesDocs = await Sale.find({
+            ...queryFilter,
+            createdAt: { $gte: todayStart, $lt: tomorrowStart }
+        }).sort({ createdAt: -1 }).lean();
+
+        const todayProductsMap = new Map();
+        let todayUnitsSold = 0;
+        todaySalesDocs.forEach(sale => {
+            (sale.items || []).forEach(item => {
+                const quantity = Math.max(0, Number(item.quantity || 0));
+                const returned = Math.min(quantity, Number(item.returnedQuantity || (item.isReturned ? quantity : 0)));
+                const soldQuantity = Math.max(0, quantity - returned);
+                if (!soldQuantity) return;
+                const productName = item.productName || 'Unnamed product';
+                const itemTotal = Number(item.total || (Number(item.price || 0) * quantity));
+                const netItemTotal = quantity > 0 ? itemTotal * soldQuantity / quantity : 0;
+                const current = todayProductsMap.get(productName) || { productName, quantity: 0, total: 0 };
+                current.quantity += soldQuantity;
+                current.total += netItemTotal;
+                todayProductsMap.set(productName, current);
+                todayUnitsSold += soldQuantity;
+            });
+        });
+        const todayProducts = Array.from(todayProductsMap.values())
+            .map(item => ({ ...item, total: Number(item.total.toFixed(2)) }))
+            .sort((a, b) => b.quantity - a.quantity);
+        const todayReport = {
+            date: todayKey,
+            totalSales: Number(todaySalesDocs.reduce((sum, sale) => sum + Number(sale.totalAmount || 0), 0).toFixed(2)),
+            totalTransactions: todaySalesDocs.length,
+            unitsSold: todayUnitsSold,
+            productsSold: todayProducts.length,
+            products: todayProducts,
+            transactions: todaySalesDocs.slice(0, 30).map(sale => ({
+                transactionId: sale.transactionId,
+                customerName: sale.customerName || 'Guest',
+                paymentMethod: sale.paymentMethod || 'Cash',
+                totalAmount: Number(sale.totalAmount || 0),
+                status: sale.status || 'Completed',
+                createdAt: sale.createdAt,
+                items: (sale.items || []).map(item => ({
+                    productName: item.productName || 'Unnamed product',
+                    quantity: Math.max(0, Number(item.quantity || 0) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0)))
+                })).filter(item => item.quantity > 0)
+            }))
+        };
         let limit = 30;
         
         if (date) {
@@ -141,7 +198,7 @@ exports.getSalesAnalytics = async (req, res) => {
             { $match: filter },
             {
                 $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
                     total: { $sum: "$totalAmount" },
                     count: { $sum: 1 }
                 }
@@ -230,6 +287,7 @@ exports.getSalesAnalytics = async (req, res) => {
             success: true, 
             data: {
                 dailySales,
+                todayReport,
                 stats: {
                     totalRevenue,
                     totalProfit,
