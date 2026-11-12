@@ -407,9 +407,9 @@ exports.upsertAddon = async (req, res) => {
 
 exports.deleteAddon = async (req, res) => {
     try {
-        const addon = await Addon.findByIdAndDelete(req.params.id);
+        const addon = await Addon.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
         if (!addon) return res.status(404).json({ success: false, message: 'Add-on not found.' });
-        res.json({ success: true, message: 'Add-on deleted.' });
+        res.json({ success: true, message: 'Add-on hidden from the shop pricing page.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
