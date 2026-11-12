@@ -111,7 +111,7 @@ export const printThermalReceipt = async (sale, columns = 32) => {
     lines.push(divider);
     lines.push(padRow('TOTAL', money(sale.totalAmount), width));
     add(`Payment: ${sale.paymentMethod || 'N/A'}`);
-    lines.push(divider, ...wrap(printerSettings.footer || 'THANK YOU! VISIT AGAIN', width), '', '');
+    lines.push(divider, ...wrap(printerSettings.footer || 'THANK YOU! VISIT AGAIN', width), ...wrap('Powered by ASKC TECHNOLOGIES', width), '', '');
 
     const bytes = [
         ESC, 0x40,             // Initialize
