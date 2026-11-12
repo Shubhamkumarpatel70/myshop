@@ -37,6 +37,24 @@ const padRow = (left, right, width) => {
 export const isThermalPrinterSupported = () =>
     typeof window !== 'undefined' && !!navigator.serial && window.isSecureContext;
 
+export const connectThermalPrinter = async () => {
+    if (!isThermalPrinterSupported()) {
+        throw new Error('Direct printer connection needs Chrome or Edge on HTTPS with Web Serial support.');
+    }
+    const ports = await navigator.serial.getPorts();
+    const port = ports[0] || await navigator.serial.requestPort();
+    const info = port.getInfo?.() || {};
+    return {
+        port,
+        name: [info.usbVendorId ? `USB ${info.usbVendorId.toString(16).toUpperCase()}` : '', info.usbProductId ? `Product ${info.usbProductId.toString(16).toUpperCase()}` : ''].filter(Boolean).join(' · ') || 'Serial thermal printer',
+    };
+};
+
+export const getAuthorizedThermalPrinters = async () => {
+    if (!isThermalPrinterSupported()) return [];
+    return navigator.serial.getPorts();
+};
+
 export const printThermalReceipt = async (sale, columns = 32) => {
     if (!isThermalPrinterSupported()) {
         throw new Error('Thermal printing needs Chrome or Edge on a secure HTTPS page with Web Serial support.');
@@ -102,7 +120,8 @@ export const printThermalReceipt = async (sale, columns = 32) => {
         GS, 0x56, 0x41, 0x03  // Partial cut
     ];
 
-    const port = await navigator.serial.requestPort();
+    const authorizedPorts = await navigator.serial.getPorts();
+    const port = authorizedPorts[0] || await navigator.serial.requestPort();
     let openedHere = false;
     try {
         if (!port.readable || !port.writable) {
