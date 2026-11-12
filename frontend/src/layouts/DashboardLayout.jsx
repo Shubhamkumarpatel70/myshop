@@ -266,6 +266,7 @@ const DashboardLayout = () => {
                 key={item.path}
                 to={item.path}
                 title={compact ? item.name : undefined}
+                aria-current={isActive ? "page" : undefined}
                 className={[
                     'group flex items-center gap-3 rounded-[1.25rem] px-3 py-2.5 text-sm font-medium transition-all',
                     isActive
@@ -304,13 +305,14 @@ const DashboardLayout = () => {
                 ].join(' ')}
             >
                 <div className="border-b border-slate-200 p-4 dark:border-slate-800">
-                    <Link to="/" className="flex items-center gap-3">
+                    <Link to="/" className="flex items-center gap-3" aria-label="StockSaathi home">
                         <span className="flex h-10 w-10 items-center justify-center rounded-[1.25rem] bg-indigo-600 text-white">
                             <ShoppingBag size={20} />
                         </span>
                         {isSidebarOpen && (
-                            <span className="font-outfit text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                                Stock<span className="text-indigo-600">Saathi</span>
+                            <span className="flex min-w-0 flex-col leading-tight">
+                                <span className="font-outfit text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Stock<span className="text-indigo-600">Saathi</span></span>
+                                <span className="mt-1 text-[8px] font-bold uppercase tracking-[0.16em] text-slate-400">by ASKC Technologies</span>
                             </span>
                         )}
                     </Link>
@@ -386,6 +388,8 @@ const DashboardLayout = () => {
                         <div className="flex min-w-0 items-center gap-3">
                             <button
                                 onClick={() => setIsMobileMenuOpen(true)}
+                                aria-label={t("Open navigation menu")}
+                                aria-expanded={isMobileMenuOpen}
                                 className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden"
                             >
                                 <Menu size={18} />
@@ -484,7 +488,7 @@ const DashboardLayout = () => {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-x-auto overflow-y-auto p-4 pb-32 sm:p-6 sm:pb-32 lg:pb-10">
+                <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 pb-28 sm:p-6 sm:pb-32 lg:pb-10">
                     <div className="w-full min-w-0">
                         <AnimatePresence mode="wait">
                             {user?.role === 'shop_owner' && user?.approvalStatus === 'Rejected' ? (
@@ -534,8 +538,9 @@ const DashboardLayout = () => {
                                     <Link
                                         key={item.path}
                                         to={item.path}
+                                        aria-current={isActive ? "page" : undefined}
                                         className={[
-                                            'flex flex-col items-center gap-1 rounded-xl px-2 py-2 transition-all duration-300',
+                                            'flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-2 transition-all duration-300',
                                             isActive
                                                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 scale-[1.02]'
                                                 : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5',
@@ -583,6 +588,7 @@ const DashboardLayout = () => {
                                 </div>
                                 <button
                                     onClick={() => setIsMobileMenuOpen(false)}
+                                    aria-label={t("Close navigation menu")}
                                     className="grid h-9 w-9 place-items-center rounded-[1.25rem] border border-slate-200 dark:border-slate-700"
                                 >
                                     <X size={16} />
