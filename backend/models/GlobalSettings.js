@@ -6,6 +6,7 @@ const globalSettingsSchema = new mongoose.Schema({
     qrCode: { type: String, default: '' }, // URL to QR image
     supportPhone: { type: String, default: '' },
     isPaymentRequired: { type: Boolean, default: false },
+    paymentVerificationMode: { type: String, enum: ['manual', 'cashfree'], default: 'manual' },
     isMaintenanceMode: { type: Boolean, default: false },
     maintenanceTime: { type: String, default: '15 Minutes' },
     maintenanceUntil: { type: Date },
