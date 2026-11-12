@@ -463,7 +463,7 @@ const Sales = () => {
         let totalSgst = 0;
         let totalIgst = 0;
 
-        const itemsHtml = sale.items.map(item => {
+        const itemsHtml = sale.items.map((item, idx) => {
             const itemTotal = Number(item.total ?? (item.price * item.quantity));
             const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
             const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
@@ -480,7 +480,7 @@ const Sales = () => {
                 <tr style="${returnedQty ? 'background-color: #fff1f2; opacity: 0.85;' : ''}">
                     <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">
                         <div style="font-weight: 800; color: #1e293b; font-size: 10pt; text-transform: uppercase;">
-                            ${escapeHtml(item.product?.productName || item.productName)}
+                            ${escapeHtml(item.product?.productName || item.productName || `Product ${idx + 1}`)}
                         </div>
                         ${returnedQty ? `<small style="color:#e11d48;">Returned: ${returnedQty}</small>` : ''}
                     </td>
@@ -661,7 +661,7 @@ const Sales = () => {
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">New Sale</span>
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white uppercase">POS <span className="text-indigo-600">Terminal</span></h1>
-                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Create sales, take payments, and print receipts.</p>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Make a sale, take payment, and print a receipt.</p>
                     </div>
                     <button onClick={() => { setPosStep(1); setIsSaleModalOpen(true); }} className="h-14 px-10 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
                         <Plus size={20} /> New Sale
@@ -966,7 +966,8 @@ const Sales = () => {
                                     {viewingSale.items.map((item, idx) => (
                                         <tr key={idx} className={item.isReturned ? 'bg-rose-50/50' : ''}>
                                             <td className="px-6 py-4">
-                                                <p className="font-black text-slate-900 dark:text-white uppercase tracking-tight">{item.product?.productName || item.productName}</p>
+                                                <p className="font-black text-slate-900 dark:text-white uppercase tracking-tight">{item.product?.productName || item.productName || 'Product'}</p>
+                                                {Number(item.returnedQuantity || 0) > 0 && <div className="mt-1 text-left text-[10px] font-semibold text-rose-600">Returned {item.returnedQuantity} of {item.quantity}{item.returnReason ? ` · ${item.returnReason}` : ''}</div>}
                                             </td>
                                             <td className="px-6 py-4 text-center font-bold">{Math.max(0, Number(item.quantity || 0) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0)))}
                                                 {Number(item.returnedQuantity || 0) > 0 && <span className="block text-[9px] text-rose-500">Returned: {item.returnedQuantity}</span>}
@@ -997,6 +998,8 @@ const Sales = () => {
                                 </tbody>
                             </table>
                         </div>
+
+                        {(viewingSale.status === 'Returned' || viewingSale.status === 'Partial Return') && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm dark:border-rose-900/50 dark:bg-rose-500/10"><p className="font-bold text-rose-700 dark:text-rose-300">{viewingSale.status === 'Returned' ? 'All items returned' : 'Partial return recorded'}</p><p className="mt-1 text-xs text-rose-600 dark:text-rose-300">Returned quantities and reasons are shown beside each product. Stock was updated when the return was saved.</p></div>}
 
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                             <div className="text-center sm:text-left">
