@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }) => {
             
             if (isNetworkError && mPin) {
                 const cachedUser = getStoredUser();
-                if (cachedUser && cachedUser.email === email && cachedUser.offlineHash) {
+                if (cachedUser && String(cachedUser.email || '').trim().toLowerCase() === String(email || '').trim().toLowerCase() && cachedUser.offlineHash) {
                     const inputHash = await hashMPin(email, mPin);
                     if (inputHash === cachedUser.offlineHash) {
                         setUser(cachedUser);
