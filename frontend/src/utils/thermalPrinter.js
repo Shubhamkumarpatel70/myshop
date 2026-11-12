@@ -63,14 +63,18 @@ export const printThermalReceipt = async (sale, columns = 32) => {
 
     const width = columns === 48 ? 48 : 32;
     const shop = sale.user || {};
+    let printerSettings = {};
+    try { printerSettings = JSON.parse(localStorage.getItem('stocksaathi_thermal_printer_settings') || '{}'); } catch { printerSettings = {}; }
     const lines = [];
     const add = value => lines.push(...wrap(value, width));
     const divider = '-'.repeat(width);
 
-    lines.push(...[shop.shopName || 'STOCK SAATHI'].flatMap(value => wrap(value, width)));
-    lines.push(...wrap(shop.address || '', width));
-    if (shop.phone) lines.push(...wrap(`Phone: ${shop.phone}`, width));
-    if (shop.gstEnabled && shop.gstin) lines.push(...wrap(`GSTIN: ${shop.gstin}`, width));
+    if (printerSettings.shopHeader !== false) {
+        lines.push(...[shop.shopName || 'STOCK SAATHI'].flatMap(value => wrap(value, width)));
+        if (shop.address) lines.push(...wrap(shop.address, width));
+        if (shop.phone) lines.push(...wrap(`Phone: ${shop.phone}`, width));
+        if (shop.gstEnabled && shop.gstin) lines.push(...wrap(`GSTIN: ${shop.gstin}`, width));
+    }
     lines.push(divider, 'TAX INVOICE', divider);
     add(`Bill: ${sale.transactionId || sale._id || 'N/A'}`);
     add(`Date: ${new Date(sale.createdAt || Date.now()).toLocaleString('en-IN')}`);
@@ -107,7 +111,7 @@ export const printThermalReceipt = async (sale, columns = 32) => {
     lines.push(divider);
     lines.push(padRow('TOTAL', money(sale.totalAmount), width));
     add(`Payment: ${sale.paymentMethod || 'N/A'}`);
-    lines.push(divider, 'THANK YOU! VISIT AGAIN', '', '');
+    lines.push(divider, ...wrap(printerSettings.footer || 'THANK YOU! VISIT AGAIN', width), '', '');
 
     const bytes = [
         ESC, 0x40,             // Initialize
