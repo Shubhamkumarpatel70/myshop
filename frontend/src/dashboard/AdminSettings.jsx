@@ -211,7 +211,6 @@ const AdminSettings = () => {
                 )}
 
                 {(settings.paymentVerificationMode || 'manual') === 'manual' && settings.isPaymentRequired && (
-                {/* QR Code Section */}
                 <div className="md:col-span-2 bg-slate-950 text-white p-8 md:p-12 rounded-[3.5rem] relative overflow-hidden group">
                     <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
                         <div className="w-48 h-48 bg-white p-4 rounded-3xl flex items-center justify-center shrink-0">
