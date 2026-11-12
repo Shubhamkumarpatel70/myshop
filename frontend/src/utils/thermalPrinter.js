@@ -111,6 +111,10 @@ export const printThermalReceipt = async (sale, columns = 32) => {
     lines.push(divider);
     lines.push(padRow('TOTAL', money(sale.totalAmount), width));
     add(`Payment: ${sale.paymentMethod || 'N/A'}`);
+    if (Array.isArray(sale.payments) && sale.payments.length > 1) {
+        for (const payment of sale.payments) add(`${payment.mode}: ${money(payment.amount)}`);
+    }
+    if (sale.customerGSTIN) add(`Customer GSTIN: ${sale.customerGSTIN}`);
     lines.push(divider, ...wrap(printerSettings.footer || 'THANK YOU! VISIT AGAIN', width), ...wrap('Powered by ASKC TECHNOLOGIES', width), '', '');
 
     const bytes = [
