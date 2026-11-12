@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -19,7 +19,6 @@ import { useLanguage } from '../context/LanguageContext';
 
 const Sales = () => {
     const { t } = useLanguage();
-    const { searchQuery } = useOutletContext() || { searchQuery: '' };
     const navigate = useNavigate();
     const [sales, setSales] = useState([]);
     const [products, setProducts] = useState([]);
@@ -31,12 +30,6 @@ const Sales = () => {
     const [pagination, setPagination] = useState({ total: 0, pages: 1 });
     const [loadingMore, setLoadingMore] = useState(false);
     const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7)); // Default: Current Month
-
-    useEffect(() => {
-        if (searchQuery !== undefined) {
-            setSearchTerm(searchQuery);
-        }
-    }, [searchQuery]);
 
     const [paymentConfig, setPaymentConfig] = useState(null);
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
