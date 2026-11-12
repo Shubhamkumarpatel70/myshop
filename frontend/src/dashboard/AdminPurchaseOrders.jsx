@@ -25,7 +25,7 @@ const AdminPurchaseOrders = () => {
     const fetchAdminPOs = async () => {
         try {
             const res = await api.get('/purchase-orders/admin');
-            setPos(res.data.data);
+            setPos(Array.isArray(res.data?.data) ? res.data.data : []);
         } catch (error) {
             toast.error("Failed to load global POs");
         } finally {
@@ -35,7 +35,7 @@ const AdminPurchaseOrders = () => {
 
     const filteredPOs = pos.filter(po => {
         const matchesSearch = 
-            po.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            String(po.poNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             po.supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             po.user?.shopName?.toLowerCase().includes(searchTerm.toLowerCase());
         
