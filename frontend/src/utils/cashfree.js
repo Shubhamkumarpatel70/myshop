@@ -53,6 +53,17 @@ export const loadCashfreeSdk = () => {
     return cashfreeSdkPromise;
 };
 
+// Warm up the Cashfree SDK while the pricing or registration page is open.
+// This is best-effort: a preload failure must not break page rendering or create
+// an unhandled promise rejection. The real checkout initialization retries and
+// reports a clear error if the SDK is still unavailable when the user pays.
+export const preloadCashfreeSdk = () => loadCashfreeSdk()
+    .then(() => true)
+    .catch((error) => {
+        console.warn('[Cashfree] SDK preload failed; checkout will retry on demand.', error);
+        return false;
+    });
+
 // Initialize the SDK before the user taps Pay so mobile browsers retain the
 // user-activation context required for the checkout redirect.
 export const prepareCashfreeCheckout = async ({ environment }) => {
