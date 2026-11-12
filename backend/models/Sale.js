@@ -25,6 +25,10 @@ const saleItemSchema = new mongoose.Schema({
 const saleSchema = new mongoose.Schema({
     items: [saleItemSchema],
     totalAmount: { type: Number, required: true },
+    subtotalAmount: { type: Number, default: 0 },
+    discountType: { type: String, enum: ['none', 'amount', 'percentage'], default: 'none' },
+    discountValue: { type: Number, default: 0, min: 0 },
+    discountAmount: { type: Number, default: 0, min: 0 },
     customerName: { type: String, default: 'Guest' },
     customerPhone: { type: String },
     customerGSTIN: { type: String, default: '' },
