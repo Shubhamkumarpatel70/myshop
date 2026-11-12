@@ -287,6 +287,7 @@ exports.getCashfreeWebhookEvents = async (req, res) => {
 
 const Payment = require('../models/Payment');
 const Plan = require('../models/Plan');
+const Addon = require('../models/Addon');
 const AuditLog = require('../models/AuditLog');
 
 // Return the authenticated user's Cashfree order details for the hosted checkout page.
@@ -388,9 +389,10 @@ const activatePaidPlan = async (orderId) => {
     if (!user || (!payment.plan && !payment.addonName)) throw new Error('Subscription owner, plan, or add-on no longer exists.');
     const now = payment.paymentDate || new Date();
     const paymentRef = String(successful.cf_payment_id || payment.cashfreePaymentId || payment.paymentId);
-    const alreadyApplied = payment.addonName === 'Barcode Booster'
+    const activationKey = payment.addonActivationKey || '';
+    const alreadyApplied = activationKey === 'barcode'
         ? Boolean(user.hasBarcodeAddon)
-        : payment.addonName === 'Team Expansion'
+        : activationKey === 'team'
             ? Boolean(user.hasStaffAddon)
             : Array.isArray(user.subscriptionHistory) && user.subscriptionHistory.some(entry => entry.paymentRef === paymentRef);
 
@@ -404,10 +406,10 @@ const activatePaidPlan = async (orderId) => {
 
     const activatedItem = payment.addonName || payment.plan.name;
     if (!alreadyApplied) {
-        if (payment.addonName === 'Barcode Booster') {
+        if (activationKey === 'barcode') {
             user.hasBarcodeAddon = true;
             user.subscriptionPlan = 'Enterprise';
-        } else if (payment.addonName === 'Team Expansion') {
+        } else if (activationKey === 'team') {
             user.hasStaffAddon = true;
             user.subscriptionPlan = 'Enterprise';
         } else if (payment.plan) {
@@ -435,14 +437,14 @@ exports.createSubscriptionOrder = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (!user || user.role !== 'shop_owner') return res.status(403).json({ success: false, message: 'Only shop owners can purchase a plan.' });
-        const addonPrices = { 'Barcode Booster': 499, 'Team Expansion': 999 };
         const addonName = String(req.body.addonName || '').trim();
         const isAddon = Boolean(addonName);
+        const addon = isAddon ? await Addon.findOne({ name: addonName, isActive: true }) : null;
         const plan = isAddon ? null : await Plan.findOne({ _id: req.body.planId, isActive: true });
-        if (isAddon && !Object.prototype.hasOwnProperty.call(addonPrices, addonName)) return res.status(400).json({ success: false, message: 'Selected add-on is not available.' });
+        if (isAddon && !addon) return res.status(404).json({ success: false, message: 'Selected add-on is not available.' });
         if (!isAddon && !plan) return res.status(404).json({ success: false, message: 'Selected plan is unavailable.' });
-        if (isAddon && ((addonName === 'Barcode Booster' && user.hasBarcodeAddon) || (addonName === 'Team Expansion' && user.hasStaffAddon))) return res.status(409).json({ success: false, message: 'This add-on is already active.' });
-        let amount = isAddon ? addonPrices[addonName] : Number(plan.price);
+        if (isAddon && ((addon.activationKey === 'barcode' && user.hasBarcodeAddon) || (addon.activationKey === 'team' && user.hasStaffAddon))) return res.status(409).json({ success: false, message: 'This add-on is already active.' });
+        let amount = isAddon ? Number(addon.price) : Number(plan.price);
         const currentPlan = isAddon ? null : await Plan.findOne({ name: user.subscriptionPlan });
         if (!isAddon && currentPlan && user.planExpiresAt && new Date(user.planExpiresAt) > new Date()) {
             const activatedAt = new Date(user.planActivatedAt || user.createdAt);
@@ -487,7 +489,7 @@ exports.createSubscriptionOrder = async (req, res) => {
             cashfreeOrderId: paymentId,
             user: user._id,
             ...(plan ? { plan: plan._id } : {}),
-            ...(isAddon ? { addonName } : {}),
+            ...(isAddon ? { addonName, addonActivationKey: addon.activationKey } : {}),
             amount,
             status: 'PENDING',
             gatewayResponse: { cf_order_id: order.cf_order_id },
