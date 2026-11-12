@@ -305,9 +305,9 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
                     muted
                     playsInline
                     className="w-full min-h-[260px] sm:min-h-[320px] max-h-[420px] object-cover"
-                    style={{ display: usingNativeScanner || status === 'starting' ? 'block' : 'none' }}
+                    style={{ display: usingNativeScanner ? 'block' : 'none' }}
                 />
-                <div id={SCAN_REGION_ID} className="barcode-reader w-full min-h-[260px] sm:min-h-[320px]" style={{ display: usingNativeScanner || status === 'starting' ? 'none' : 'block' }} />
+                <div id={SCAN_REGION_ID} className="barcode-reader w-full min-h-[260px] sm:min-h-[320px]" style={{ display: usingNativeScanner ? 'none' : 'block' }} />
                 {status === 'starting' && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/80 px-5 text-center">
                         <span className="h-9 w-9 animate-spin rounded-full border-4 border-white/20 border-t-indigo-400" />
