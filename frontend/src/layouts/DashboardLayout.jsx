@@ -157,6 +157,7 @@ const DashboardLayout = () => {
         { name: t('Plan Settings'), icon: Zap, path: '/dashboard/admin/pricing', roles: ['super_admin'], description: t('Manage plans and pricing'), group: 'admin-system' },
         { name: t('Settings'), icon: Settings, path: '/dashboard/admin/settings', roles: ['super_admin'], description: t('Manage platform settings'), group: 'admin-system' },
         { name: t('Revenue'), icon: IndianRupee, path: '/dashboard/admin/revenue', roles: ['super_admin'], priority: true, description: t('View platform income'), group: 'admin-system' },
+        { name: t('System Health'), icon: Activity, path: '/dashboard/admin/system-health', roles: ['super_admin'], description: t('Monitor database and API status'), group: 'admin-system' },
     ];
 
     const navItems = useMemo(
