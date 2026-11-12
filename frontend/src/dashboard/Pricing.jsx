@@ -264,9 +264,9 @@ const Pricing = () => {
     };
 
     return (
-        <div className="space-y-12 pb-20 font-jakarta">
+        <div className="mx-auto w-full min-w-0 space-y-10 overflow-x-clip pb-16 font-jakarta sm:space-y-12 sm:pb-20">
             {!user ? (
-                <div className="mx-auto max-w-4xl text-center space-y-6">
+                <div className="mx-auto max-w-4xl space-y-5 rounded-[2rem] border border-slate-200/80 bg-white/80 px-5 py-9 text-center shadow-sm backdrop-blur sm:space-y-6 sm:px-8 sm:py-12 dark:border-slate-800 dark:bg-slate-900/70">
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -275,7 +275,7 @@ const Pricing = () => {
                         <Zap size={14} className="text-indigo-600" />
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Enterprise Ready Infrastructure</span>
                     </motion.div>
-                    <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none dark:text-white">
+                    <h1 className="text-4xl font-black leading-[1.05] tracking-tight text-slate-950 dark:text-white sm:text-5xl md:text-6xl lg:text-7xl">
                         Precision <span className="text-indigo-600">Pricing</span> for <br className="hidden md:block" />
                         Modern <span className="text-slate-400">Retail.</span>
                     </h1>
@@ -284,12 +284,12 @@ const Pricing = () => {
                     </p>
                 </div>
             ) : (
-                <div className="relative overflow-hidden rounded-[3rem] border border-slate-200 bg-white p-8 shadow-2xl dark:border-slate-800 dark:bg-slate-900 md:p-12">
+                <div className="relative min-w-0 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:rounded-[2rem] sm:p-7 md:p-10 dark:border-slate-800 dark:bg-slate-900">
                     {/* Cinematic Background Elements */}
                     <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-indigo-600/5 blur-[120px]"></div>
                     <div className="absolute -bottom-20 -left-20 h-96 w-96 rounded-full bg-emerald-600/5 blur-[120px]"></div>
                     
-                    <div className="relative flex flex-col gap-10 md:flex-row md:items-center md:justify-between">
+                    <div className="relative flex min-w-0 flex-col gap-7 md:flex-row md:items-center md:justify-between md:gap-10">
                         <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-indigo-600 blur-2xl opacity-20 animate-pulse"></div>
@@ -302,7 +302,7 @@ const Pricing = () => {
                                     <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 dark:text-indigo-400">Current active License</p>
                                 </div>
-                                <h2 className="font-outfit text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-6xl flex flex-wrap items-center gap-4">
+                                <h2 className="flex flex-wrap items-center gap-3 font-outfit text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl md:text-5xl lg:text-6xl">
                                     {user.subscriptionPlan}
                                     {user.subscriptionPlan !== 'Free' && (
                                         <span className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-500/20 ring-1 ring-white/20">
@@ -357,7 +357,7 @@ const Pricing = () => {
             )}
 
             {user && !user.isTrialUsed && user.subscriptionPlan === 'Free' && (
-                <div className="rounded-3xl bg-indigo-600 p-6 text-white shadow-[0_20px_50px_rgba(79,70,229,0.35)] sm:p-8">
+                <div className="rounded-3xl bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white shadow-[0_20px_50px_rgba(79,70,229,0.25)] sm:p-8">
                     <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
                         <div>
                             <h3 className="font-outfit text-2xl font-bold">Start your 7-day trial</h3>
@@ -374,10 +374,10 @@ const Pricing = () => {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <div className="grid min-w-0 grid-cols-1 gap-5 pt-2 md:grid-cols-2 xl:grid-cols-3">
                 {loading
                     ? [1, 2, 3].map((i) => (
-                          <div key={i} className="h-[480px] animate-pulse rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" />
+                          <div key={i} className="h-[420px] animate-pulse rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" />
                       ))
                     : plans.map((plan) => {
                           const isCurrentPlan = user?.subscriptionPlan === plan.name;
@@ -389,7 +389,7 @@ const Pricing = () => {
                                   key={plan.name}
                                   initial={{ opacity: 0, y: 14 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  className={`relative flex flex-col rounded-3xl border p-6 shadow-sm transition-all sm:p-7 ${isCurrentPlan ? 'border-indigo-500 bg-indigo-50/40 dark:border-indigo-400 dark:bg-indigo-500/10' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'}`}
+                                  className={`relative flex min-w-0 flex-col rounded-3xl border p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-7 ${isCurrentPlan ? 'border-indigo-500 bg-indigo-50/40 shadow-indigo-500/10 dark:border-indigo-400 dark:bg-indigo-500/10' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'}`}
                               >
                                   {plan.isRecommended && (
                                       <span className="absolute -top-4 left-6 inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-500/30 ring-4 ring-white dark:ring-slate-900">
@@ -406,7 +406,7 @@ const Pricing = () => {
                                   <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{plan.description}</p>
 
                                   <div className="mt-4 flex items-end gap-2">
-                                      <p className="font-outfit text-4xl font-extrabold text-slate-900 dark:text-white">₹{plan.price.toLocaleString()}</p>
+                                      <p className="font-outfit text-3xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">₹{plan.price.toLocaleString()}</p>
                                       <p className="pb-1 text-sm text-slate-500">/ {plan.duration}</p>
                                   </div>
 
