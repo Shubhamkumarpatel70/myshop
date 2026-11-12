@@ -52,7 +52,7 @@ const Pricing = () => {
     const fetchPlans = async () => {
         try {
             const res = await api.get('/subscriptions/plans');
-            setPlans(res.data.data || []);
+            setPlans(Array.isArray(res.data?.data) ? res.data.data : []);
         } catch {
             toast.error('Unable to load pricing plans');
         } finally {
