@@ -39,7 +39,8 @@ const AdminPricing = () => {
     const handleSaveAddon = async (e) => {
         e.preventDefault();
         try {
-            const res = await api.post('/subscriptions/admin/addons', editingAddon);
+            const payload = { ...editingAddon, id: editingAddon._id || editingAddon.id || undefined };
+            const res = await api.post('/subscriptions/admin/addons', payload);
             if (res.data.success) { toast.success('Add-on saved'); setEditingAddon(null); fetchAddons(); }
         } catch (error) { toast.error(error.response?.data?.message || 'Unable to save add-on'); }
     };
