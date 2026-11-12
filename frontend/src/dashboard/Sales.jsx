@@ -729,7 +729,7 @@ const Sales = () => {
 
             {/* POS UI Modal - 4 Steps */}
             <Modal isOpen={isSaleModalOpen} onClose={() => { setIsSaleModalOpen(false); setPosStep(1); }} title="New Sale" className="max-w-4xl">
-                <div className="space-y-6">
+                <div className="ss-pos-flow space-y-6">
                     {/* Stepper */}
                     <div className="flex items-center justify-between px-4 pt-2">
                         {[1, 2, 3, 4].map(step => (
@@ -959,6 +959,7 @@ const Sales = () => {
                                                 {item.isReturned ? (
                                                     <span className="text-[9px] font-black text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2.5 py-1 rounded-lg uppercase tracking-widest">{t('Returned')}</span>
                                                 ) : (
+                                                    {Number(item.returnedQuantity || 0) > 0 && <span className="block mb-1 text-[9px] font-bold text-amber-600">Returned {item.returnedQuantity}/{item.quantity}</span>}
                                                     <button
                                                         onClick={() => {
                                                             setItemToReturn(item);
@@ -968,7 +969,7 @@ const Sales = () => {
                                                         }}
                                                         className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors inline-flex items-center gap-1 cursor-pointer"
                                                     >
-                                                        <Undo2 size={12} /> {t('Return')}
+                                                        <Undo2 size={12} /> {t('Return remaining')}
                                                     </button>
                                                 )}
                                             </td>
