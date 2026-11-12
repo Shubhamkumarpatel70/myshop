@@ -351,9 +351,18 @@ exports.getSubscriptionPayments = async (req, res) => {
 };
 
 
+const ensureDefaultAddons = async () => {
+    const defaults = [
+        { name: 'Barcode Booster', description: 'Unlimited barcode generation and priority registry access for your entire inventory.', price: 499, billingLabel: 'One-time payment', features: ['Unlimited Identifiers', 'Lifetime Validity'], activationKey: 'barcode', isActive: true },
+        { name: 'Team Expansion', description: 'Scale your team infrastructure. Instantly unlock 5 additional staff slots with advanced role-based permissions.', price: 999, billingLabel: 'One-time payment', features: ['+5 Permanent Staff Slots', 'Advanced Access Control'], activationKey: 'team', isActive: true }
+    ];
+    await Promise.all(defaults.map(item => Addon.updateOne({ name: item.name }, { $setOnInsert: item }, { upsert: true })));
+};
+
 // @desc Admin: Manage standalone add-ons
 exports.getAddons = async (req, res) => {
     try {
+        await ensureDefaultAddons();
         const addons = await Addon.find().sort({ createdAt: -1 }).lean();
         res.json({ success: true, data: addons });
     } catch (error) {
@@ -363,6 +372,7 @@ exports.getAddons = async (req, res) => {
 
 exports.getPublicAddons = async (req, res) => {
     try {
+        await ensureDefaultAddons();
         const addons = await Addon.find({ isActive: true }).sort({ price: 1 }).lean();
         res.json({ success: true, data: addons });
     } catch (error) {
