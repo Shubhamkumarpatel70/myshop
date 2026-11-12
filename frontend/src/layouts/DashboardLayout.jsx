@@ -123,39 +123,39 @@ const DashboardLayout = () => {
     };
 
     const allNavItems = [
-        { name: t('Overview'), icon: LayoutDashboard, path: '/dashboard', roles: ['super_admin', 'shop_owner', 'manager', 'cashier'], priority: true, description: t('Role summary and quick actions'), group: 'core' },
-        { name: t('Sales'), icon: ShoppingCart, path: '/dashboard/sales', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: t('POS transactions and returns'), group: 'operations' },
-        { name: t('Shifts'), icon: Clock, path: '/dashboard/shifts', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: t('Open/close and shift logs'), group: 'operations' },
-        { name: t('Reports'), icon: BarChart3, path: '/dashboard/reports', roles: ['shop_owner', 'manager', 'super_admin'], priority: true, description: t('Sales and business analytics'), group: 'operations' },
-        { name: t('Inventory'), icon: Package, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'], priority: true, description: t('Stock levels and adjustments'), group: 'inventory' },
-        { name: t('Stock Ledger'), icon: History, path: '/dashboard/ledger', roles: ['shop_owner', 'manager'], description: t('Complete product history log'), group: 'inventory' },
-        { name: t('Categories'), icon: Layers, path: '/dashboard/categories', roles: ['shop_owner', 'manager'], description: t('Catalog grouping'), group: 'inventory' },
-        { name: t('Barcodes'), icon: Tag, path: '/dashboard/barcodes', roles: ['shop_owner', 'manager'], description: t('Manage product identifiers'), group: 'inventory' },
-        { name: t('Staff'), icon: Users, path: '/dashboard/staff', roles: ['shop_owner'], description: t('Team access and roles'), group: 'management' },
-        { name: t('Pricing'), icon: Zap, path: '/dashboard/pricing', roles: ['shop_owner'], description: t('Plan and billing controls'), group: 'management' },
-        { name: t('Payments'), icon: CreditCard, path: '/dashboard/payment-settings', roles: ['shop_owner'], description: t('Gateway and UPI settings'), group: 'management' },
-        { name: t('Share Shop'), icon: Share2, path: '/dashboard/share', roles: ['shop_owner'], description: t('Promote your shop link'), group: 'community' },
-        { name: t('Customers'), icon: Users, path: '/dashboard/customers', roles: ['shop_owner', 'manager'], priority: true, description: t('Client CRM and loyalty'), group: 'community' },
-        { name: t('Purchase Orders'), icon: ShoppingCart, path: '/dashboard/purchase-orders', roles: ['shop_owner', 'manager'], description: t('Procurement and restocking'), group: 'inventory' },
-        { name: t('Account'), icon: User, path: '/dashboard/account', roles: ['shop_owner', 'manager', 'cashier'], description: t('Profile and security'), group: 'management' },
+        { name: t('Overview'), icon: LayoutDashboard, path: '/dashboard', roles: ['super_admin', 'shop_owner', 'manager', 'cashier'], priority: true, description: t('Your daily summary and shortcuts'), group: 'core' },
+        { name: t('Sales'), icon: ShoppingCart, path: '/dashboard/sales', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: t('Record sales and returns'), group: 'operations' },
+        { name: t('Shifts'), icon: Clock, path: '/dashboard/shifts', roles: ['shop_owner', 'manager', 'cashier'], priority: true, description: t('Manage work shifts'), group: 'operations' },
+        { name: t('Reports'), icon: BarChart3, path: '/dashboard/reports', roles: ['shop_owner', 'manager', 'super_admin'], priority: true, description: t('View sales and reports'), group: 'operations' },
+        { name: t('Inventory'), icon: Package, path: '/dashboard/inventory', roles: ['shop_owner', 'manager'], priority: true, description: t('Check and update stock'), group: 'inventory' },
+        { name: t('Stock Ledger'), icon: History, path: '/dashboard/ledger', roles: ['shop_owner', 'manager'], description: t('View stock changes'), group: 'inventory' },
+        { name: t('Categories'), icon: Layers, path: '/dashboard/categories', roles: ['shop_owner', 'manager'], description: t('Organise products'), group: 'inventory' },
+        { name: t('Barcodes'), icon: Tag, path: '/dashboard/barcodes', roles: ['shop_owner', 'manager'], description: t('Print and manage barcodes'), group: 'inventory' },
+        { name: t('Staff'), icon: Users, path: '/dashboard/staff', roles: ['shop_owner'], description: t('Manage your team'), group: 'management' },
+        { name: t('Pricing'), icon: Zap, path: '/dashboard/pricing', roles: ['shop_owner'], description: t('Manage your plan'), group: 'management' },
+        { name: t('Payments'), icon: CreditCard, path: '/dashboard/payment-settings', roles: ['shop_owner'], description: t('Manage payment options'), group: 'management' },
+        { name: t('Share Shop'), icon: Share2, path: '/dashboard/share', roles: ['shop_owner'], description: t('Share your shop online'), group: 'community' },
+        { name: t('Customers'), icon: Users, path: '/dashboard/customers', roles: ['shop_owner', 'manager'], priority: true, description: t('Manage customer details'), group: 'community' },
+        { name: t('Purchase Orders'), icon: ShoppingCart, path: '/dashboard/purchase-orders', roles: ['shop_owner', 'manager'], description: t('Order new stock'), group: 'inventory' },
+        { name: t('Account'), icon: User, path: '/dashboard/account', roles: ['shop_owner', 'manager', 'cashier'], description: t('Update your account'), group: 'management' },
 
         { name: t('Shops'), icon: Store, path: '/dashboard/shops', roles: ['super_admin'], priority: true, description: t('All registered shops'), group: 'admin-core' },
         { name: t('Approvals'), icon: ShieldCheck, path: '/dashboard/admin/approvals', roles: ['super_admin'], priority: true, description: t('Shop verification list'), group: 'admin-core' },
-        { name: t('Global Staff'), icon: Users, path: '/dashboard/admin/staff', roles: ['super_admin'], description: t('Monitor all shop employees'), group: 'admin-core' },
-        { name: t('Admin Barcodes'), icon: Tag, path: '/dashboard/admin/barcodes', roles: ['super_admin'], description: t('Global identifier registry'), group: 'admin-core' },
+        { name: t('Staff'), icon: Users, path: '/dashboard/admin/staff', roles: ['super_admin'], description: t('Monitor all shop employees'), group: 'admin-core' },
+        { name: t('Barcodes'), icon: Tag, path: '/dashboard/admin/barcodes', roles: ['super_admin'], description: t('Global identifier registry'), group: 'admin-core' },
         { name: t('Subscriptions'), icon: CreditCard, path: '/dashboard/admin/subscriptions', roles: ['super_admin'], description: t('Manage shop subscriptions'), group: 'admin-core' },
-        { name: t('Admin Sales'), icon: ShoppingCart, path: '/dashboard/admin/sales', roles: ['super_admin'], priority: true, description: t('Platform-wide transaction audit'), group: 'admin-ops' },
-        { name: t('Admin Inventory'), icon: Package, path: '/dashboard/admin/inventory', roles: ['super_admin'], priority: true, description: t('Platform-wide inventory view'), group: 'admin-ops' },
-        { name: t('Admin POs'), icon: ShoppingCart, path: '/dashboard/admin/purchase-orders', roles: ['super_admin'], priority: true, description: t('Platform-wide procurement audit'), group: 'admin-ops' },
-        { name: t('Platform Reports'), icon: BarChart3, path: '/dashboard/reports', roles: ['super_admin'], priority: true, description: t('Global business intelligence'), group: 'admin-ops' },
-        { name: t('Shop Finder'), icon: Search, path: '/dashboard/admin/shop-finder', roles: ['super_admin'], description: t('Lookup by shop ID'), group: 'admin-tools' },
-        { name: t('Order Finder'), icon: Search, path: '/dashboard/admin/order-finder', roles: ['super_admin'], description: t('Lookup by order or transaction ID'), group: 'admin-tools' },
+        { name: t('Sales'), icon: ShoppingCart, path: '/dashboard/admin/sales', roles: ['super_admin'], priority: true, description: t('View all shop sales'), group: 'admin-ops' },
+        { name: t('Inventory'), icon: Package, path: '/dashboard/admin/inventory', roles: ['super_admin'], priority: true, description: t('View stock across shops'), group: 'admin-ops' },
+        { name: t('Purchase Orders'), icon: ShoppingCart, path: '/dashboard/admin/purchase-orders', roles: ['super_admin'], priority: true, description: t('View shop purchase orders'), group: 'admin-ops' },
+        { name: t('Reports'), icon: BarChart3, path: '/dashboard/reports', roles: ['super_admin'], priority: true, description: t('View platform reports'), group: 'admin-ops' },
+        { name: t('Shop Finder'), icon: Search, path: '/dashboard/admin/shop-finder', roles: ['super_admin'], description: t('Find a shop'), group: 'admin-tools' },
+        { name: t('Order Finder'), icon: Search, path: '/dashboard/admin/order-finder', roles: ['super_admin'], description: t('Find an order'), group: 'admin-tools' },
         { name: t('Broadcast'), icon: Megaphone, path: '/dashboard/broadcast', roles: ['super_admin'], description: t('Send announcements to shops'), group: 'admin-comms' },
-        { name: t('Queries'), icon: MessageSquare, path: '/dashboard/admin/queries', roles: ['super_admin'], description: t('Customer support inquiries'), group: 'admin-comms' },
-        { name: t('Activity'), icon: Activity, path: '/dashboard/activity', roles: ['super_admin'], description: t('Platform activity logs'), group: 'admin-comms' },
-        { name: t('Pricing Config'), icon: Zap, path: '/dashboard/admin/pricing', roles: ['super_admin'], description: t('Manage plans and pricing'), group: 'admin-system' },
-        { name: t('Settings'), icon: Settings, path: '/dashboard/admin/settings', roles: ['super_admin'], description: t('Global platform configuration'), group: 'admin-system' },
-        { name: t('Platform Revenue'), icon: IndianRupee, path: '/dashboard/admin/revenue', roles: ['super_admin'], priority: true, description: t('Subscription earnings audit'), group: 'admin-system' },
+        { name: t('Queries'), icon: MessageSquare, path: '/dashboard/admin/queries', roles: ['super_admin'], description: t('Read and reply to questions'), group: 'admin-comms' },
+        { name: t('Activity'), icon: Activity, path: '/dashboard/activity', roles: ['super_admin'], description: t('View recent platform activity'), group: 'admin-comms' },
+        { name: t('Plan Settings'), icon: Zap, path: '/dashboard/admin/pricing', roles: ['super_admin'], description: t('Manage plans and pricing'), group: 'admin-system' },
+        { name: t('Settings'), icon: Settings, path: '/dashboard/admin/settings', roles: ['super_admin'], description: t('Manage platform settings'), group: 'admin-system' },
+        { name: t('Revenue'), icon: IndianRupee, path: '/dashboard/admin/revenue', roles: ['super_admin'], priority: true, description: t('View platform income'), group: 'admin-system' },
     ];
 
     const navItems = useMemo(
@@ -168,9 +168,9 @@ const DashboardLayout = () => {
             const sections = [
                 { key: 'core', label: t('Main') },
                 { key: 'operations', label: t('Operations') },
-                { key: 'inventory', label: t('Supply Chain') },
+                { key: 'inventory', label: t('Stock') },
                 { key: 'community', label: t('Community') },
-                { key: 'management', label: t('Administrative') },
+                { key: 'management', label: t('Manage') },
             ];
 
             return sections
@@ -182,10 +182,10 @@ const DashboardLayout = () => {
         }
 
         const sections = [
-            { key: 'admin-core', label: t('Core Admin') },
+            { key: 'admin-core', label: t('Platform') },
             { key: 'admin-ops', label: t('Operations') },
-            { key: 'admin-tools', label: t('Lookup Tools') },
-            { key: 'admin-comms', label: t('Communication') },
+            { key: 'admin-tools', label: t('Search') },
+            { key: 'admin-comms', label: t('Messages') },
             { key: 'admin-system', label: t('System') },
         ];
 
@@ -296,11 +296,11 @@ const DashboardLayout = () => {
     };
 
     return (
-        <div className="flex h-screen bg-slate-50 text-slate-900 dark:bg-[#020617] dark:text-white">
+        <div className="ss-dashboard-shell flex h-screen bg-slate-50 text-slate-900 dark:bg-[#020617] dark:text-white">
             <UserTour user={user} />
             <aside
                 className={[
-                    'hidden shrink-0 border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-900 lg:flex lg:flex-col',
+                    'ss-sidebar hidden shrink-0 border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-800 dark:bg-slate-900 lg:flex lg:flex-col',
                     isSidebarOpen ? 'w-64' : 'w-24',
                 ].join(' ')}
             >
@@ -383,7 +383,7 @@ const DashboardLayout = () => {
                         </button>
                     </div>
                 )}
-                <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-2xl dark:border-slate-800/50 dark:bg-[#020617]/80">
+                <header className="ss-topbar sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-2xl dark:border-slate-800/50 dark:bg-[#020617]/80">
                     <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
                         <div className="flex min-w-0 items-center gap-3">
                             <button
@@ -488,7 +488,7 @@ const DashboardLayout = () => {
                     </div>
                 </header>
 
-                <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 pb-28 sm:p-6 sm:pb-32 lg:pb-10">
+                <main className="ss-main min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 pb-28 sm:p-6 sm:pb-32 lg:pb-10">
                     <div className="w-full min-w-0">
                         <AnimatePresence mode="wait">
                             {user?.role === 'shop_owner' && user?.approvalStatus === 'Rejected' ? (
@@ -526,7 +526,7 @@ const DashboardLayout = () => {
                 </main>
 
                 {mobileBottomItems.length > 0 && (
-                    <nav className="fixed bottom-6 left-6 right-6 z-40 rounded-[2rem] border border-white/20 bg-white/80 px-2.5 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/80 lg:hidden ring-1 ring-black/5">
+                    <nav className="ss-mobile-bottom fixed bottom-6 left-6 right-6 z-40 rounded-[2rem] border border-white/20 bg-white/80 px-2.5 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/80 lg:hidden ring-1 ring-black/5">
                         <div className="grid grid-cols-4 gap-1">
                             {mobileBottomItems.map((item) => {
                                 const Icon = item.icon;
