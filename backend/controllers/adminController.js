@@ -55,7 +55,6 @@ exports.updateApprovalStatus = async (req, res) => {
             shop.isPaymentDone = false;
         } else {
             shop.rejectionReason = '';
-            // Approval and payment are separate checks. Never mark a payment as paid here.
         }
 
         await shop.save();
