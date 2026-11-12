@@ -232,7 +232,7 @@ exports.handleCashfreeWebhook = async (req, res) => {
         const paymentId = paymentData.cf_payment_id || event?.data?.refund?.cf_refund_id || 'no-reference';
         const eventType = event?.type || event?.event_type || 'UNKNOWN';
         const category = classifyCashfreeEvent(eventType);
-        webhookEventId = [orderId || 'no-order', paymentId, eventType, timestamp].join(':');
+        webhookEventId = [orderId || 'no-order', paymentId, eventType].join(':');
         const log = await WebhookLog.findOneAndUpdate(
             { eventId: webhookEventId },
             { $setOnInsert: {
@@ -243,10 +243,12 @@ exports.handleCashfreeWebhook = async (req, res) => {
         );
         if (log.status === 'PROCESSED') return res.status(200).json({ success: true, duplicate: true });
 
-        if (orderId && String(paymentData.payment_status || '').toUpperCase() === 'SUCCESS') {
+        // Only the canonical success event activates an order. Charges and other
+        // payment-related events are recorded for audit, but must never activate it.
+        if (orderId && String(eventType).toUpperCase() === 'PAYMENT_SUCCESS_WEBHOOK') {
             if (String(orderId).startsWith('SSPAY_')) await activatePaidPlan(orderId);
-            else await markRegistrationPaid(orderId);
-        } else if (orderId) {
+            else if (String(orderId).startsWith('SSREG_')) await markRegistrationPaid(orderId);
+        } else if (orderId && String(eventType).toUpperCase() !== 'PAYMENT_CHARGES_WEBHOOK') {
             await updateFailedPaymentFromWebhook(orderId, paymentData);
         }
 
@@ -360,54 +362,68 @@ exports.getCashfreeCheckoutOrder = async (req, res) => {
 const activatePaidPlan = async (orderId) => {
     const payment = await Payment.findOne({ cashfreeOrderId: orderId }).populate('plan');
     if (!payment) return { paid: false, reason: 'Unknown subscription order' };
-    if (payment.status === 'SUCCESS') return { paid: true, payment };
-    const payments = await cashfreeRequest(`/orders/${encodeURIComponent(orderId)}/payments`, { method: 'GET' });
-    const successful = (Array.isArray(payments) ? payments : []).find(item =>
-        item.payment_status === 'SUCCESS' &&
-        Number(item.payment_amount) === Number(payment.amount) &&
-        item.payment_currency === 'INR'
-    );
-    if (!successful) {
-        const latest = Array.isArray(payments) ? payments[payments.length - 1] : null;
-        if (latest?.payment_status === 'FAILED' || latest?.payment_status === 'USER_DROPPED') {
-            payment.status = latest.payment_status;
-            payment.gatewayResponse = latest;
-            await payment.save();
+
+    // A previous webhook may have saved SUCCESS before the user update completed.
+    // Reuse its verified gateway response and finish activation idempotently.
+    let successful = payment.status === 'SUCCESS' ? payment.gatewayResponse : null;
+    if (!successful || successful.payment_status !== 'SUCCESS') {
+        const payments = await cashfreeRequest('/orders/' + encodeURIComponent(orderId) + '/payments', { method: 'GET' });
+        successful = (Array.isArray(payments) ? payments : []).find(item =>
+            item.payment_status === 'SUCCESS' &&
+            Number(item.payment_amount) === Number(payment.amount) &&
+            item.payment_currency === 'INR'
+        );
+        if (!successful) {
+            const latest = Array.isArray(payments) ? payments[payments.length - 1] : null;
+            if (latest?.payment_status === 'FAILED' || latest?.payment_status === 'USER_DROPPED') {
+                payment.status = latest.payment_status;
+                payment.gatewayResponse = latest;
+                await payment.save();
+            }
+            return { paid: false, status: latest?.payment_status || payment.status };
         }
-        return { paid: false, status: latest?.payment_status || payment.status };
     }
 
     const user = await User.findById(payment.user);
     if (!user || (!payment.plan && !payment.addonName)) throw new Error('Subscription owner, plan, or add-on no longer exists.');
-    const now = new Date();
-    payment.status = 'SUCCESS';
-    payment.cashfreePaymentId = String(successful.cf_payment_id || '');
-    payment.paymentDate = now;
-    payment.gatewayResponse = successful;
-    await payment.save();
+    const now = payment.paymentDate || new Date();
+    const paymentRef = String(successful.cf_payment_id || payment.cashfreePaymentId || payment.paymentId);
+    const alreadyApplied = Array.isArray(user.subscriptionHistory) && user.subscriptionHistory.some(entry => entry.paymentRef === paymentRef);
 
-    let activatedItem = payment.addonName || payment.plan.name;
-    if (payment.addonName === 'Barcode Booster') {
-        user.hasBarcodeAddon = true;
-        user.subscriptionPlan = 'Enterprise';
-    } else if (payment.addonName === 'Team Expansion') {
-        user.hasStaffAddon = true;
-        user.subscriptionPlan = 'Enterprise';
-    } else if (payment.plan) {
-        const expiry = new Date(now);
-        if (payment.plan.duration === 'month') expiry.setMonth(expiry.getMonth() + 1);
-        else if (payment.plan.duration === 'year') expiry.setFullYear(expiry.getFullYear() + 1);
-        else if (payment.plan.duration === 'forever') expiry.setFullYear(expiry.getFullYear() + 50);
-        else expiry.setFullYear(expiry.getFullYear() + 1);
-        user.subscriptionPlan = payment.plan.name;
-        user.planActivatedAt = now;
-        user.planExpiresAt = payment.plan.duration === 'forever' ? null : expiry;
-        user.subscriptionHistory.push({ plan: payment.plan.name, startDate: now, endDate: payment.plan.duration === 'forever' ? null : expiry, amount: payment.amount, paymentRef: payment.cashfreePaymentId || payment.paymentId });
+    if (payment.status !== 'SUCCESS' || !payment.cashfreePaymentId) {
+        payment.status = 'SUCCESS';
+        payment.cashfreePaymentId = paymentRef;
+        payment.paymentDate = payment.paymentDate || now;
+        payment.gatewayResponse = successful;
+        await payment.save();
     }
-    user.pendingSubscription.status = 'None';
-    user.pendingSubscription.rejectReason = '';
-    await user.save();
-    await AuditLog.create({ user: user._id, shop: user._id, action: payment.addonName ? 'Add-on activated by Cashfree' : 'Subscription activated by Cashfree', module: 'Subscription Payment', details: { paymentId: payment.paymentId, orderId, item: activatedItem, amount: payment.amount } });
+
+    const activatedItem = payment.addonName || payment.plan.name;
+    if (!alreadyApplied) {
+        if (payment.addonName === 'Barcode Booster') {
+            user.hasBarcodeAddon = true;
+            user.subscriptionPlan = 'Enterprise';
+        } else if (payment.addonName === 'Team Expansion') {
+            user.hasStaffAddon = true;
+            user.subscriptionPlan = 'Enterprise';
+        } else if (payment.plan) {
+            const expiry = new Date(now);
+            if (payment.plan.duration === 'month') expiry.setMonth(expiry.getMonth() + 1);
+            else if (payment.plan.duration === 'year') expiry.setFullYear(expiry.getFullYear() + 1);
+            else if (payment.plan.duration === 'forever') expiry.setFullYear(expiry.getFullYear() + 50);
+            else expiry.setFullYear(expiry.getFullYear() + 1);
+            user.subscriptionPlan = payment.plan.name;
+            user.planActivatedAt = now;
+            user.planExpiresAt = payment.plan.duration === 'forever' ? null : expiry;
+            user.subscriptionHistory.push({ plan: payment.plan.name, startDate: now, endDate: payment.plan.duration === 'forever' ? null : expiry, amount: payment.amount, paymentRef });
+        }
+        if (user.pendingSubscription) {
+            user.pendingSubscription.status = 'None';
+            user.pendingSubscription.rejectReason = '';
+        }
+        await user.save();
+        await AuditLog.create({ user: user._id, shop: user._id, action: payment.addonName ? 'Add-on activated by Cashfree' : 'Subscription activated by Cashfree', module: 'Subscription Payment', details: { paymentId: payment.paymentId, orderId, item: activatedItem, amount: payment.amount } });
+    }
     return { paid: true, payment };
 };
 
