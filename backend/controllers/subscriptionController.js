@@ -363,7 +363,6 @@ exports.getAddons = async (req, res) => {
 
 exports.getPublicAddons = async (req, res) => {
     try {
-        await ensureDefaultAddons();
         const addons = await Addon.find({ isActive: true }).sort({ price: 1 }).lean();
         res.json({ success: true, data: addons });
     } catch (error) {
