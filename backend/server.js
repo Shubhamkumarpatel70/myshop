@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const sanitizeInput = require('./middleware/sanitizeInput');
 
 // Initialize App
 const app = express();
@@ -54,6 +55,7 @@ app.use('/api/payments/cashfree/webhook', express.raw({ type: 'application/json'
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(sanitizeInput);
 app.use(cookieParser());
 app.use(cors({
     origin: [
