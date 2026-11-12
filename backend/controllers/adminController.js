@@ -40,6 +40,13 @@ exports.updateApprovalStatus = async (req, res) => {
         if (!shop) return res.status(404).json({ success: false, message: 'Shop not found' });
 
         shop.approvalStatus = status;
+        if (status === 'Approved') {
+            const settings = await GlobalSettings.findOne();
+            if (settings?.isPaymentRequired && (settings.paymentVerificationMode || 'manual') === 'manual') {
+                if (!shop.paymentScreenshot) return res.status(400).json({ success: false, message: 'Manual payment screenshot is required before approval.' });
+                shop.isPaymentDone = true;
+            }
+        }
         if (status === 'Rejected') {
             shop.rejectionReason = reason || 'No reason provided';
             shop.isPaymentDone = false;
@@ -70,7 +77,7 @@ exports.getGlobalSettings = async (req, res) => {
 
 exports.updateGlobalSettings = async (req, res) => {
     try {
-        const { regFee, upiId, qrCode, supportPhone, isPaymentRequired, maintenanceTime, maintenanceDuration } = req.body;
+        const { regFee, upiId, qrCode, supportPhone, isPaymentRequired, paymentVerificationMode, maintenanceTime, maintenanceDuration } = req.body;
         
         let settings = await GlobalSettings.findOne();
         if (!settings) {
@@ -82,6 +89,7 @@ exports.updateGlobalSettings = async (req, res) => {
         settings.qrCode = qrCode ?? settings.qrCode;
         settings.supportPhone = supportPhone ?? settings.supportPhone;
         settings.isPaymentRequired = typeof req.body.isPaymentRequired !== 'undefined' ? req.body.isPaymentRequired : settings.isPaymentRequired;
+        if (['manual', 'cashfree'].includes(paymentVerificationMode)) settings.paymentVerificationMode = paymentVerificationMode;
         
         // Handle Maintenance Logic
         if (typeof req.body.isMaintenanceMode !== 'undefined') {
