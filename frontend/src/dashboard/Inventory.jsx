@@ -150,7 +150,8 @@ const Inventory = () => {
                 batchNumber: '',
                 productImage: product.productImage || '',
                 purchasePrice: product.purchasePrice || 0,
-                taxRate: product.taxRate || 0
+                taxRate: product.taxRate || 0,
+                variants: (product.variants || []).map(v => ({ name: v.name || '', sku: v.sku || '', price: Number(v.price) || 0, quantity: Number(v.quantity) || 0, isActive: v.isActive !== false }))
             });
         } else {
             setEditingProduct(null);
@@ -167,7 +168,8 @@ const Inventory = () => {
                 batchNumber: '',
                 productImage: '',
                 purchasePrice: 0,
-                taxRate: 0
+                taxRate: 0,
+                variants: []
             });
         }
         setIsModalOpen(true);
@@ -265,6 +267,7 @@ const Inventory = () => {
 
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [stockFilter, setStockFilter] = useState('all');
+    const [viewMode, setViewMode] = useState('table');
 
     const filteredProducts = products
         .filter(p => {
@@ -357,6 +360,10 @@ const Inventory = () => {
                         />
                     </div>
                     <div className="flex items-center gap-3">
+                        <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 p-1 bg-white dark:bg-slate-900">
+                            <button type="button" onClick={() => setViewMode('table')} className={viewMode === 'table' ? 'px-3 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-3 py-2 rounded-lg text-xs font-bold text-slate-500'}>Table</button>
+                            <button type="button" onClick={() => setViewMode('cards')} className={viewMode === 'cards' ? 'px-3 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white' : 'px-3 py-2 rounded-lg text-xs font-bold text-slate-500'}>Cards</button>
+                        </div>
                         <div className="relative">
                             <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <select
@@ -376,7 +383,7 @@ const Inventory = () => {
             {/* Inventory Asset Grid */}
             <div className="space-y-6">
                 {/* Desktop Professional Ledger */}
-                <div className="hidden lg:block overflow-hidden rounded-[1.25rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                {viewMode === 'table' && <div className="hidden lg:block overflow-hidden rounded-[1.25rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-800/30">
@@ -459,8 +466,8 @@ const Inventory = () => {
                     </table>
                 </div>
 
-                {/* Mobile Agile View */}
-                <div className="lg:hidden grid grid-cols-1 gap-5">
+                {/* Product cards */}
+                <div className={viewMode === 'cards' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5' : 'lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-5'}>
                     {loading ? [1, 2, 3].map(i => (
                         <div key={i} className="h-52 bg-white dark:bg-slate-900 rounded-[1.25rem] animate-pulse" />
                     )) : filteredProducts.map(product => (
@@ -506,7 +513,7 @@ const Inventory = () => {
                             </div>
                         </div>
                     ))}
-                </div>
+                </div>}
             </div>
 
             {/* Product Configuration Modal */}
@@ -651,6 +658,17 @@ const Inventory = () => {
                             </div>
                         </div>
                     </div>
+
+                    <section className="rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3"><div><h4 className="font-bold text-slate-900 dark:text-white">Product variants</h4><p className="text-xs text-slate-500 mt-1">Add sizes, colours or other options with separate prices and stock.</p></div>
+                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, variants: [...(prev.variants || []), { name: "", sku: "", price: Number(prev.price) || 0, quantity: 0, isActive: true }] }))} className="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold">+ Add variant</button></div>
+                        {(formData.variants || []).map((v, i) => <div key={i} className="grid grid-cols-1 sm:grid-cols-5 gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 p-3">
+                            <input aria-label="Variant name" placeholder="Size / Colour" value={v.name} onChange={e => setFormData(p => ({ ...p, variants: p.variants.map((x,n) => n === i ? { ...x, name: e.target.value } : x) }))} className="h-11 rounded-lg px-3 border dark:bg-slate-900 dark:border-slate-700" />
+                            <input aria-label="Variant SKU" placeholder="SKU" value={v.sku} onChange={e => setFormData(p => ({ ...p, variants: p.variants.map((x,n) => n === i ? { ...x, sku: e.target.value } : x) }))} className="h-11 rounded-lg px-3 border dark:bg-slate-900 dark:border-slate-700" />
+                            <input aria-label="Variant price" type="number" min="0" placeholder="Price" value={v.price} onChange={e => setFormData(p => ({ ...p, variants: p.variants.map((x,n) => n === i ? { ...x, price: Number(e.target.value) } : x) }))} className="h-11 rounded-lg px-3 border dark:bg-slate-900 dark:border-slate-700" />
+                            <input aria-label="Variant stock" type="number" min="0" placeholder="Stock" value={v.quantity} onChange={e => setFormData(p => ({ ...p, variants: p.variants.map((x,n) => n === i ? { ...x, quantity: Number(e.target.value) } : x) }))} className="h-11 rounded-lg px-3 border dark:bg-slate-900 dark:border-slate-700" />
+                            <button type="button" onClick={() => setFormData(p => ({ ...p, variants: p.variants.filter((_,n) => n !== i) }))} className="h-11 rounded-lg bg-rose-50 text-rose-600 text-xs font-bold">Remove</button></div>)}
+                    </section>
 
                     <div className="pt-6 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-4">
                         <button type="button" onClick={() => setIsModalOpen(false)} className="h-14 rounded-[1.25rem] border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">{t("Cancel Operation")}</button>
