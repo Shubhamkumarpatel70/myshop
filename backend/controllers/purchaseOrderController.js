@@ -47,8 +47,11 @@ exports.updatePOStatus = async (req, res) => {
 
             // Receive stock once only. Reopening or changing the order status cannot add the same stock twice.
             if (status === 'Received' && !po.receivedAt) {
-                const InventoryLog = require('../models/InventoryLog');
-                for (const item of po.items) {
+                // Older orders may already be marked Received before this one-time safeguard existed.
+                // Do not add their stock again.
+                if (po.status !== 'Received') {
+                    const InventoryLog = require('../models/InventoryLog');
+                    for (const item of po.items) {
                     const product = await Product.findOne({ _id: item.productId, user: req.shopOwnerId }).session(session);
                     if (!product) throw Object.assign(new Error(`Product "${item.productName}" was not found in this shop.`), { statusCode: 404 });
 
@@ -85,6 +88,7 @@ exports.updatePOStatus = async (req, res) => {
                         price: Number(item.expectedPrice || product.price || 0),
                         batchNumber
                     }], { session });
+                    }
                 }
                 po.receivedAt = new Date();
             }
