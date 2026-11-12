@@ -20,6 +20,7 @@ const purchaseOrderSchema = new mongoose.Schema({
         default: 'Pending' 
     },
     expectedDelivery: { type: Date },
+    receivedAt: { type: Date, default: null },
     notes: { type: String },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } // Shop Owner
 }, { timestamps: true });
