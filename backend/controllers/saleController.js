@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const Shift = require('../models/Shift');
 const InventoryLog = require('../models/InventoryLog');
 const Customer = require('../models/Customer');
+const User = require('../models/User');
 const { sendNotification } = require('../utils/notificationUtils');
 
 const generateTransactionId = () => {
@@ -18,6 +19,10 @@ const generateTransactionId = () => {
 exports.createSale = async (req, res) => {
     try {
         const { items, customerName, customerPhone, paymentMethod } = req.body;
+        if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ success: false, message: 'Add at least one item before checkout.' });
+        const shopSettings = await User.findById(req.shopOwnerId).select('gstEnabled gstin businessState');
+        const gstEnabled = Boolean(shopSettings?.gstEnabled);
+        const isInterState = gstEnabled && Boolean(req.body.isInterState);
         
         // Enforce Shift Management
         const activeShift = await Shift.findOne({ user: req.user._id, status: 'Open' });
@@ -39,7 +44,13 @@ exports.createSale = async (req, res) => {
                 return res.status(400).json({ success: false, message: `Insufficient stock for ${product.productName}` });
             }
 
-            const itemTotal = item.quantity * item.price;
+            const taxableAmount = Number((Number(item.quantity) * Number(item.price)).toFixed(2));
+            const taxRate = gstEnabled ? Math.min(100, Math.max(0, Number(product.taxRate) || 0)) : 0;
+            const taxAmount = Number((taxableAmount * taxRate / 100).toFixed(2));
+            const cgst = isInterState ? 0 : Number((taxAmount / 2).toFixed(2));
+            const sgst = isInterState ? 0 : Number((taxAmount - cgst).toFixed(2));
+            const igst = isInterState ? taxAmount : 0;
+            const itemTotal = Number((taxableAmount + taxAmount).toFixed(2));
             totalAmount += itemTotal;
 
             // Update product quantity (Deduct from earliest batches first - FIFO)
@@ -72,6 +83,12 @@ exports.createSale = async (req, res) => {
                 batchNumber: usedBatchNumber,
                 expiryDate: usedExpiryDate,
                 discount: item.discount || 0,
+                taxRate,
+                taxableAmount,
+                cgst,
+                sgst,
+                igst,
+                taxAmount,
                 total: itemTotal
             });
 
@@ -107,7 +124,11 @@ exports.createSale = async (req, res) => {
 
         const sale = await Sale.create({
             items: processedItems,
-            totalAmount,
+            totalAmount: Number(totalAmount.toFixed(2)),
+            taxableAmount: Number(processedItems.reduce((sum, item) => sum + (item.taxableAmount || 0), 0).toFixed(2)),
+            taxAmount: Number(processedItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0).toFixed(2)),
+            taxType: !gstEnabled ? 'none' : (isInterState ? 'inter-state' : 'intra-state'),
+            payments: Array.isArray(req.body.payments) ? req.body.payments.filter(p => p && Number(p.amount) > 0).map(p => ({ mode: p.mode, amount: Number(p.amount) })) : [],
             customerName,
             customerPhone,
             paymentMethod,
