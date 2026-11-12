@@ -274,12 +274,12 @@ const Overview = () => {
                                     <Clock size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">{t("Expiry Watchlist")}</h3>
-                                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">{t("Critical: Action Required")}</p>
+                                    <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">{t("Products Near Expiry")}</h3>
+                                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">{t("Check these items soon")}</p>
                                 </div>
                             </div>
                             <span className="px-4 py-1.5 bg-rose-50 dark:bg-rose-900/40 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-100">
-                                {stats?.expiringProducts || 0} {t("Alerts")}
+                                {stats?.expiringProducts || 0} {t("Items")}
                             </span>
                         </div>
 
@@ -294,14 +294,14 @@ const Overview = () => {
                                             <div>
                                                 <p className="font-black text-sm uppercase text-slate-900 dark:text-white truncate max-w-[200px]">{item.productName}</p>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">{t("Expires")}: {new Date(item.expiryDate).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">{t("Expiry date")}: {new Date(item.expiryDate).toLocaleDateString()}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-xs font-black text-slate-900 dark:text-white">{item.quantity} {t("Units")}</p>
                                             <Link to="/dashboard/inventory" className="inline-flex items-center gap-1 mt-1 text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline group-hover:gap-2 transition-all">
-                                                {t("Audit")} <ArrowRight size={10} />
+                                                {t("View stock")} <ArrowRight size={10} />
                                             </Link>
                                         </div>
                                     </div>
@@ -311,7 +311,7 @@ const Overview = () => {
                                     <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-200 mb-4 border border-slate-100">
                                         <ShieldCheck size={32} />
                                     </div>
-                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("All Assets Stable")}</p>
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("No products near expiry")}</p>
                                 </div>
                             )}
                         </div>
