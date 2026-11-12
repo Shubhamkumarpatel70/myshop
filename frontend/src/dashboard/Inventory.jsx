@@ -114,7 +114,7 @@ const Inventory = () => {
                     productName: productName || prev.productName,
                     productImage: productImage || prev.productImage
                 }));
-                toast.success("Identity Detected: Details Pre-filled");
+                toast.success("Product details added from barcode.");
             }
         } catch (error) {
         }
@@ -124,7 +124,7 @@ const Inventory = () => {
         setIsScannerOpen(false);
         setFormData(prev => ({ ...prev, barcode: decodedText }));
         handleBarcodeLookup(decodedText);
-        toast.success("Uplink Successful: Barcode Synced");
+        toast.success("Barcode scanned successfully.");
     };
 
     const handleOpenModal = async (product = null) => {
@@ -197,7 +197,7 @@ const Inventory = () => {
         }
     };
 
-    const handleDelete = async (id) => {        if (window.confirm("Confirm decommissioning of this asset?")) {
+    const handleDelete = async (id) => {        if (window.confirm("Are you sure you want to delete this product?")) {
             try {
                 await api.delete(`/products/${id}`);
                 toast.success("Product deleted.");
@@ -317,13 +317,13 @@ const Inventory = () => {
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{t("Real-time Warehouse Intelligence")}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{t("Stock Overview")}</p>
                         </div>
                         <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-none">
-                            {t("Stock")} <span className="text-indigo-600">{t("Inventory")}</span>
+                            {"Stock"} <span className="text-indigo-600">{"Inventory"}</span>
                         </h1>
                         <p className="text-slate-500 text-xs sm:text-sm font-medium max-w-2xl leading-relaxed">
-                            {t("Complete catalog oversight with real-time health metrics, expiry tracking, and procurement automation.")}
+                            {t("Manage products, check stock levels, and track expiry dates.")}
                         </p>
                     </div>
                     <div className="flex w-full sm:w-auto gap-3 flex-wrap">
@@ -352,7 +352,7 @@ const Inventory = () => {
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
                         <input
                             type="text"
-                            placeholder={t("Identify product by name, category or identifier...")}
+                            placeholder={t("Search by product name, category or barcode...")}
                             className="w-full h-14 pl-16 pr-6 rounded-[1.25rem] bg-slate-50 dark:bg-slate-800 border-none font-bold text-xs sm:text-sm outline-none focus:ring-4 focus:ring-indigo-500/5 transition-all dark:bg-slate-800 dark:text-white"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -408,7 +408,7 @@ const Inventory = () => {
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="text-sm font-black text-slate-900 dark:text-white truncate max-w-[200px]">{product.productName}</p>
-                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{product.barcode || t("NO IDENTIFIER")}</p>
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{product.barcode || t("NO BARCODE")}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -425,7 +425,7 @@ const Inventory = () => {
                                                 <p className={`text-sm font-black leading-none ${new Date(product.expiryDate) < new Date() ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
                                                     {formatDate(product.expiryDate)}
                                                 </p>
-                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t("Expiration")}</p>
+                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t("Expiry Date")}</p>
                                             </div>
                                         ) : (
                                             <span className="text-[9px] font-black text-slate-300 uppercase italic">{"Total Stock"}</span>
