@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Plan = require('../models/Plan');
+const Addon = require('../models/Addon');
 const { logAction } = require('../utils/auditLogger');
 const Payment = require('../models/Payment');
 
@@ -342,6 +343,61 @@ exports.getSubscriptionPayments = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(200);
         res.json({ success: true, data: payments });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+// @desc Admin: Manage standalone add-ons
+exports.getAddons = async (req, res) => {
+    try {
+        const addons = await Addon.find().sort({ createdAt: -1 }).lean();
+        res.json({ success: true, data: addons });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.getPublicAddons = async (req, res) => {
+    try {
+        const addons = await Addon.find({ isActive: true }).sort({ price: 1 }).lean();
+        res.json({ success: true, data: addons });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.upsertAddon = async (req, res) => {
+    try {
+        const { id, name, description, price, billingLabel, features, activationKey, isActive } = req.body;
+        if (!String(name || '').trim() || !String(description || '').trim() || !Number.isFinite(Number(price)) || Number(price) < 1) {
+            return res.status(400).json({ success: false, message: 'Name, description and a valid price are required.' });
+        }
+        const payload = {
+            name: String(name).trim(),
+            description: String(description).trim(),
+            price: Number(price),
+            billingLabel: String(billingLabel || 'One-time payment').trim(),
+            features: Array.isArray(features) ? features.map(item => String(item).trim()).filter(Boolean) : [],
+            activationKey: ['barcode', 'team', 'none'].includes(activationKey) ? activationKey : 'none',
+            isActive: isActive !== false
+        };
+        const addon = id
+            ? await Addon.findByIdAndUpdate(id, payload, { new: true, runValidators: true })
+            : await Addon.create(payload);
+        if (!addon) return res.status(404).json({ success: false, message: 'Add-on not found.' });
+        res.json({ success: true, data: addon });
+    } catch (error) {
+        res.status(error.code === 11000 ? 409 : 500).json({ success: false, message: error.code === 11000 ? 'An add-on with this name already exists.' : error.message });
+    }
+};
+
+exports.deleteAddon = async (req, res) => {
+    try {
+        const addon = await Addon.findByIdAndDelete(req.params.id);
+        if (!addon) return res.status(404).json({ success: false, message: 'Add-on not found.' });
+        res.json({ success: true, message: 'Add-on deleted.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
