@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Plan = require('../models/Plan');
+const { logAction } = require('../utils/auditLogger');
 
 // @desc    Get all active plans (Public)
 exports.getPublicPlans = async (req, res) => {
@@ -126,6 +127,7 @@ exports.verifySubscription = async (req, res) => {
         }
 
         await user.save();
+        await logAction(req, `Subscription ${status}`, 'Subscription', { userId, plan: user.subscriptionPlan, verificationMethod: 'manual' });
         res.json({ success: true, message: `Subscription ${status} successfully.` });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
