@@ -68,7 +68,7 @@ const Navbar = () => {
     const initial = user?.ownerName?.charAt(0)?.toUpperCase() || 'U';
 
     return (
-        <header className="fixed inset-x-0 top-0 z-[110] px-4 pt-4 sm:px-6">
+        <header className="ss-public-header fixed inset-x-0 top-0 z-[110] px-4 pt-4 sm:px-6">
             <nav
                 className={[
                     'mx-auto flex max-w-7xl items-center justify-between rounded-[1.25rem] border px-4 py-2.5 transition-all duration-300 sm:px-6',
