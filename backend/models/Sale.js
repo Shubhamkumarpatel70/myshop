@@ -25,6 +25,7 @@ const saleSchema = new mongoose.Schema({
     totalAmount: { type: Number, required: true },
     customerName: { type: String, default: 'Guest' },
     customerPhone: { type: String },
+    customerGSTIN: { type: String, default: '' },
     paymentMethod: { type: String, enum: ['Cash', 'UPI', 'Card', 'Scan & Pay', 'Udhar'], default: 'Cash' },
     payments: [{ mode: { type: String, enum: ['Cash', 'UPI', 'Card', 'Scan & Pay', 'Udhar'] }, amount: { type: Number, min: 0 } }],
     taxableAmount: { type: Number, default: 0 },
