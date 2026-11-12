@@ -83,7 +83,8 @@ const Reports = () => {
 
     const handleExportPDF = () => {
         if (!analytics) return;
-        const { stats, insights } = analytics;
+        const stats = analytics.stats || {};
+        const insights = analytics.insights || {};
         const doc = new jsPDF();
         
         // Header
@@ -91,17 +92,17 @@ const Reports = () => {
         doc.text("Business Report", 14, 22);
         doc.setFontSize(10);
         doc.setTextColor(100);
-        const filterText = dateFilter ? `Date: ${dateFilter}` : monthFilter ? `Month: ${monthFilter}` : 'Last 30 days';
+        const filterText = dateFilter ? `Date: ${dateFilter}` : monthFilter ? `Month: ${monthFilter}` : `Last ${periodFilter} days`;
         doc.text(`Generated on: ${new Date().toLocaleString()} | ${filterText}`, 14, 30);
         
         // Metrics Table
         const metricsData = [
             ["Metric", "Value", "Status"],
-            ["Total Revenue", `Rs. ${stats.totalRevenue.toLocaleString()}`, "Active"],
-            ["Net Profit", `Rs. ${stats.totalProfit.toLocaleString()}`, "Stable"],
-            ["Net Margin", `${stats.netMargin}%`, parseFloat(stats.netMargin) > 20 ? "Optimal" : "Healthy"],
-            ["Total Orders", stats.totalSalesCount, "Consistent"],
-            ["Growth Rate", `${stats.growthRate}%`, parseFloat(stats.growthRate) >= 0 ? "Positive" : "Critical"]
+            ["Total Revenue", `Rs. ${Number(stats.totalRevenue || 0).toLocaleString()}`, "Recorded"],
+            ["Net Profit", `Rs. ${Number(stats.totalProfit || 0).toLocaleString()}`, "Calculated"],
+            ["Net Margin", `${Number(stats.netMargin || 0)}%`, Number(stats.netMargin || 0) > 20 ? "Good" : "Needs review"],
+            ["Total Orders", Number(stats.totalSalesCount || 0), "Recorded"],
+            ["Growth Rate", `${Number(stats.growthRate || 0)}%`, Number(stats.growthRate || 0) >= 0 ? "Up" : "Down"]
         ];
 
         doc.autoTable({
@@ -125,7 +126,7 @@ const Reports = () => {
             `• Stock Status: ${insights.lowStockRisk}`
         ], 14, finalY + 10);
 
-        doc.save(`audit_report_${new Date().toISOString().split('T')[0]}.pdf`);
+        doc.save(`business_report_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
     const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -199,10 +200,10 @@ const Reports = () => {
                         <FileText size={14} /> Reports
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
-                        Business <span className="text-indigo-600">Audit</span>
+                        Business <span className="text-indigo-600">Report</span>
                     </h1>
                     <p className="text-slate-500 font-medium max-w-2xl text-lg leading-relaxed">
-                        See your sales, profit and stock performance in one place.
+                        Check your sales, profit, and stock in one place.
                     </p>
                 </div>
                 
@@ -274,9 +275,10 @@ const Reports = () => {
                     )}
                     <button 
                         onClick={handleExportPDF}
-                        className="flex-1 xl:flex-none h-14 px-8 rounded-[1.25rem] bg-indigo-600 text-white text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3"
+                        disabled={!analytics || loading}
+                        className="flex-1 xl:flex-none h-14 px-8 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        <Download size={18} /> Download Report
+                        <Download size={18} /> Download PDF Report
                     </button>
                 </div>
             </div>
@@ -319,7 +321,7 @@ const Reports = () => {
                 ))}
             </div>
 
-            {/* Strategic Insights Audit */}
+            {/* Quick Business Insights */}
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
