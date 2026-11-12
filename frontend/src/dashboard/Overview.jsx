@@ -107,7 +107,7 @@ const Overview = () => {
         ];
     }, [stats, currentRole, t]);
 
-    if (loading) return <Loader message={t("Analyzing Operations")} />;
+    if (loading) return <Loader message={t("Loading your dashboard")} />;
 
     return (
         <div className="space-y-8 pb-20 font-jakarta px-1">
@@ -117,19 +117,19 @@ const Overview = () => {
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{t("Real-time Performance Metrics")}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{currentRole === "super_admin" ? "Platform overview" : "Your shop at a glance"}</p>
                         </div>
                         <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-none">
-                            {t("Business")} <span className="text-indigo-600">{t("Audit")}</span>
+                            {currentRole === "super_admin" ? "Admin dashboard" : "Shop dashboard"}
                         </h1>
                         <p className="text-slate-500 text-xs sm:text-sm font-medium max-w-xl">
-                            {t("A detailed breakdown of your storefront's financial performance and operational efficiency.")}
+                            {currentRole === "super_admin" ? "Manage shops, payments and platform activity from one place." : "See your sales, stock and daily work in one place."}
                         </p>
                     </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 flex items-center gap-2 w-full sm:w-auto justify-center">
                             <Activity size={16} className="text-emerald-500" />
-                            <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-300 tracking-wider">{t("Dashboard data")}</span>
+                            <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-300 tracking-wider">{t("Live data")}</span>
                         </div>
                     </div>
                 </div>
