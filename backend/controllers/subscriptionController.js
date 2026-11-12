@@ -382,7 +382,9 @@ exports.getPublicAddons = async (req, res) => {
 
 exports.upsertAddon = async (req, res) => {
     try {
-        const { id, name, description, price, billingLabel, features, activationKey, isActive } = req.body;
+        const { name, description, price, billingLabel, features, activationKey, isActive } = req.body;
+        // The admin edit form sends the Mongo document as _id; accept both forms.
+        const id = req.body.id || req.body._id || null;
         if (!String(name || '').trim() || !String(description || '').trim() || !Number.isFinite(Number(price)) || Number(price) < 1) {
             return res.status(400).json({ success: false, message: 'Name, description and a valid price are required.' });
         }
