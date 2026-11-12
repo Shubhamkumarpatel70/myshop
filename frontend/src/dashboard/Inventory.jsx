@@ -50,7 +50,8 @@ const Inventory = () => {
         description: '',
         batchNumber: '',
         productImage: '',
-        purchasePrice: 0
+        purchasePrice: 0,
+        taxRate: 0
     });
 
     const handleImageUpload = async (e) => {
@@ -145,7 +146,8 @@ const Inventory = () => {
                 description: product.description || '',
                 batchNumber: '',
                 productImage: product.productImage || '',
-                purchasePrice: product.purchasePrice || 0
+                purchasePrice: product.purchasePrice || 0,
+                taxRate: product.taxRate || 0
             });
         } else {
             setEditingProduct(null);
@@ -161,7 +163,8 @@ const Inventory = () => {
                 description: '',
                 batchNumber: '',
                 productImage: '',
-                purchasePrice: 0
+                purchasePrice: 0,
+                taxRate: 0
             });
         }
         setIsModalOpen(true);
@@ -512,6 +515,16 @@ const Inventory = () => {
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Procurement Cost (₹)")}</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.purchasePrice} onChange={(e) => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) })} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">GST Rate (%)</label>
+                            <select value={formData.taxRate} onChange={(e) => setFormData({ ...formData, taxRate: Number(e.target.value) })} className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white">
+                                <option value={0}>No GST</option>
+                                <option value={5}>5%</option>
+                                <option value={12}>12%</option>
+                                <option value={18}>18%</option>
+                                <option value={28}>28%</option>
+                            </select>
                         </div>
                         <div className="space-y-2 relative">
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Global Identifier (Barcode)")}</label>
