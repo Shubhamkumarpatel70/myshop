@@ -27,11 +27,13 @@ const ReceiptLookup = () => {
         setLoading(true);
         setReceipt(null);
         try {
-            const res = await api.get(`/sales/public/${lookupId}`);
+            const safeLookupId = String(lookupId || '').trim();
+            if (!safeLookupId) throw new Error('Enter your transaction ID to continue.');
+            const res = await api.get(`/sales/public/${encodeURIComponent(safeLookupId)}`);
             setReceipt(res.data.data);
             toast.success("Order Id found!");
         } catch (error) {
-            toast.error(error.response?.data?.message || "Invalid Transaction ID");
+            toast.error(error.response?.data?.message || error.message || "We couldn't find a receipt for this transaction ID.");
         } finally {
             setLoading(false);
         }
@@ -39,7 +41,10 @@ const ReceiptLookup = () => {
 
     const handleLookup = (e) => {
         e.preventDefault();
-        if (!txId) return;
+        if (!txId.trim()) {
+            toast.error('Please enter your transaction ID.');
+            return;
+        }
         performLookup(txId);
     };
 
@@ -188,9 +193,9 @@ const ReceiptLookup = () => {
     };
 
     return (
-        <div className="min-h-[80vh] bg-slate-50 dark:bg-slate-950 py-20 px-4">
-            <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-12">
+        <div className="relative min-h-[80vh] overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50 px-4 py-12 text-slate-900 dark:from-[#070b18] dark:via-slate-950 dark:to-[#070b18] dark:text-white sm:py-16">
+            <div className="relative mx-auto w-full max-w-5xl">
+                <div className="mx-auto mb-9 max-w-3xl text-center sm:mb-12">
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -198,31 +203,33 @@ const ReceiptLookup = () => {
                     >
                         <CheckCircle2 size={14} /> Digital Verification
                     </motion.div>
-                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4">
+                    <h1 className="mb-4 text-4xl font-black tracking-tight sm:text-5xl md:text-6xl">
                         My <span className="text-indigo-600">Shopping</span>
                     </h1>
-                    <p className="text-slate-500 font-medium text-lg">Enter your transaction ID to verify and download your digital receipt.</p>
+                    <p className="mx-auto max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:text-lg dark:text-slate-300">Enter your transaction ID to verify and download your digital receipt.</p>
                 </div>
 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white dark:bg-slate-900 p-8 md:p-12 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 mb-10"
+                    className="mb-8 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] sm:p-7 md:rounded-[2rem] md:p-9 dark:border-slate-800 dark:bg-slate-900/90 dark:shadow-black/20"
                 >
-                    <form onSubmit={handleLookup} className="flex flex-col md:flex-row gap-4">
-                        <div className="relative flex-1 group">
+                    <form onSubmit={handleLookup} className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                        <div className="group relative min-w-0 flex-1">
                             <Hash className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
                             <input
                                 type="text"
-                                placeholder="Enter Transaction ID (e.g. ABC12345)"
-                                className="w-full h-16 pl-16 pr-6 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-black uppercase tracking-widest text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
+                                placeholder="Enter transaction ID (e.g. ABC12345)"
+                                aria-label="Transaction ID"
+                                autoComplete="off"
+                                className="h-14 w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-bold uppercase tracking-wider text-slate-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 placeholder:font-medium placeholder:normal-case placeholder:tracking-normal dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900 sm:h-16 sm:pl-14 sm:text-base"
                                 value={txId}
                                 onChange={(e) => setTxId(e.target.value)}
                             />
                         </div>
                         <button
                             disabled={loading}
-                            className="h-16 px-10 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-3"
+                            className="inline-flex h-14 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:-translate-y-0.5 hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60 sm:h-16 sm:w-auto sm:px-8"
                         >
                             {loading ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -239,9 +246,9 @@ const ReceiptLookup = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="bg-white dark:bg-slate-900 rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800"
+                            className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900 sm:rounded-[2rem]"
                         >
-                            <div className="bg-indigo-600 p-10 text-white flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="flex flex-col items-start justify-between gap-5 bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-600 p-5 text-white sm:p-7 md:flex-row md:items-center md:p-9">
                                 <div className="flex items-center gap-4">
                                     <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
                                         <Store size={32} />
@@ -266,8 +273,8 @@ const ReceiptLookup = () => {
                                 </button>
                             </div>
 
-                            <div className="p-10">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10 pb-10 border-b border-slate-100 dark:border-slate-800">
+                            <div className="p-4 sm:p-6 md:p-9">
+                                <div className="mb-8 grid grid-cols-1 gap-4 border-b border-slate-100 pb-7 sm:grid-cols-2 md:grid-cols-3 md:gap-6 dark:border-slate-800 sm:mb-9 sm:pb-9">
                                     <div className="space-y-1">
                                         <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Transaction ID</p>
                                         <p className="font-black text-lg">#{receipt.transactionId}</p>
@@ -286,8 +293,8 @@ const ReceiptLookup = () => {
                                     <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Order Items</h4>
                                     <div className="space-y-3">
                                         {receipt.items.map((item, i) => (
-                                            <div key={i} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                                <div className="flex items-center gap-3">
+                                            <div key={i} className="flex min-w-0 items-start justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 sm:items-center sm:p-4 dark:border-slate-700/70 dark:bg-slate-800/50">
+                                                <div className="flex min-w-0 items-start gap-3">
                                                     <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center text-indigo-600 border border-slate-100 dark:border-slate-700 shadow-sm font-black text-xs">
                                                         {i + 1}
                                                     </div>
@@ -309,7 +316,7 @@ const ReceiptLookup = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end pt-6 border-t border-slate-100 dark:border-slate-800">
+                                <div className="flex justify-end border-t border-slate-100 pt-6 dark:border-slate-800">
                                     <div className="text-right space-y-2">
                                         <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
                                             {receipt.items.some(i => i.isReturned || Number(i.returnedQuantity || 0) > 0) ? 'Net Adjusted Total' : 'Grand Total'}
@@ -322,7 +329,7 @@ const ReceiptLookup = () => {
                                         )}
 
                                         <p className="text-sm font-semibold text-emerald-600">Discount: {Number(receipt.discountAmount || 0) > 0 ? `- ₹${Number(receipt.discountAmount).toFixed(2)}${receipt.discountType === 'percentage' ? ` (${receipt.discountValue}%)` : ''}` : 'N/A'}</p>
-                                        <div className="flex items-center justify-end gap-2 text-4xl font-black text-indigo-600">
+                                        <div className="flex flex-wrap items-center justify-end gap-1.5 text-3xl font-black text-indigo-600 sm:text-4xl">
                                             <IndianRupee size={32} />
                                             {Math.max(0, receipt.items.reduce((acc, item) => {
                                                 const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
