@@ -61,7 +61,19 @@ const cashfreeRequest = async (path, options = {}) => {
 const markRegistrationPaid = async (orderId) => {
     const record = await RegistrationPayment.findOne({ orderId });
     if (!record || record.paymentMethod !== 'cashfree') return { paid: false, reason: 'Unknown Cashfree order' };
-    if (record.status === 'SUCCESS') return { paid: true, record };
+    if (record.status === 'SUCCESS') {
+        // Keep legacy successful Cashfree payments in sync with dashboard access.
+        await User.updateOne(
+            { _id: record.user },
+            { $set: {
+                isPaymentDone: true,
+                approvalStatus: 'Approved',
+                registrationPaymentOrderId: record.orderId,
+                registrationPaymentId: record.cfPaymentId || ''
+            } }
+        );
+        return { paid: true, record };
+    }
 
     const payments = await cashfreeRequest(`/orders/${encodeURIComponent(orderId)}/payments`, { method: 'GET' });
     const successful = (Array.isArray(payments) ? payments : []).find(payment =>
@@ -85,7 +97,7 @@ const markRegistrationPaid = async (orderId) => {
 
     await User.updateOne(
         { _id: record.user },
-        { $set: { isPaymentDone: true, registrationPaymentOrderId: record.orderId, registrationPaymentId: record.cfPaymentId } }
+        { $set: { isPaymentDone: true, approvalStatus: 'Approved', registrationPaymentOrderId: record.orderId, registrationPaymentId: record.cfPaymentId } }
     );
     return { paid: true, record };
 };
