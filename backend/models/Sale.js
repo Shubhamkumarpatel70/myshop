@@ -17,6 +17,7 @@ const saleItemSchema = new mongoose.Schema({
     taxAmount: { type: Number, default: 0 },
     total: { type: Number, required: true },
     isReturned: { type: Boolean, default: false },
+    returnedQuantity: { type: Number, default: 0, min: 0 },
     returnReason: { type: String }
 });
 
