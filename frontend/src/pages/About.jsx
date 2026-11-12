@@ -26,14 +26,14 @@ const About = () => {
     ];
 
     return (
-        <main className="overflow-x-hidden bg-slate-50 pb-20 pt-32 text-slate-900 dark:bg-[#020617] dark:text-white">
-            <section className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        <main className="relative isolate overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50 pb-16 pt-10 text-slate-900 dark:from-[#070b18] dark:via-slate-950 dark:to-[#070b18] dark:text-white sm:pb-24">
+            <section className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
                     <div className="absolute -left-20 top-0 h-64 w-64 rounded-full bg-indigo-500/12 blur-3xl" />
                     <div className="absolute -right-20 top-20 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
                 </div>
 
-                <div className="mx-auto max-w-3xl text-center">
+                <div className="mx-auto max-w-4xl text-center">
                     <motion.p
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -45,7 +45,7 @@ const About = () => {
                         initial={{ opacity: 0, y: 14 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="mt-5 font-outfit text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl"
+                        className="mt-5 font-outfit text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
                     >
                         {t('Built to help retail teams run faster and smarter every day')}
                     </motion.h1>
@@ -59,7 +59,7 @@ const About = () => {
                     </motion.p>
                 </div>
 
-                <div className="mt-14 grid gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-2 lg:p-10">
+                <div className="mt-12 grid gap-6 rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.07)] backdrop-blur sm:mt-16 sm:p-8 lg:grid-cols-2 lg:gap-10 lg:p-10 dark:border-slate-800 dark:bg-slate-900/90">
                     <div>
                         <h2 className="font-outfit text-2xl font-bold tracking-tight sm:text-3xl">{t('Our mission')}</h2>
                         <p className="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">
@@ -76,7 +76,7 @@ const About = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="rounded-2xl bg-slate-950 p-6 text-white shadow-xl sm:p-8">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-xl sm:p-8">
                         <div className="flex items-center gap-2 text-indigo-300">
                             <Users className="h-5 w-5" />
                             <p className="text-sm font-semibold">{t('Customer-first product direction')}</p>
@@ -91,7 +91,7 @@ const About = () => {
                     </div>
                 </div>
 
-                <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-14 sm:grid-cols-2 lg:grid-cols-3">
                     {pillars.map((pillar, index) => (
                         <motion.article
                             key={pillar.title}
@@ -99,9 +99,9 @@ const About = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.08 }}
                             viewport={{ once: true }}
-                            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                            className="group rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-950/5 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-500/40"
                         >
-                            <div className="mb-4 inline-flex rounded-xl bg-indigo-50 p-3 dark:bg-indigo-500/15">{pillar.icon}</div>
+                            <div className="mb-4 inline-flex rounded-2xl bg-indigo-50 p-3 transition-colors group-hover:bg-indigo-100 dark:bg-indigo-500/15 dark:group-hover:bg-indigo-500/25">{pillar.icon}</div>
                             <h3 className="font-outfit text-xl font-bold tracking-tight">{pillar.title}</h3>
                             <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{pillar.description}</p>
                         </motion.article>
