@@ -69,7 +69,7 @@ const Home = () => {
                             className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-4 py-2 text-xs font-semibold text-indigo-700 shadow-sm dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200"
                         >
                             <Sparkles className="h-4 w-4" />
-                            {t('Trusted by growing retail teams')}
+                            {t('Retail operations, made clearer')}
                         </motion.div>
 
                         <motion.h1
@@ -137,11 +137,11 @@ const Home = () => {
                                 </span>
                                 <div>
                                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t("Today's Summary")}</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('Live store performance')}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('Product capabilities')}</p>
                                 </div>
                             </div>
                             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                                {t('Live')}
+                                {t('Product preview')}
                             </span>
                         </div>
 
@@ -149,26 +149,26 @@ const Home = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
                                     <p className="text-xs text-slate-500 dark:text-slate-400">{t('Sales')}</p>
-                                    <p className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">₹12,640</p>
+                                    <p className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">—</p>
                                 </div>
                                 <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
                                     <p className="text-xs text-slate-500 dark:text-slate-400">{t('Orders')}</p>
-                                    <p className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">286</p>
+                                    <p className="font-outfit text-2xl font-bold text-slate-900 dark:text-white">—</p>
                                 </div>
                             </div>
 
                             <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
                                 <div className="mb-3 flex items-center justify-between">
                                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('Stock Health')}</p>
-                                    <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">93%</p>
+                                    <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">Your data<p>
                                 </div>
                                 <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800">
-                                    <div className="h-full w-[93%] rounded-full bg-indigo-600" />
+                                    <div className="h-full w-1/2 rounded-full bg-indigo-600" />
                                 </div>
                             </div>
 
                             <ul className="space-y-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                                {[t('Low stock alerts: 4'), t('Pending invoices: 6'), t('Cashier shifts active: 9')].map((item) => (
+                                {[t('Low stock alerts'), t('Pending invoices'), t('Active cashier shifts')].map((item) => (
                                     <li key={item} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                                         <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                                         {item}
