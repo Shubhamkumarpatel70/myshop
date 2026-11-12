@@ -33,47 +33,65 @@ exports.createPO = async (req, res) => {
 exports.updatePOStatus = async (req, res) => {
     try {
         const { status } = req.body;
+        const allowedStatuses = ['Pending', 'Sent', 'Received', 'Cancelled'];
+        if (!allowedStatuses.includes(status)) {
+            return res.status(400).json({ success: false, message: 'Choose a valid order status.' });
+        }
+
         const po = await PurchaseOrder.findOne({ _id: req.params.id, user: req.shopOwnerId });
-        
-        if (!po) return res.status(404).json({ success: false, message: 'PO not found' });
+        if (!po) return res.status(404).json({ success: false, message: 'Purchase order not found.' });
 
-        // If marking as received, update inventory
-        if (status === 'Received' && po.status !== 'Received') {
+        // Add stock only once, even if the order status is changed later.
+        if (status === 'Received' && !po.receivedAt) {
             const InventoryLog = require('../models/InventoryLog');
-            
             for (const item of po.items) {
-                const product = await Product.findById(item.productId);
-                if (product) {
-                    product.quantity += item.quantity;
-                    // If PO has updated price, update product cost price
-                    if (item.expectedPrice > 0) {
-                        product.purchasePrice = item.expectedPrice;
-                    }
-                    await product.save();
-
-                    // Log the inventory change
-                    // Log the inventory change for Stock Ledger
-                    await InventoryLog.create({
-                        product: product._id,
-                        user: req.user._id,
-                        shop: req.shopOwnerId,
-                        action: 'Restock',
-                        reason: `Received from PO #${po.poNumber}`,
-                        previousQuantity: product.quantity - item.quantity,
-                        newQuantity: product.quantity,
-                        price: item.expectedPrice || product.price,
-                        batchNumber: 'PO-' + (po.poNumber.split('-')[1] || 'Batch')
-                    });
+                const product = await Product.findOne({ _id: item.productId, user: req.shopOwnerId });
+                if (!product) {
+                    return res.status(404).json({ success: false, message: `Product "${item.productName}" was not found in this shop.` });
                 }
+
+                const oldQuantity = Number(product.quantity || 0);
+                const receivedQuantity = Number(item.quantity || 0);
+                if (!Number.isFinite(receivedQuantity) || receivedQuantity <= 0) {
+                    return res.status(400).json({ success: false, message: 'Every order item must have a quantity greater than zero.' });
+                }
+
+                const batchNumber = `PO-${po.poNumber}`;
+                const existingBatch = product.batches.find(batch => batch.batchNumber === batchNumber);
+                if (existingBatch) existingBatch.quantity += receivedQuantity;
+                else product.batches.push({
+                    batchNumber,
+                    quantity: receivedQuantity,
+                    expiryDate: product.expiryDate,
+                    price: product.price,
+                    purchasePrice: Number(item.expectedPrice || product.purchasePrice || 0),
+                    supplier: po.supplierName || ''
+                });
+
+                product.quantity = oldQuantity + receivedQuantity;
+                if (Number(item.expectedPrice) > 0) product.purchasePrice = Number(item.expectedPrice);
+                await product.save();
+
+                await InventoryLog.create({
+                    product: product._id,
+                    user: req.user._id,
+                    shop: req.shopOwnerId,
+                    action: 'Restock',
+                    reason: `Received from purchase order #${po.poNumber}`,
+                    previousQuantity: oldQuantity,
+                    newQuantity: product.quantity,
+                    price: Number(item.expectedPrice || product.price || 0),
+                    batchNumber
+                });
             }
+            po.receivedAt = new Date();
         }
 
         po.status = status;
         await po.save();
-        
         res.json({ success: true, data: po });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: error.message || 'Could not update purchase order.' });
     }
 };
 
