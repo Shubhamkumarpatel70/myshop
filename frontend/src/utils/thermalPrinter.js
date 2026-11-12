@@ -73,7 +73,7 @@ export const printThermalReceipt = async (sale, columns = 32) => {
         lines.push(...[shop.shopName || 'STOCK SAATHI'].flatMap(value => wrap(value, width)));
         if (shop.address) lines.push(...wrap(shop.address, width));
         if (shop.phone) lines.push(...wrap(`Phone: ${shop.phone}`, width));
-        if (shop.gstEnabled && shop.gstin) lines.push(...wrap(`GSTIN: ${shop.gstin}`, width));
+        lines.push(...wrap(`GSTIN: ${String(shop.gstin || '').trim() || 'XXXXXXXXXXXX'}`, width));
     }
     lines.push(divider, 'TAX INVOICE', divider);
     add(`Bill: ${sale.transactionId || sale._id || 'N/A'}`);
