@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const GlobalSettings = require('../models/GlobalSettings');
 const User = require('../models/User');
 const RegistrationPayment = require('../models/RegistrationPayment');
+const WebhookLog = require('../models/WebhookLog');
 
 const API_VERSION = process.env.CASHFREE_API_VERSION || '2023-08-01';
 const isProduction = () => String(process.env.CASHFREE_ENV || 'sandbox').toLowerCase() === 'production';
@@ -147,6 +148,7 @@ exports.verifyRegistrationOrder = async (req, res) => {
 };
 
 exports.handleCashfreeWebhook = async (req, res) => {
+    let webhookEventId = null;
     try {
         const signature = req.headers['x-webhook-signature'];
         const timestamp = req.headers['x-webhook-timestamp'];
@@ -160,12 +162,24 @@ exports.handleCashfreeWebhook = async (req, res) => {
         }
         const event = JSON.parse(req.body.toString('utf8'));
         const orderId = event?.data?.order?.order_id;
+        const paymentId = event?.data?.payment?.cf_payment_id || 'no-payment-id';
+        const eventType = event?.type || event?.event_type || 'UNKNOWN';
+        webhookEventId = [orderId || 'no-order', paymentId, eventType, timestamp].join(':');
+        const log = await WebhookLog.findOneAndUpdate(
+            { eventId: webhookEventId },
+            { $setOnInsert: { eventId: webhookEventId, orderId, eventType, payload: event, status: 'RECEIVED' } },
+            { upsert: true, new: true }
+        );
+        if (log.status === 'PROCESSED') return res.status(200).json({ success: true, duplicate: true });
+
         if (orderId && event?.data?.payment?.payment_status === 'SUCCESS') {
             if (String(orderId).startsWith('SSPAY_')) await activatePaidPlan(orderId);
             else await markRegistrationPaid(orderId);
         }
+        await WebhookLog.updateOne({ eventId: webhookEventId }, { $set: { status: 'PROCESSED', processedAt: new Date() } });
         return res.status(200).json({ success: true });
     } catch (error) {
+        if (webhookEventId) await WebhookLog.updateOne({ eventId: webhookEventId }, { $set: { status: 'FAILED' } }).catch(() => {});
         console.error('Cashfree webhook processing failed:', error.message);
         return res.status(500).send('Webhook processing failed');
     }
