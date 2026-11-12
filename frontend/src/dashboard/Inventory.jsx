@@ -147,7 +147,7 @@ const Inventory = () => {
                 expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
                 lowStockThreshold: product.lowStockThreshold,
                 description: product.description || '',
-                batchNumber: '',
+                batchNumber: product.batches?.[product.batches.length - 1]?.batchNumber || '',
                 productImage: product.productImage || '',
                 purchasePrice: product.purchasePrice || 0,
                 taxRate: product.taxRate || 0,
