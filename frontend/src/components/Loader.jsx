@@ -16,16 +16,16 @@ const Loader = ({ message = "Synchronizing Matrix", fullScreen = true }) => {
                         rotate: { duration: 8, repeat: Infinity, ease: "linear" },
                         scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }
                     }}
-                    className="w-24 h-24 rounded-[2rem] border-2 border-dashed border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center relative"
+                    className="w-24 h-24 rounded-full border-[5px] border-indigo-100 border-t-indigo-600 border-r-indigo-400 dark:border-slate-700 dark:border-t-indigo-400 dark:border-r-indigo-300 flex items-center justify-center relative"
                 >
-                    <div className="absolute inset-0 bg-indigo-500/5 rounded-[2rem] blur-xl animate-pulse"></div>
+                    <div className="absolute inset-2 rounded-full bg-indigo-500/5 blur-xl animate-pulse"></div>
                 </motion.div>
                 
                 <div className="absolute inset-0 flex items-center justify-center">
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-2xl border border-slate-100 dark:border-white/5 relative z-10"
+                        className="bg-white dark:bg-slate-800 p-4 rounded-full shadow-lg border border-slate-100 dark:border-white/5 relative z-10"
                     >
                         <ShoppingBag size={32} className="text-indigo-600" />
                     </motion.div>

@@ -40,8 +40,8 @@ const PurchaseOrders = () => {
                 api.get('/purchase-orders'),
                 api.get('/products')
             ]);
-            setPos(poRes.data.data);
-            setProducts(prodRes.data.data);
+            setPos(Array.isArray(poRes.data?.data) ? poRes.data.data : []);
+            setProducts(Array.isArray(prodRes.data?.data) ? prodRes.data.data : []);
         } catch (error) {
             toast.error("Failed to load data");
         } finally {
@@ -61,8 +61,9 @@ const PurchaseOrders = () => {
         if (field === 'productId') {
             const prod = products.find(p => p._id === value);
             newItems[index].productId = value;
-            newItems[index].productName = prod.productName;
-            newItems[index].expectedPrice = prod.purchasePrice || 0;
+            if (!prod) return;
+            newItems[index].productName = prod.productName || '';
+            newItems[index].expectedPrice = Number(prod.purchasePrice) || 0;
         } else {
             newItems[index][field] = value;
         }

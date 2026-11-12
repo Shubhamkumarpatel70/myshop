@@ -23,7 +23,7 @@ const Shifts = () => {
     const [openingCash, setOpeningCash] = useState('');
     const [closingCash, setClosingCash] = useState('');
     const [notes, setNotes] = useState('');
-    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+    const [selectedMonth, setSelectedMonth] = useState((() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; })()); // YYYY-MM
 
     useEffect(() => {
         fetchData();
@@ -35,8 +35,8 @@ const Shifts = () => {
                 api.get(`/shifts?month=${selectedMonth}`),
                 api.get('/shifts/current')
             ]);
-            setShifts(shiftsRes.data.data);
-            setCurrentShift(currentRes.data.data);
+            setShifts(Array.isArray(shiftsRes.data?.data) ? shiftsRes.data.data : []);
+            setCurrentShift(currentRes.data?.data || null);
         } catch (error) {
             toast.error(t("Failed to load shift data"));
         } finally {
@@ -81,7 +81,7 @@ const Shifts = () => {
     };
 
     const getReconciliationStatus = (shift) => {
-        if (!shift.closingCash || !shift.expectedCash) return { label: t('Pending'), color: 'text-slate-400', diff: 0 };
+        if (shift.closingCash == null || shift.expectedCash == null) return { label: t('Pending'), color: 'text-slate-400', diff: 0 };
         const diff = shift.closingCash - shift.expectedCash;
         if (Math.abs(diff) < 1) return { label: t('Balanced'), color: 'text-emerald-500', icon: CheckCircle, diff: 0 };
         if (diff > 0) return { label: `+₹${diff.toLocaleString()}`, color: 'text-amber-500', icon: ArrowUpCircle, diff };
