@@ -197,8 +197,7 @@ const Inventory = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm("Confirm decommissioning of this asset?")) {
+    const handleDelete = async (id) => {        if (window.confirm("Confirm decommissioning of this asset?")) {
             try {
                 await api.delete(`/products/${id}`);
                 toast.success("Asset Decommissioned");
@@ -397,8 +396,7 @@ const Inventory = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                            {loading ? [1, 2, 3, 4, 5].map(i => (
-                                <tr key={i} className="animate-pulse"><td colSpan="7" className="px-8 py-10 bg-slate-50/5"></td></tr>
+                            {loading ? [1, 2, 3, 4, 5].map(i => (                                <tr key={i} className="animate-pulse"><td colSpan="7" className="px-8 py-10 bg-slate-50/5"></td></tr>
                             )) : filteredProducts.map((product) => (
                                 <tr key={product._id} className="group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
                                     <td className="px-8 py-6">
@@ -513,7 +511,7 @@ const Inventory = () => {
                             </div>
                         </div>
                     ))}
-                </div>}
+                </div>
             </div>
 
             {/* Product Configuration Modal */}
@@ -597,8 +595,7 @@ const Inventory = () => {
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
                                     <input
-                                        type="text"
-                                        placeholder={t("Scan or Type")}
+                                        type="text"                                        placeholder={t("Scan or Type")}
                                         className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 pr-12 text-sm font-bold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                                         value={formData.barcode}
                                         onChange={(e) => {
