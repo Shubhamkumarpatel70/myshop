@@ -598,7 +598,7 @@ const Sales = () => {
 
                     <div class="footer">
                         <div class="terms">Terms & Conditions</div>
-                        <div>Goods once sold cannot be returned.</div>
+                        <div>Returns are subject to the shop return policy.</div>
                         <div style="margin-top: 5px; font-weight: 900; color: #1e293b; letter-spacing: 1px;">THANK YOU! VISIT AGAIN</div>
                         <div style="font-size: 5pt; margin-top: 10px;">Computer Generated Invoice</div>
                         <div style="font-size: 7pt; margin-top: 7px; font-weight: 900; color: #4f46e5;">Powered by ASKC TECHNOLOGIES</div>
