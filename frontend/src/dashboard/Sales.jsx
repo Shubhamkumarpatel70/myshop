@@ -36,6 +36,7 @@ const Sales = () => {
     const [utrNumber, setUtrNumber] = useState('');
     const [cart, setCart] = useState([]);
     const [customerInfo, setCustomerInfo] = useState({ name: 'Guest', phone: '', address: '', paymentMethod: 'Cash' });
+    const [customerMatches, setCustomerMatches] = useState([]);
     const [transactionSearch, setTransactionSearch] = useState('');
     const [searching, setSearching] = useState(false);
     const [viewingSale, setViewingSale] = useState(null);
@@ -91,6 +92,20 @@ const Sales = () => {
         setIsSyncing(false);
         fetchSales();
     };
+
+    useEffect(() => {
+        const query = String(customerInfo.phone || '').trim();
+        if (query.length < 2) { setCustomerMatches([]); return; }
+        const timer = setTimeout(async () => {
+            try {
+                const response = await api.get(`/customers/search?q=${encodeURIComponent(query)}`);
+                setCustomerMatches(Array.isArray(response.data?.data) ? response.data.data : []);
+            } catch (error) {
+                setCustomerMatches([]);
+            }
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [customerInfo.phone]);
 
     const fetchPaymentConfig = async () => {
         try {
@@ -719,7 +734,17 @@ const Sales = () => {
                                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Customer Mobile Number</label>
                                         <div className="relative">
                                             <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                            <input type="tel" className="w-full h-16 pl-14 pr-6 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] font-black text-lg outline-none transition-all dark:text-white" value={customerInfo.phone} onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })} placeholder="91XXXXXXXX" />
+                                            <input type="tel" autoComplete="off" className="w-full h-16 pl-14 pr-6 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] font-black text-lg outline-none transition-all dark:text-white" value={customerInfo.phone} onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })} placeholder="Enter customer mobile or name" />
+                                            {customerMatches.length > 0 && (
+                                                <div className="absolute z-30 top-full mt-2 left-0 right-0 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden">
+                                                    {customerMatches.map(customer => (
+                                                        <button type="button" key={customer._id} onClick={() => { setCustomerInfo(current => ({ ...current, name: customer.name || 'Guest', phone: customer.phone || '', address: customer.address || '' })); setCustomerMatches([]); }} className="w-full px-4 py-3 text-left hover:bg-indigo-50 dark:hover:bg-slate-800 border-b last:border-0 border-slate-100 dark:border-slate-800">
+                                                            <span className="block text-sm font-bold text-slate-900 dark:text-white">{customer.name}</span>
+                                                            <span className="block text-xs text-slate-500">{customer.phone}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="space-y-3">
