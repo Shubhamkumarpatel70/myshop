@@ -462,7 +462,7 @@ const Inventory = () => {
                             ))}
                         </tbody>
                     </table>
-                </div>
+                </div>}
 
                 {/* Product cards */}
                 <div className={viewMode === 'cards' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5' : 'lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-5'}>
