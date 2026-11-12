@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
-import { openCashfreeCheckout } from '../utils/cashfree';
+import { openCashfreeCheckout, preloadCashfreeSdk } from '../utils/cashfree';
 import Modal from '../components/Modal';
 
 const Pricing = () => {
@@ -51,6 +51,7 @@ const Pricing = () => {
     useEffect(() => {
         fetchPlans();
         fetchSettings();
+        preloadCashfreeSdk();
     }, []);
 
     const fetchPlans = async () => {
