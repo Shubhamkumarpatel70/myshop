@@ -499,7 +499,7 @@ const DashboardLayout = () => {
                                 </motion.div>
                             ) : user?.role === 'shop_owner' && !user?.isPaymentDone ? (
                                 <RegistrationPayment user={user} onPaymentSuccess={() => window.location.reload()} />
-                            ) : user?.role === 'shop_owner' && user?.approvalStatus === 'Pending' ? (
+                            ) : user?.role === 'shop_owner' && !user?.isPaymentDone && user?.approvalStatus === 'Pending' ? (
                                 <motion.div key="pending" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex min-h-[70vh] flex-col items-center justify-center rounded-[1.25rem] border border-amber-200 bg-white p-8 text-center dark:border-amber-500/20 dark:bg-slate-900">
                                     <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
                                         <Clock size={24} />
