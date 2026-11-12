@@ -309,7 +309,7 @@ const CashfreeCheckout = () => {
                             {statusPopup.type === 'success' ? (
                                 <Link to="/dashboard" className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-700">Go to dashboard</Link>
                             ) : (
-                                <button type="button" onClick={() => { setStatusPopup(null); if (statusPopup.type === 'pending') verifyPayment(true); }} className="min-h-12 flex-1 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-indigo-700">{statusPopup.type === 'failed' ? 'Try again' : 'Check again'}</button>
+                                <button type="button" onClick={() => { const type = statusPopup.type; setStatusPopup(null); if (type === 'pending') verifyPayment(true); else handlePay(); }} className="min-h-12 flex-1 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-indigo-700">{statusPopup.type === 'failed' ? 'Try payment again' : 'Check again'}</button>
                             )}
                             <button type="button" onClick={() => setStatusPopup(null)} className="min-h-12 flex-1 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Close</button>
                         </div>
