@@ -1,6 +1,10 @@
 const CASHFREE_SDK_URL = 'https://sdk.cashfree.com/js/v3/cashfree.js';
 
 let cashfreeSdkPromise;
+let cashfreeInstanceCache = new Map();
+
+// Warm up the SDK while the payment screen is displayed, not after Pay is tapped.
+export const preloadCashfreeSdk = () => loadCashfreeSdk().catch(() => null);
 
 export const loadCashfreeSdk = () => {
     if (typeof window === 'undefined') return Promise.reject(new Error('Cashfree checkout is only available in a browser.'));
@@ -46,13 +50,32 @@ export const loadCashfreeSdk = () => {
 };
 
 export const openCashfreeCheckout = async ({ paymentSessionId, environment }) => {
-    if (!paymentSessionId || typeof paymentSessionId !== 'string') {
+    if (!paymentSessionId || typeof paymentSessionId !== 'string' || !paymentSessionId.trim()) {
         throw new Error('Cashfree did not return a valid payment session. Please create a new payment order.');
     }
+
+    const mode = String(environment || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
     const Cashfree = await loadCashfreeSdk();
-    const cashfree = Cashfree({ mode: environment === 'production' ? 'production' : 'sandbox' });
-    if (!cashfree || typeof cashfree.checkout !== 'function') {
-        throw new Error('Cashfree checkout could not be initialized. Please refresh and try again.');
+    let cashfree = cashfreeInstanceCache.get(mode);
+
+    if (!cashfree) {
+        cashfree = Cashfree({ mode });
+        if (cashfree && typeof cashfree.checkout === 'function') cashfreeInstanceCache.set(mode, cashfree);
     }
-    return cashfree.checkout({ paymentSessionId, redirectTarget: '_self' });
+
+    if (!cashfree || typeof cashfree.checkout !== 'function') {
+        throw new Error('Cashfree checkout could not be initialized. Refresh the page and try again.');
+    }
+
+    // _self performs a same-tab redirect and avoids mobile popup blockers.
+    const result = await cashfree.checkout({
+        paymentSessionId: paymentSessionId.trim(),
+        redirectTarget: '_self'
+    });
+
+    if (result?.error) {
+        const message = result.error.message || result.error.code;
+        throw new Error(message ? `Cashfree could not open checkout: ${message}` : 'Cashfree could not open checkout. Please retry.');
+    }
+    return result;
 };
