@@ -180,10 +180,10 @@ const Inventory = () => {
         try {
             if (editingProduct) {
                 await api.put(`/products/${editingProduct._id}`, formData);
-                toast.success("Inventory List Updated");
+                toast.success("Product updated.");
             } else {
                 await api.post('/products', formData);
-                toast.success("New Product Registered");
+                toast.success("Product added and stock saved.");
             }
             fetchData();
             setIsModalOpen(false);
@@ -192,7 +192,7 @@ const Inventory = () => {
                 setLimitMetadata({ type: 'product', isTrialUsed: error.response.data.isTrialUsed });
                 setIsLimitModalOpen(true);
             } else {
-                toast.error(error.response?.data?.message || "Protocol Failure");
+                toast.error(error.response?.data?.message || "Could not save product.");
             }
         }
     };
@@ -200,7 +200,7 @@ const Inventory = () => {
     const handleDelete = async (id) => {        if (window.confirm("Confirm decommissioning of this asset?")) {
             try {
                 await api.delete(`/products/${id}`);
-                toast.success("Asset Decommissioned");
+                toast.success("Product deleted.");
                 fetchData();
             } catch (error) {
                 toast.error("Decommissioning failed");
@@ -515,7 +515,7 @@ const Inventory = () => {
             </div>
 
             {/* Product Configuration Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingProduct ? t('Modify Asset') : t('Register Asset')} className="max-w-4xl">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingProduct ? 'Edit Product' : 'Add Product'} className="max-w-4xl">
                 <form onSubmit={handleSubmit} className="space-y-8 py-4">
                     <div className="grid grid-cols-1 gap-8 rounded-[1.25rem] border border-slate-100 bg-slate-50/50 p-6 dark:border-slate-800 dark:bg-slate-800/40 sm:grid-cols-[200px_1fr]">
                         <div className="relative mx-auto">
@@ -541,43 +541,48 @@ const Inventory = () => {
                             </div>
                         </div>
                         <div className="flex flex-col justify-center space-y-3">
-                            <h4 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">{t("Asset Identity")}</h4>
-                            <p className="text-sm text-slate-500 font-medium leading-relaxed">{t("Assign a visual identifier to this product. High-quality imagery improves catalog navigation and cashier efficiency.")}</p>
+                            <h4 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">{"Product Photo"}</h4>
+                            <p className="text-sm text-slate-500 font-medium leading-relaxed">{"Add a photo to help you identify this product."}</p>
                             <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-widest">
-                                <Zap size={14} /> {t("AI Recognition Active")}
+                                <Zap size={14} /> {"Photo added"}
                             </div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Product Designation")}</label>
-                            <input type="text" required placeholder="e.g. Premium Cotton Shirt" className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.productName} onChange={(e) => setFormData({ ...formData, productName: e.target.value })} />
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">{"Product Name"}</label>
+                            <input type="text" required placeholder="e.g. Cotton Shirt" className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.productName} onChange={(e) => setFormData({ ...formData, productName: e.target.value })} />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Logical Category")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Category"}</label>
                             <div className="relative">
                                 <select required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 appearance-none dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-                                    <option value="">{t("Select Domain")}</option>
+                                    <option value="">{"Select a category"}</option>
                                     {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
                                 </select>
                                 <ChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 rotate-90" size={18} />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Bin Quantity")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Stock Quantity"}</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Threshold Alert")}</label>
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Batch Number</label>
+                            <input type="text" placeholder="Enter batch number" className="h-14 w-full rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.batchNumber || ''} onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value.trimStart() })} />
+                            <p className="text-xs text-slate-500">This number will be saved with this stock batch.</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Low Stock Alert At</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.lowStockThreshold} onChange={(e) => setFormData({ ...formData, lowStockThreshold: parseInt(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Sale Valuation (₹)")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Selling Price (₹)"}</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Procurement Cost (₹)")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Purchase Price (₹)"}</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.purchasePrice} onChange={(e) => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
@@ -591,11 +596,11 @@ const Inventory = () => {
                             </select>
                         </div>
                         <div className="space-y-2 relative">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Global Identifier (Barcode)")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Barcode (Optional)"}</label>
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
                                     <input
-                                        type="text"                                        placeholder={t("Scan or Type")}
+                                        type="text"                                        placeholder={"Scan or enter barcode"}
                                         className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 pr-12 text-sm font-bold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                                         value={formData.barcode}
                                         onChange={(e) => {
@@ -648,7 +653,7 @@ const Inventory = () => {
                             </AnimatePresence>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Asset Expiration")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Expiry Date (Optional)"}</label>
                             <div className="relative">
                                 <input type="date" className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.expiryDate} onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })} />
                                 <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={18} />
@@ -668,8 +673,8 @@ const Inventory = () => {
                     </section>
 
                     <div className="pt-6 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-4">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-14 rounded-[1.25rem] border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">{t("Cancel Operation")}</button>
-                        <button type="submit" className="h-14 rounded-[1.25rem] bg-indigo-600 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all">{editingProduct ? t('Commit Changes') : t('Confirm Entry')}</button>
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-14 rounded-[1.25rem] border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">{"Cancel"}</button>
+                        <button type="submit" className="h-14 rounded-[1.25rem] bg-indigo-600 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all">{editingProduct ? 'Save Changes' : 'Add Product'}</button>
                     </div>
                 </form>
             </Modal>
