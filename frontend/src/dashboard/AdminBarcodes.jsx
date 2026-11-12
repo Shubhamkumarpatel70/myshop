@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { motion } from 'framer-motion';
 import { 
-    Tag, Search, Filter, ArrowUpDown, 
-    Calendar, Store, User, Box, 
-    RefreshCcw, AlertCircle, CheckCircle2 
+    Tag, Search, Calendar, Store, User, Box,
+    RefreshCcw, AlertCircle, CheckCircle2, Zap
 } from 'lucide-react';
 import BarcodeImage from '../components/BarcodeImage';
 import toast from 'react-hot-toast';
@@ -27,12 +26,25 @@ const AdminBarcodes = () => {
     const fetchAllData = async () => {
         setLoading(true);
         try {
-            const [barcodeRes, statsRes] = await Promise.all([
+            const results = await Promise.allSettled([
                 api.get('/barcodes/admin'),
                 api.get('/barcodes/admin/stats')
             ]);
-            setBarcodes(Array.isArray(barcodeRes.data?.data) ? barcodeRes.data.data : []);
-            setShopStats(Array.isArray(statsRes.data?.data) ? statsRes.data.data : []);
+            const [barcodeResult, statsResult] = results;
+
+            if (barcodeResult.status === 'fulfilled') {
+                setBarcodes(Array.isArray(barcodeResult.value.data?.data) ? barcodeResult.value.data.data : []);
+            } else {
+                setBarcodes([]);
+                throw barcodeResult.reason;
+            }
+
+            if (statsResult.status === 'fulfilled') {
+                setShopStats(Array.isArray(statsResult.value.data?.data) ? statsResult.value.data.data : []);
+            } else {
+                setShopStats([]);
+                toast.error(statsResult.reason?.response?.data?.message || 'Shop barcode summary could not be loaded.');
+            }
         } catch (error) {
             toast.error(error.response?.data?.message || "Could not load barcode records. Please refresh.");
         } finally {
@@ -43,7 +55,8 @@ const AdminBarcodes = () => {
     const fetchBarcodes = () => fetchAllData();
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-GB', {
+        if (!dateString || Number.isNaN(new Date(dateString).getTime())) return 'Not available';
+        return new Date(dateString).toLocaleString('en-GB', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
@@ -52,19 +65,25 @@ const AdminBarcodes = () => {
         });
     };
 
-    const filteredBarcodes = barcodes.filter(b => {
-        const matchesSearch = 
-            String(b.barcode || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-            (b.shopName || b.user?.shopName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            b.productName?.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesStatus = filterStatus === 'all' ? true : b.status === filterStatus;
-        
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const filteredBarcodes = barcodes.filter((barcode) => {
+        const searchableValues = [
+            barcode.barcode,
+            barcode.shopName,
+            barcode.user?.shopName,
+            barcode.ownerName,
+            barcode.user?.ownerName,
+            barcode.productName
+        ];
+        const matchesSearch = searchableValues.some(value =>
+            String(value || '').toLowerCase().includes(normalizedSearch)
+        );
+        const matchesStatus = filterStatus === 'all' || barcode.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
 
-    const filteredStats = shopStats.filter(s => 
-        String(s.shopName || '').toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredStats = shopStats.filter(shop =>
+        String(shop.shopName || '').toLowerCase().includes(normalizedSearch)
     );
 
     return (
@@ -153,7 +172,7 @@ const AdminBarcodes = () => {
                                     <div className="space-y-1">
                                         <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 dark:text-white">{shop.shopName}</h3>
                                         <div className="flex items-center gap-2">
-                                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-black uppercase tracking-widest text-slate-500">{shop.subscriptionPlan}</span>
+                                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-black uppercase tracking-widest text-slate-500">{shop.subscriptionPlan || 'No plan'}</span>
                                             {shop.hasBarcodeAddon && (
                                                 <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded text-[9px] font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-800 flex items-center gap-1">
                                                     <Zap size={10} /> Booster
@@ -169,11 +188,11 @@ const AdminBarcodes = () => {
                                 <div className="grid grid-cols-2 gap-4 mb-6">
                                     <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Barcodes</p>
-                                        <p className="text-xl font-black text-slate-900 dark:text-white">{shop.totalUsed}</p>
+                                        <p className="text-xl font-black text-slate-900 dark:text-white">{Number(shop.totalUsed || 0).toLocaleString()}</p>
                                     </div>
                                     <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Not linked</p>
-                                        <p className="text-xl font-black text-amber-600">{shop.unlinkedCount}</p>
+                                        <p className="text-xl font-black text-amber-600">{Number(shop.unlinkedCount || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
 
@@ -230,7 +249,7 @@ const AdminBarcodes = () => {
                                                 <BarcodeImage value={b.barcode} className="w-20 h-10 border border-slate-100" />
                                                 <div>
                                                     <p className="text-sm font-bold text-slate-900 dark:text-white">{b.barcode}</p>
-                                                    <p className="text-[11px] font-medium text-slate-500">ID: {b._id.slice(-8).toUpperCase()}</p>
+                                                    <p className="text-[11px] font-medium text-slate-500">ID: {String(b._id || '').slice(-8).toUpperCase() || 'N/A'}</p>
                                                 </div>
                                             </button>
                                         </td>
@@ -312,7 +331,7 @@ const AdminBarcodes = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Record ID</p>
-                                <p className="text-sm font-bold text-slate-900 dark:text-white">#{selectedBarcode._id.toUpperCase()}</p>
+                                <p className="text-sm font-bold text-slate-900 dark:text-white">#{String(selectedBarcode._id || '').toUpperCase() || 'N/A'}</p>
                             </div>
                             <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Generation Time</p>
@@ -327,8 +346,19 @@ const AdminBarcodes = () => {
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Originating Shop</p>
-                                    <p className="text-lg font-black">{selectedBarcode.shopName}</p>
+                                    <p className="text-lg font-black">{selectedBarcode.shopName || selectedBarcode.user?.shopName || 'Unknown shop'}</p>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="rounded-2xl border border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-800">
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Shop owner</p>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedBarcode.ownerName || selectedBarcode.user?.ownerName || 'Unknown'}</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-800">
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Barcode status</p>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedBarcode.status || 'Generated'}</p>
                             </div>
                         </div>
 
