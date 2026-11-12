@@ -203,8 +203,10 @@ const Sales = () => {
                 setReturnQuantity('1');
                 setItemToReturn(null);
                 await fetchProducts();
-                fetchSales(page, false);
-                setIsViewModalOpen(false);
+                await fetchSales(page, false);
+                const refreshedSale = await api.get(`/sales/${viewingSale._id}`);
+                setViewingSale(refreshedSale.data.data);
+                // Keep Sale Details open so the returned quantity and reason are visible immediately.
             }
         } catch (error) {
             toast.error(error.response?.data?.message || "Could not process the return.");
@@ -653,14 +655,14 @@ const Sales = () => {
             </AnimatePresence>
 
             {/* Simplified Terminal Header */}
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 md:p-12 border border-slate-100 dark:border-slate-800 shadow-sm mb-8">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm mb-8">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <div className="h-1 w-8 bg-indigo-400 rounded-[1.25rem]"></div>
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">New Sale</span>
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white uppercase">POS <span className="text-indigo-600">Terminal</span></h1>
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white">Sales &amp; Billing</h1>
                         <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Make a sale, take payment, and print a receipt.</p>
                     </div>
                     <button onClick={() => { setPosStep(1); setIsSaleModalOpen(true); }} className="h-14 px-10 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
