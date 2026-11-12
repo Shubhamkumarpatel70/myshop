@@ -1051,9 +1051,24 @@ const Sales = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 pt-4">
-                            <button onClick={() => handlePrintInvoice(viewingSale)} className="h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl"><Printer size={18} /> {t('Physical Bill')}</button>
-                            <button onClick={() => handleShare(viewingSale)} className="h-14 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all shadow-xl"><Share2 size={18} /> {t('Digital Bill')}</button>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
+                            <button onClick={() => handlePrintInvoice(viewingSale)} className="min-h-14 px-3 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-wide text-[10px] flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-lg"><Printer size={17} /> {t('Physical Bill')}</button>
+                            <button onClick={() => handleShare(viewingSale)} className="min-h-14 px-3 bg-emerald-600 text-white rounded-xl font-bold uppercase tracking-wide text-[10px] flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all shadow-lg"><Share2 size={17} /> {t('Share Bill')}</button>
+                            <button
+                                onClick={() => {
+                                    const eligibleItem = viewingSale.items.find(item => !item.isReturned && Number(item.quantity || 0) > Number(item.returnedQuantity || 0));
+                                    if (!eligibleItem) {
+                                        toast.error('All items in this sale have already been returned.');
+                                        return;
+                                    }
+                                    setItemToReturn(eligibleItem);
+                                    setReturnQuantity(String(Math.max(1, Number(eligibleItem.quantity || 1) - Number(eligibleItem.returnedQuantity || 0))));
+                                    setReturnReasonInput('');
+                                    setIsReturnModalOpen(true);
+                                }}
+                                disabled={!viewingSale.items.some(item => !item.isReturned && Number(item.quantity || 0) > Number(item.returnedQuantity || 0))}
+                                className="min-h-14 px-3 bg-rose-600 text-white rounded-xl font-bold uppercase tracking-wide text-[10px] flex items-center justify-center gap-2 hover:bg-rose-700 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                            ><Undo2 size={17} /> {t('Return')}</button>
                         </div>
                         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
                             <div className="flex items-center justify-between gap-3">
@@ -1081,6 +1096,22 @@ const Sales = () => {
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('Returned items will be added back to stock and recorded in inventory history.')}</p>
                     </div>
                     <div className="space-y-3 text-left">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Product to return</label>
+                        <select
+                            value={itemToReturn ? String(viewingSale?.items?.indexOf(itemToReturn) ?? -1) : ''}
+                            onChange={event => {
+                                const selectedItem = viewingSale?.items?.[Number(event.target.value)];
+                                if (!selectedItem) return;
+                                setItemToReturn(selectedItem);
+                                setReturnQuantity(String(Math.max(1, Number(selectedItem.quantity || 0) - Number(selectedItem.returnedQuantity || 0))));
+                            }}
+                            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                        >
+                            {viewingSale?.items?.map((item, index) => {
+                                const remaining = Math.max(0, Number(item.quantity || 0) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0)));
+                                return remaining > 0 ? <option key={index} value={index}>{item.product?.productName || item.productName || 'Product'} · {remaining} remaining</option> : null;
+                            })}
+                        </select>
                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Return quantity (max {Math.max(0, Number(itemToReturn?.quantity || 0) - Number(itemToReturn?.returnedQuantity || 0))})</label>
                         <input type="number" min="1" max={Math.max(1, Number(itemToReturn?.quantity || 1) - Number(itemToReturn?.returnedQuantity || 0))} step="1" required value={returnQuantity} onChange={event => setReturnQuantity(event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">{t('Reason for Return')}</label>
