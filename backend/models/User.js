@@ -36,6 +36,8 @@ const userSchema = new mongoose.Schema({
     },
     rejectionReason: { type: String, default: '' },
     isPaymentDone: { type: Boolean, default: false },
+    registrationPaymentOrderId: { type: String, default: '' },
+    registrationPaymentId: { type: String, default: '' },
     aadharNumber: { type: String },
     aadharImage: { type: String },
     paymentScreenshot: { type: String },

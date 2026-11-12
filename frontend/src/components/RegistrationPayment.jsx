@@ -1,318 +1,184 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
-import { 
-    CreditCard, ShieldCheck, QrCode, 
-    Smartphone, ArrowRight, Info, CheckCircle2,
-    Clock
-} from 'lucide-react';
+import { CreditCard, ShieldCheck, CheckCircle2, Clock3, LockKeyhole, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const CASHFREE_SDK_URL = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+
+const loadCashfreeSdk = () => new Promise((resolve, reject) => {
+    if (window.Cashfree) return resolve();
+    const existing = document.querySelector(`script[src="${CASHFREE_SDK_URL}"]`);
+    if (existing) {
+        existing.addEventListener('load', resolve, { once: true });
+        existing.addEventListener('error', reject, { once: true });
+        return;
+    }
+    const script = document.createElement('script');
+    script.src = CASHFREE_SDK_URL;
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Unable to load secure Cashfree checkout.'));
+    document.head.appendChild(script);
+});
+
 const RegistrationPayment = ({ user, onPaymentSuccess }) => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [confirming, setConfirming] = useState(false);
-    const [screenshot, setScreenshot] = useState(null);
-    const [preview, setPreview] = useState(null);
+    const [paying, setPaying] = useState(false);
+    const [verifying, setVerifying] = useState(false);
+    const [paymentState, setPaymentState] = useState('ready');
 
     useEffect(() => {
-        fetchSettings();
-    }, []);
+        let active = true;
+        const loadSettings = async () => {
+            try {
+                const response = await api.get('/admin/settings');
+                if (!active) return;
+                setSettings(response.data.data || {});
+                if (!response.data.data?.isPaymentRequired) {
+                    await api.post('/admin/confirm-payment');
+                    onPaymentSuccess?.();
+                }
+            } catch (error) {
+                if (active) toast.error(error.response?.data?.message || 'Unable to load registration payment settings.');
+            } finally {
+                if (active) setLoading(false);
+            }
+        };
+        loadSettings();
+        return () => { active = false; };
+    }, [onPaymentSuccess]);
 
-    const fetchSettings = async () => {
+    useEffect(() => {
+        const orderId = searchParams.get('order_id');
+        if (!orderId) return;
+        let active = true;
+        const verify = async () => {
+            setVerifying(true);
+            setPaymentState('verifying');
+            try {
+                const response = await api.get('/payments/registration/verify', { params: { order_id: orderId } });
+                if (!active) return;
+                if (response.data?.data?.paid) {
+                    setPaymentState('success');
+                    toast.success('Registration payment verified successfully.');
+                    const next = new URLSearchParams(searchParams);
+                    next.delete('order_id');
+                    next.delete('cf_id');
+                    next.set('payment', 'success');
+                    setSearchParams(next, { replace: true });
+                    window.setTimeout(() => onPaymentSuccess?.() || window.location.reload(), 900);
+                } else {
+                    setPaymentState('pending');
+                    toast('Payment is not confirmed yet. You can check again shortly.', { icon: '⏳' });
+                }
+            } catch (error) {
+                if (active) {
+                    setPaymentState('pending');
+                    toast.error(error.response?.data?.message || 'Payment verification is pending. Please retry.');
+                }
+            } finally {
+                if (active) setVerifying(false);
+            }
+        };
+        verify();
+        return () => { active = false; };
+    }, [searchParams, setSearchParams, onPaymentSuccess]);
+
+    const startPayment = async () => {
+        setPaying(true);
         try {
-            const res = await api.get('/admin/settings');
-            setSettings(res.data.data);
-            if (res.data.data && !res.data.data.isPaymentRequired) {
-                handleConfirm();
+            const response = await api.post('/payments/registration/order');
+            const { payment_session_id: paymentSessionId, environment } = response.data.data || {};
+            if (!paymentSessionId) throw new Error('Cashfree did not return a payment session.');
+            await loadCashfreeSdk();
+            const cashfree = window.Cashfree({ mode: environment === 'production' ? 'production' : 'sandbox' });
+            await cashfree.checkout({ paymentSessionId, redirectTarget: '_self' });
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message || 'Unable to start payment. Please try again.');
+        } finally {
+            setPaying(false);
+        }
+    };
+
+    const checkPayment = async () => {
+        const orderId = searchParams.get('order_id') || user?.registrationPaymentOrderId;
+        if (!orderId) return toast.error('No pending registration order found. Start payment again.');
+        setVerifying(true);
+        try {
+            const response = await api.get('/payments/registration/verify', { params: { order_id: orderId } });
+            if (response.data?.data?.paid) {
+                setPaymentState('success');
+                toast.success('Payment verified. Your account will continue to approval.');
+                window.setTimeout(() => onPaymentSuccess?.() || window.location.reload(), 800);
+            } else {
+                setPaymentState('pending');
+                toast('Payment is still processing. Please try again shortly.', { icon: '⏳' });
             }
         } catch (error) {
-            toast.error("Failed to load payment details");
+            toast.error(error.response?.data?.message || 'Unable to verify payment right now.');
         } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setScreenshot(file);
-            setPreview(URL.createObjectURL(file));
-        }
-    };
-
-    const handleSubmitProof = async (e) => {
-        e.preventDefault();
-        if (!screenshot) {
-            toast.error("Please upload a payment screenshot");
-            return;
-        }
-
-        setConfirming(true);
-        const formData = new FormData();
-        formData.append('screenshot', screenshot);
-
-        try {
-            await api.post('/auth/submit-payment', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            toast.success("Payment proof submitted! We will verify it shortly.");
-            setTimeout(() => window.location.reload(), 2000);
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Submission failed");
-        } finally {
-            setConfirming(false);
-        }
-    };
-
-    const handleConfirm = async () => {
-        setConfirming(true);
-        try {
-            await api.post('/admin/confirm-payment');
-            toast.success("Payment verified! Redirecting...");
-            setTimeout(() => onPaymentSuccess(), 1500);
-        } catch (error) {
-            toast.error("Confirmation failed. Please contact support.");
-        } finally {
-            setConfirming(false);
+            setVerifying(false);
         }
     };
 
     if (loading) return (
-        <div className="h-[70vh] flex flex-col items-center justify-center space-y-4 animate-pulse">
-            <div className="w-20 h-20 bg-slate-100 rounded-[2rem]"></div>
-            <div className="h-8 w-64 bg-slate-100 rounded-xl"></div>
+        <div className="grid min-h-[65vh] place-items-center">
+            <div className="flex flex-col items-center gap-3 text-slate-500">
+                <span className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+                <span className="text-sm font-medium">Preparing secure registration checkout…</span>
+            </div>
         </div>
     );
 
-    if (settings && !settings.isPaymentRequired) {
-        return (
-            <div className="h-[70vh] flex flex-col items-center justify-center text-center p-6">
-                <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-[2rem] flex items-center justify-center mb-6">
-                    <CheckCircle2 size={40} />
-                </div>
-                <h2 className="text-3xl font-black uppercase tracking-tight">Access Granted!</h2>
-                <p className="text-slate-500">Redirecting to your dashboard...</p>
-            </div>
-        );
-    }
-
-    if (user?.paymentScreenshot) {
-        return (
-            <div className="h-[70vh] flex flex-col items-center justify-center text-center p-6">
-                <div className="w-24 h-24 bg-amber-50 dark:bg-amber-500/10 text-amber-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl shadow-amber-500/20 animate-pulse">
-                    <ShieldCheck size={48} />
-                </div>
-                <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4">Payment Under Audit</h2>
-                <p className="text-slate-500 text-lg max-w-lg mx-auto font-medium leading-relaxed">
-                    We have received your payment screenshot. Our team is verifying the transaction. 
-                    Once confirmed, your dashboard will be unlocked automatically.
-                </p>
-                <div className="mt-10 p-6 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-4">
-                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
-                        <CheckCircle2 size={20} />
-                    </div>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Transaction Status: Pending Verification</p>
-                </div>
-            </div>
-        );
-    }
-
-    const getStepStatus = (step) => {
-        if (step === 'register') return 'complete';
-        if (step === 'payment') {
-            if (user?.isPaymentDone || user?.paymentScreenshot) return 'complete';
-            return 'active';
-        }
-        if (step === 'audit') {
-            if (user?.approvalStatus === 'Approved') return 'complete';
-            if (user?.paymentScreenshot) return 'active';
-            return 'pending';
-        }
-        return 'pending';
-    };
-
-    const StatusStepper = () => (
-        <div className="flex items-center justify-center gap-4 mb-16">
-            {[
-                { id: 'register', label: 'Identity' },
-                { id: 'payment', label: 'Payment' },
-                { id: 'audit', label: 'Verification' }
-            ].map((step, i, arr) => {
-                const status = getStepStatus(step.id);
-                return (
-                    <React.Fragment key={step.id}>
-                        <div className="flex flex-col items-center gap-2">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                                status === 'complete' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' :
-                                status === 'active' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 animate-pulse' :
-                                'bg-slate-200 dark:bg-slate-800 text-slate-400'
-                            }`}>
-                                {status === 'complete' ? <CheckCircle2 size={20} /> : <span className="text-xs font-black">{i + 1}</span>}
-                            </div>
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${
-                                status === 'complete' ? 'text-emerald-500' :
-                                status === 'active' ? 'text-indigo-600' :
-                                'text-slate-400'
-                            }`}>{step.label}</span>
-                        </div>
-                        {i < arr.length - 1 && (
-                            <div className={`w-12 h-0.5 rounded-full ${
-                                status === 'complete' ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'
-                            }`} />
-                        )}
-                    </React.Fragment>
-                );
-            })}
+    if (!settings?.isPaymentRequired) return (
+        <div className="grid min-h-[60vh] place-items-center text-center">
+            <div><CheckCircle2 className="mx-auto mb-4 text-emerald-500" size={48}/><h2 className="text-2xl font-bold">Payment not required</h2><p className="mt-2 text-slate-500">Your account access is being updated.</p></div>
         </div>
     );
 
-    if (loading) return (
-        <div className="h-[70vh] flex flex-col items-center justify-center space-y-4 animate-pulse">
-            <div className="w-20 h-20 bg-slate-100 rounded-[2rem]"></div>
-            <div className="h-8 w-64 bg-slate-100 rounded-xl"></div>
+    if (user?.isPaymentDone || paymentState === 'success') return (
+        <div className="mx-auto grid min-h-[60vh] max-w-xl place-items-center px-5 text-center">
+            <div><CheckCircle2 className="mx-auto mb-5 text-emerald-500" size={56}/><h2 className="text-3xl font-black">Payment verified</h2><p className="mt-3 text-slate-500">Your registration payment is complete. Shop approval remains a separate step.</p></div>
         </div>
     );
-
-    if (user?.paymentScreenshot && user?.approvalStatus === 'Pending') {
-        return (
-            <div className="max-w-4xl mx-auto py-10 px-4">
-                <StatusStepper />
-                <div className="h-[60vh] flex flex-col items-center justify-center text-center p-6 bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
-                    <div className="w-24 h-24 bg-amber-50 dark:bg-amber-500/10 text-amber-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl shadow-amber-500/20 animate-pulse">
-                        <ShieldCheck size={48} />
-                    </div>
-                    <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4">Under Verification</h2>
-                    <p className="text-slate-500 text-lg max-w-lg mx-auto font-medium leading-relaxed">
-                        Your payment proof has been submitted. Our compliance team is currently auditing your shop details.
-                    </p>
-                    <div className="mt-10 p-6 bg-slate-50 dark:bg-slate-800 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl flex items-center gap-4">
-                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
-                            <Clock size={20} />
-                        </div>
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">ETA: Typically within 2-4 business hours</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
-        <div className="max-w-4xl mx-auto py-10 px-4">
-            <StatusStepper />
-            
-            <div className="text-center mb-12">
-                <div className="w-20 h-20 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-indigo-500/20">
-                    <CreditCard size={36} />
-                </div>
-                <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4">
-                    {user?.approvalStatus === 'Rejected' ? 'Re-Submit' : 'One Final Step'}
-                </h2>
-                <p className="text-slate-500 text-lg font-medium max-w-2xl mx-auto">
-                    {user?.approvalStatus === 'Rejected' 
-                        ? 'Your previous application was rejected. Please review the reason below and submit valid payment proof.'
-                        : 'To unlock your shop\'s dashboard and start selling, please complete the one-time registration fee.'}
-                </p>
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
+            <div className="mx-auto mb-8 max-w-2xl text-center">
+                <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"><CreditCard size={30}/></div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">StockSaathi · by ASKC Technologies</p>
+                <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">{user?.approvalStatus === 'Rejected' ? 'Complete registration payment' : 'One secure step to get started'}</h1>
+                <p className="mt-3 text-sm leading-6 text-slate-500">Pay the one-time registration fee using Cashfree’s secure hosted checkout. Your dashboard unlocks only after the server verifies the payment.</p>
             </div>
 
-            {user?.approvalStatus === 'Rejected' && (
-                <div className="mb-10 p-8 bg-rose-50 dark:bg-rose-500/5 rounded-[2.5rem] border-2 border-rose-100 dark:border-rose-500/20 text-center">
-                    <p className="text-[10px] font-black uppercase text-rose-400 tracking-widest mb-2">Rejection Reason</p>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white leading-relaxed italic">
-                        "{user?.rejectionReason || 'Details provided were insufficient.'}"
-                    </p>
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Payment Card */}
-                <div className="bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl relative overflow-hidden">
-                    <form onSubmit={handleSubmitProof} className="relative z-10 space-y-8">
-                        <div>
-                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Total Payable Amount</p>
-                            <h3 className="text-6xl font-black text-indigo-600 tracking-tighter">₹{settings?.regFee}</h3>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-4 p-5 bg-slate-50 dark:bg-slate-800 rounded-3xl">
-                                <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm">
-                                    <Smartphone size={24} />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Pay via UPI</p>
-                                    <p className="font-black text-lg truncate">{settings?.upiId}</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 ml-2 tracking-widest">Upload Payment Screenshot</label>
-                                <div className="relative group">
-                                    <input 
-                                        type="file" 
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                        className="hidden" 
-                                        id="screenshot-upload"
-                                    />
-                                    <label 
-                                        htmlFor="screenshot-upload"
-                                        className="w-full h-32 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-indigo-600 transition-all overflow-hidden relative bg-slate-50/50 dark:bg-slate-800/50"
-                                    >
-                                        {preview ? (
-                                            <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <>
-                                                <QrCode size={24} className="text-slate-400" />
-                                                <span className="text-xs font-bold text-slate-500 uppercase">Click to Upload</span>
-                                            </>
-                                        )}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button 
-                            type="submit"
-                            disabled={confirming || !screenshot}
-                            className="w-full py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3 disabled:opacity-50"
-                        >
-                            {confirming ? 'Submitting...' : <><ShieldCheck size={20} /> Submit Payment Proof</>}
-                        </button>
-                    </form>
-                </div>
-
-                {/* QR Display */}
-                <div className="bg-slate-950 rounded-[3.5rem] p-10 flex flex-col items-center justify-center text-white relative overflow-hidden group">
-                    <div className="relative z-10 w-full flex flex-col items-center">
-                        <div className="w-full aspect-square max-w-[280px] bg-white rounded-[2.5rem] p-6 flex items-center justify-center mb-8 shadow-2xl overflow-hidden">
-                            {settings?.upiId ? (
-                                <img 
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`upi://pay?pa=${settings.upiId}&pn=Admin&am=${settings.regFee}&cu=INR`)}`} 
-                                    alt="Payment QR" 
-                                    className="w-full h-full object-contain" 
-                                />
-                            ) : (
-                                <div className="text-slate-200 flex flex-col items-center gap-3">
-                                    <QrCode size={64} />
-                                    <span className="text-xs font-black uppercase tracking-widest">Scan to Pay</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="text-center">
-                            <h4 className="text-xl font-black uppercase tracking-tight mb-2">Scan & Pay</h4>
-                            <p className="text-slate-400 text-sm font-medium">Use any UPI App (GPay, PhonePe, Paytm)</p>
-                        </div>
+            <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
+                    <div className="flex items-start justify-between gap-4">
+                        <div><p className="text-sm font-semibold text-slate-500">Registration fee</p><p className="mt-2 text-5xl font-black tracking-tight text-indigo-600">₹{Number(settings?.regFee || 0).toLocaleString('en-IN')}</p><p className="mt-2 text-xs text-slate-500">INR · One-time payment</p></div>
+                        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">Secure checkout</span>
                     </div>
-                    <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600 rounded-full blur-[100px]"></div>
-                    </div>
-                </div>
+                    {user?.approvalStatus === 'Rejected' && user?.rejectionReason && <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"><strong>Review required:</strong> {user.rejectionReason}</div>}
+                    <button onClick={startPayment} disabled={paying || verifying || Number(settings?.regFee || 0) <= 0} className="mt-8 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-indigo-600 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+                        {paying ? <><RefreshCw size={18} className="animate-spin"/> Connecting to Cashfree…</> : <><CreditCard size={18}/> Pay ₹{Number(settings?.regFee || 0).toLocaleString('en-IN')} securely</>}
+                    </button>
+                    {(searchParams.get('order_id') || user?.registrationPaymentOrderId || paymentState === 'pending') && <button onClick={checkPayment} disabled={verifying} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">{verifying ? <RefreshCw size={16} className="animate-spin"/> : <Clock3 size={16}/>} Check payment status</button>}
+                    <div className="mt-6 flex items-start gap-3 rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300"><LockKeyhole size={16} className="mt-0.5 shrink-0 text-emerald-600"/><p>Card, UPI and supported payment methods are handled by Cashfree. We never store your card or UPI credentials.</p></div>
+                </section>
+                <aside className="rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
+                    <ShieldCheck size={28} className="text-emerald-400"/>
+                    <h2 className="mt-5 text-xl font-bold">How activation works</h2>
+                    <ol className="mt-5 space-y-5 text-sm text-slate-300">
+                        <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">1</span><span>Complete payment on Cashfree’s hosted checkout.</span></li>
+                        <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">2</span><span>StockSaathi verifies the payment directly with Cashfree.</span></li>
+                        <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">3</span><span>Your shop then proceeds through the admin approval process.</span></li>
+                    </ol>
+                    <div className="mt-8 border-t border-white/10 pt-5 text-xs text-slate-400"><p className="flex items-center gap-2"><ShieldCheck size={14}/> Encrypted, hosted payment page</p><p className="mt-2">Need help? {settings?.supportPhone || 'Contact support'}</p></div>
+                </aside>
             </div>
-
-            <div className="mt-10 text-center">
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
-                    Need help? Contact support at <span className="text-indigo-600">{settings?.supportPhone}</span>
-                </p>
-            </div>
+            {paymentState === 'verifying' && <p className="mt-6 text-center text-sm text-slate-500">Confirming payment securely…</p>}
         </div>
     );
 };

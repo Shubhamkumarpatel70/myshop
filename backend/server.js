@@ -48,6 +48,9 @@ connectDB().then(async () => {
     startNotificationCleanupTask();
 });
 
+// Cashfree webhook needs the exact raw request bytes for signature verification.
+app.use('/api/payments/cashfree/webhook', express.raw({ type: 'application/json' }));
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

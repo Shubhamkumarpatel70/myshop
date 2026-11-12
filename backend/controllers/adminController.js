@@ -45,7 +45,7 @@ exports.updateApprovalStatus = async (req, res) => {
             shop.isPaymentDone = false;
         } else {
             shop.rejectionReason = '';
-            shop.isPaymentDone = true; // Auto-verify payment on approval
+            // Approval and payment are separate checks. Never mark a payment as paid here.
         }
 
         await shop.save();
@@ -123,6 +123,11 @@ exports.confirmRegistrationPayment = async (req, res) => {
         const user = await User.findById(req.user._id);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
         
+        const GlobalSettings = require('../models/GlobalSettings');
+        const settings = await GlobalSettings.findOne();
+        if (settings?.isPaymentRequired) {
+            return res.status(403).json({ success: false, message: 'Registration payment must be verified by Cashfree.' });
+        }
         user.isPaymentDone = true;
         await user.save();
         
