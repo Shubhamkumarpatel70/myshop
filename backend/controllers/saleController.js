@@ -204,89 +204,96 @@ exports.createSale = async (req, res) => {
 };
 
 exports.returnProduct = async (req, res) => {
+    const session = await mongoose.startSession();
     try {
         const { saleId, productId, quantity, returnReason } = req.body;
-        console.log("Returning Product:", { saleId, productId, quantity, returnReason });
-
         if (!saleId || !productId) {
             return res.status(400).json({ success: false, message: 'Sale ID and Product ID are required' });
         }
 
-        const sale = await Sale.findById(saleId);
-        if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
+        let responseMessage = 'Product returned and inventory updated';
+        await session.withTransaction(async () => {
+            const sale = await Sale.findById(saleId).session(session);
+            if (!sale) throw Object.assign(new Error('Sale not found'), { statusCode: 404 });
 
-        // Authorization check
-        if (!req.isAdmin && sale.user.toString() !== req.shopOwnerId.toString()) {
-            return res.status(401).json({ success: false, message: 'Not authorized' });
-        }
+            if (!req.isAdmin && sale.user.toString() !== req.shopOwnerId.toString()) {
+                throw Object.assign(new Error('Not authorized'), { statusCode: 401 });
+            }
 
-        const item = sale.items.find(i => {
-            if (!i.product) return false;
-            const itemId = i.product._id ? i.product._id.toString() : i.product.toString();
-            return itemId === productId && !i.isReturned;
-        });
-
-        if (!item) return res.status(400).json({ success: false, message: 'Item not found or already returned' });
-
-        const product = await Product.findById(productId);
-        if (!product) return res.status(404).json({ success: false, message: 'Product no longer exists in inventory.' });
-
-        const alreadyReturned = Number(item.returnedQuantity || 0);
-        const remainingQty = Number(item.quantity || 0) - alreadyReturned;
-        const returnQty = Number(quantity || remainingQty);
-        if (!Number.isInteger(returnQty) || returnQty < 1 || returnQty > remainingQty) {
-            return res.status(400).json({ success: false, message: `Return quantity must be between 1 and ${remainingQty}.` });
-        }
-        item.returnedQuantity = alreadyReturned + returnQty;
-        item.isReturned = item.returnedQuantity >= item.quantity;
-        item.returnReason = [item.returnReason, returnReason || 'Customer Return'].filter(Boolean).join(' | ');
-        sale.status = sale.items.every(i => i.isReturned) ? 'Returned' : 'Partial Return';
-
-        await sale.save();
-
-        const oldQuantity = product.quantity;
-        product.quantity += returnQty;
-        const matchingBatch = product.batches?.find(batch => batch.batchNumber && batch.batchNumber === item.batchNumber);
-        if (matchingBatch) {
-            matchingBatch.quantity += returnQty;
-        } else if (product.batches && product.batches.length > 0 && item.batchNumber) {
-            product.batches.push({
-                batchNumber: item.batchNumber,
-                quantity: returnQty,
-                expiryDate: item.expiryDate || product.expiryDate || new Date(),
-                price: item.price,
-                purchasePrice: item.purchasePrice || product.purchasePrice || 0
+            const item = sale.items.find(i => {
+                if (!i.product) return false;
+                const itemId = i.product._id ? i.product._id.toString() : i.product.toString();
+                return itemId === String(productId) && !i.isReturned;
             });
-        } else if (product.batches && product.batches.length > 0) {
-            product.batches[0].quantity += returnQty;
-        } else {
-            product.batches = [{
-                batchNumber: item.batchNumber || 'RETURN',
-                quantity: returnQty,
-                expiryDate: item.expiryDate || product.expiryDate || new Date(),
-                price: item.price || product.price,
-                purchasePrice: item.purchasePrice || product.purchasePrice || 0
-            }];
-        }
-        await product.save();
-        await sale.save();
-        await InventoryLog.create({
-            product: product._id,
-            user: req.user._id,
-            shop: req.shopOwnerId,
-            action: 'Return',
-            previousQuantity: oldQuantity,
-            newQuantity: product.quantity,
-            batchNumber: item.batchNumber || 'Return',
-            price: item.price,
-            reason: `Returned from sale. Reason: ${returnReason || 'No reason provided'}`,
-            transactionId: sale.transactionId
+            if (!item) throw Object.assign(new Error('Item not found or already fully returned'), { statusCode: 400 });
+
+            const product = await Product.findById(productId).session(session);
+            if (!product || product.user.toString() !== sale.user.toString()) {
+                throw Object.assign(new Error('Product no longer exists in this shop inventory'), { statusCode: 404 });
+            }
+
+            const alreadyReturned = Number(item.returnedQuantity || 0);
+            const remainingQty = Number(item.quantity || 0) - alreadyReturned;
+            const returnQty = Number(quantity || remainingQty);
+            if (!Number.isInteger(returnQty) || returnQty < 1 || returnQty > remainingQty) {
+                throw Object.assign(new Error(`Return quantity must be between 1 and ${remainingQty}.`), { statusCode: 400 });
+            }
+
+            item.returnedQuantity = alreadyReturned + returnQty;
+            item.isReturned = item.returnedQuantity >= item.quantity;
+            item.returnReason = [item.returnReason, returnReason || 'Customer Return'].filter(Boolean).join(' | ');
+            sale.status = sale.items.every(i => i.isReturned) ? 'Returned' : 'Partial Return';
+
+            const oldQuantity = product.quantity;
+            product.quantity += returnQty;
+            const matchingBatch = product.batches?.find(batch => batch.batchNumber && batch.batchNumber === item.batchNumber);
+            if (matchingBatch) {
+                matchingBatch.quantity += returnQty;
+            } else if (product.batches && product.batches.length > 0 && item.batchNumber) {
+                product.batches.push({
+                    batchNumber: item.batchNumber,
+                    quantity: returnQty,
+                    expiryDate: item.expiryDate || product.expiryDate || new Date(),
+                    price: item.price,
+                    purchasePrice: item.purchasePrice || product.purchasePrice || 0
+                });
+            } else if (product.batches && product.batches.length > 0) {
+                product.batches[0].quantity += returnQty;
+            } else {
+                product.batches = [{
+                    batchNumber: item.batchNumber || 'RETURN',
+                    quantity: returnQty,
+                    expiryDate: item.expiryDate || product.expiryDate || new Date(),
+                    price: item.price || product.price,
+                    purchasePrice: item.purchasePrice || product.purchasePrice || 0
+                }];
+            }
+
+            await product.save({ session });
+            await sale.save({ session });
+            await InventoryLog.create([{
+                product: product._id,
+                user: req.user._id,
+                shop: req.shopOwnerId,
+                action: 'Return',
+                previousQuantity: oldQuantity,
+                newQuantity: product.quantity,
+                batchNumber: item.batchNumber || 'Return',
+                price: item.price,
+                reason: `Returned ${returnQty} unit(s). Reason: ${returnReason || 'No reason provided'}`,
+                transactionId: sale.transactionId
+            }], { session });
+
+            if (item.isReturned) responseMessage = 'All remaining units returned. Inventory updated.';
+            else responseMessage = `${returnQty} unit(s) returned. Remaining returnable quantity: ${Number(item.quantity) - Number(item.returnedQuantity)}.`;
         });
 
-        res.json({ success: true, message: 'Product returned and inventory updated' });
+        res.json({ success: true, message: responseMessage });
     } catch (error) {
-        console.error("RETURN ERROR:", error);
-        res.status(500).json({ success: false, message: 'Return failed: ' + error.message });
+        console.error('RETURN ERROR:', error);
+        res.status(error.statusCode || 500).json({ success: false, message: error.message || 'Return failed' });
+    } finally {
+        await session.endSession();
     }
 };
 
