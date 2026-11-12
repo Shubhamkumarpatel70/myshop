@@ -109,13 +109,18 @@ const ReceiptLookup = () => {
             doc.text(receipt.paymentMethod, 155, 94);
 
             // Table
-            const tableData = receipt.items.map((item, index) => [
-                index + 1,
-                item.product?.productName || 'Product',
-                item.quantity,
-                `Rs. ${item.price.toLocaleString()}`,
-                `Rs. ${item.total.toLocaleString()}`
-            ]);
+            const tableData = receipt.items.map((item, index) => {
+                const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
+                const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
+                const netAmount = Number(item.total || (item.price * item.quantity)) * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
+                return [
+                    index + 1,
+                    `${item.product?.productName || item.productName || 'Product'}${returnedQty ? ` (Returned: ${returnedQty})` : ''}`,
+                    remainingQty,
+                    `Rs. ${Number(item.price || 0).toLocaleString()}`,
+                    `Rs. ${netAmount.toFixed(2)}`
+                ];
+            });
 
             autoTable(doc, {
                 startY: 110,
@@ -142,13 +147,19 @@ const ReceiptLookup = () => {
             doc.setFontSize(9);
             doc.setTextColor(100);
             doc.text("Total Units:", 135, finalY + 12);
-            doc.text(receipt.items.reduce((acc, item) => acc + item.quantity, 0).toString(), 185, finalY + 12, { align: 'right' });
+            doc.text(receipt.items.reduce((acc, item) => acc + Math.max(0, Number(item.quantity || 0) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0))), 0).toString(), 185, finalY + 12, { align: 'right' });
 
             doc.setFontSize(12);
             doc.setTextColor(79, 70, 229);
             doc.setFont("helvetica", "bold");
             doc.text("GRAND TOTAL:", 135, finalY + 22);
-            doc.text(`Rs. ${receipt.totalAmount.toLocaleString()}`, 185, finalY + 22, { align: 'right' });
+            const netTotal = receipt.items.reduce((sum, item) => {
+                const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
+                const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
+                const itemTotal = Number(item.total || (item.price * item.quantity));
+                return sum + itemTotal * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
+            }, 0);
+            doc.text(`Rs. ${netTotal.toFixed(2)}`, 185, finalY + 22, { align: 'right' });
 
             // Terms and Footer
             doc.setFontSize(8);
@@ -161,7 +172,7 @@ const ReceiptLookup = () => {
             doc.setDrawColor(241, 245, 249);
             doc.line(20, 275, 190, 275);
             doc.setFontSize(8);
-            doc.text("Generated via StockSaathi Retail OS - www.stocksaathi.com", pageWidth / 2, 282, { align: 'center' });
+            doc.text("Powered by ASKC TECHNOLOGIES", pageWidth / 2, 282, { align: 'center' });
 
             doc.save(`Invoice_${receipt.transactionId}.pdf`);
             toast.success("Professional Invoice Generated!");
@@ -278,16 +289,16 @@ const ReceiptLookup = () => {
                                                     <div>
                                                         <div className="flex items-center gap-2">
                                                             <p className={`font-bold text-sm uppercase tracking-tight ${item.isReturned ? 'line-through text-slate-400' : ''}`}>{item.product?.productName || item.productName || 'Product'}</p>
-                                                            {item.isReturned && <span className="text-[8px] px-1.5 py-0.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-md font-bold">RETURNED</span>}
+                                                            {(item.isReturned || Number(item.returnedQuantity || 0) > 0) && <span className="text-[8px] px-1.5 py-0.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-md font-bold">{item.isReturned ? 'RETURNED' : `RETURNED ${item.returnedQuantity}/${item.quantity}`}</span>}
                                                         </div>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.quantity} Unit(s) × ₹{item.price}</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{Math.max(0, Number(item.quantity || 0) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0)))} Unit(s) × ₹{item.price}</p>
                                                         <div className="flex flex-wrap gap-2 mt-1">
                                                             <span className="text-[8px] px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 rounded-md font-bold uppercase tracking-tighter">Batch: {item.batchNumber || 'N/A'}</span>
                                                             <span className="text-[8px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-md font-bold uppercase tracking-tighter">Exp: {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }).toUpperCase() : 'N/A'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <p className={`font-black text-sm ${item.isReturned ? 'line-through text-slate-400' : ''}`}>₹{item.total.toLocaleString()}</p>
+                                                <p className={`font-black text-sm ${item.isReturned ? 'line-through text-slate-400' : ''}`}>₹{(Number(item.total || (item.price * item.quantity)) * (Number(item.quantity) > 0 ? Math.max(0, Number(item.quantity) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0))) / Number(item.quantity) : 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -296,10 +307,10 @@ const ReceiptLookup = () => {
                                 <div className="flex justify-end pt-6 border-t border-slate-100 dark:border-slate-800">
                                     <div className="text-right space-y-2">
                                         <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                                            {receipt.items.some(i => i.isReturned) ? 'Net Adjusted Total' : 'Grand Total'}
+                                            {receipt.items.some(i => i.isReturned || Number(i.returnedQuantity || 0) > 0) ? 'Net Adjusted Total' : 'Grand Total'}
                                         </p>
 
-                                        {receipt.items.some(i => i.isReturned) && (
+                                        {receipt.items.some(i => i.isReturned || Number(i.returnedQuantity || 0) > 0) && (
                                             <p className="text-sm font-bold text-slate-400 line-through">
                                                 ₹{receipt.totalAmount.toLocaleString()}
                                             </p>
@@ -307,15 +318,20 @@ const ReceiptLookup = () => {
 
                                         <div className="flex items-center justify-end gap-2 text-4xl font-black text-indigo-600">
                                             <IndianRupee size={32} />
-                                            {receipt.items
-                                                .filter(item => !item.isReturned)
-                                                .reduce((acc, item) => acc + (item.total || (item.price * item.quantity)), 0)
-                                                .toLocaleString()}
+                                            {receipt.items.reduce((acc, item) => {
+                                                const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
+                                                const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
+                                                const itemTotal = Number(item.total || (item.price * item.quantity));
+                                                return acc + itemTotal * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
+                                            }, 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                                         </div>
                                         <p className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">
-                                            {receipt.items.some(i => i.isReturned) ? 'Refund(s) Accounted' : `Paid via ${receipt.paymentMethod}`}
+                                            {receipt.items.some(i => i.isReturned || Number(i.returnedQuantity || 0) > 0) ? 'Returns recorded' : `Paid via ${receipt.paymentMethod}`}
                                         </p>
                                     </div>
+                                </div>
+                                <div className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-5 text-center text-[10px] font-bold tracking-wider text-slate-400">
+                                    Powered by ASKC TECHNOLOGIES
                                 </div>
                             </div>
                         </motion.div>
