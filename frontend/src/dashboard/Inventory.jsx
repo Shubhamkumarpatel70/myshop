@@ -268,17 +268,40 @@ const Inventory = () => {
     const [stockFilter, setStockFilter] = useState('all');
     const [viewMode, setViewMode] = useState('table');
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiryWindowEnd = new Date(today);
+    expiryWindowEnd.setDate(expiryWindowEnd.getDate() + 30);
+
+    const getExpiryDate = (product) => {
+        if (!product.expiryDate) return null;
+        const date = new Date(product.expiryDate);
+        if (Number.isNaN(date.getTime())) return null;
+        date.setHours(0, 0, 0, 0);
+        return date;
+    };
+
     const filteredProducts = products
         .filter(p => {
-            const searchLower = searchTerm.toLowerCase();
-            const matchesSearch = p.productName.toLowerCase().includes(searchLower) || 
-                                 p.category?.name?.toLowerCase().includes(searchLower) || 
-                                 p.barcode?.toLowerCase().includes(searchLower);
+            const searchLower = searchTerm.trim().toLowerCase();
+            const matchesSearch = (p.productName || '').toLowerCase().includes(searchLower) ||
+                (p.category?.name || '').toLowerCase().includes(searchLower) ||
+                (p.barcode || '').toLowerCase().includes(searchLower);
 
-            const matchesStock = stockFilter === 'all' ? true :
-                stockFilter === 'low' ? p.quantity <= p.lowStockThreshold :
-                    stockFilter === 'out' ? p.quantity === 0 : true;
-            return matchesSearch && matchesStock;
+            const quantity = Number(p.quantity) || 0;
+            const threshold = Number(p.lowStockThreshold) || 0;
+            const expiryDate = getExpiryDate(p);
+            const isExpired = expiryDate && expiryDate < today;
+            const isNearExpiry = expiryDate && expiryDate >= today && expiryDate <= expiryWindowEnd;
+
+            const matchesFilter = stockFilter === 'all' ? true
+                : stockFilter === 'low' ? quantity > 0 && quantity <= threshold
+                : stockFilter === 'out' ? quantity <= 0
+                : stockFilter === 'in-stock' ? quantity > threshold
+                : stockFilter === 'near-expiry' ? Boolean(isNearExpiry)
+                : stockFilter === 'expired' ? Boolean(isExpired)
+                : true;
+            return matchesSearch && matchesFilter;
         })
         .sort((a, b) => {
             if (!sortConfig.key) return 0;
@@ -323,15 +346,11 @@ const Inventory = () => {
                             {"Stock"} <span className="text-indigo-600">{"Inventory"}</span>
                         </h1>
                         <p className="text-slate-500 text-xs sm:text-sm font-medium max-w-2xl leading-relaxed">
-                            {t("Manage products, check stock levels, and track expiry dates.")}
+                            {t("Manage products, monitor stock levels, and track products nearing or past their expiry date.")}
                         </p>
                     </div>
                     <div className="flex w-full sm:w-auto gap-3 flex-wrap">
 
-                        <label className="flex-1 sm:flex-none h-14 px-6 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] border border-indigo-100 dark:border-indigo-500/20 hover:bg-indigo-100 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                            <Upload size={18} /> {importingCsv ? 'Importing...' : 'Import CSV'}
-                            <input type="file" accept=".csv,text/csv" className="hidden" disabled={importingCsv} onChange={handleImportCsv} />
-                        </label>
                         <button
                             onClick={handleExport}
                             className="flex-1 sm:flex-none h-14 px-6 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] border border-slate-100 dark:border-slate-800 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
@@ -366,13 +385,16 @@ const Inventory = () => {
                         <div className="relative">
                             <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <select
-                                className="h-14 w-full sm:w-56 appearance-none rounded-[1.25rem] bg-slate-50 dark:bg-slate-800 border-none pl-12 pr-10 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 outline-none cursor-pointer focus:ring-4 focus:ring-indigo-500/5 transition-all"
+                                className="h-14 w-full sm:w-64 appearance-none rounded-[1.25rem] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pl-12 pr-10 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none cursor-pointer focus:ring-4 focus:ring-indigo-500/10 transition-all"
                                 value={stockFilter}
                                 onChange={(e) => setStockFilter(e.target.value)}
                             >
-                                <option value="all">{t("Metric: All Items")}</option>
-                                <option value="low">{t("Metric: Low Stock")}</option>
-                                <option value="out">{t("Metric: Depleted")}</option>
+                                <option value="all">{t("All Products")}</option>
+                                <option value="in-stock">{t("In Stock")}</option>
+                                <option value="low">{t("Low Stock")}</option>
+                                <option value="out">{t("Out of Stock")}</option>
+                                <option value="near-expiry">{t("Expiring Within 30 Days")}</option>
+                                <option value="expired">{t("Expired Products")}</option>
                             </select>
                         </div>
                     </div>
