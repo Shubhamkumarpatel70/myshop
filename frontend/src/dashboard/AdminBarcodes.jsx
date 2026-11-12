@@ -168,11 +168,11 @@ const AdminBarcodes = () => {
 
                                 <div className="grid grid-cols-2 gap-4 mb-6">
                                     <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Active</p>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Barcodes</p>
                                         <p className="text-xl font-black text-slate-900 dark:text-white">{shop.totalUsed}</p>
                                     </div>
                                     <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Unlinked</p>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Not linked</p>
                                         <p className="text-xl font-black text-amber-600">{shop.unlinkedCount}</p>
                                     </div>
                                 </div>
@@ -240,7 +240,7 @@ const AdminBarcodes = () => {
                                                     <Store size={14} className="text-slate-400" /> {b.shopName || b.user?.shopName || 'Unknown shop'}
                                                 </p>
                                                 <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                                                    <User size={14} className="text-slate-400" /> {b.user?.ownerName || 'Unknown'}
+                                                    <User size={14} className="text-slate-400" /> {b.ownerName || b.user?.ownerName || 'Unknown'}
                                                 </p>
                                             </div>
                                         </td>
