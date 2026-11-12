@@ -261,3 +261,14 @@ img { max-width: 100%; }
   .ss-public-header nav { padding-inline: 12px !important; }
   .ss-main h1 { font-size: clamp(25px, 7vw, 34px) !important; }
 }
+
+
+/* Refined card and panel corners: reduce oversized rounding across dashboard surfaces. */
+.ss-main .card,
+.ss-main section.bg-white,
+.ss-main .rounded-3xl,
+.ss-main [class*="rounded-[3rem]"],
+.ss-main [class*="rounded-[2.5rem]"] {
+  border-radius: 14px !important;
+}
+.ss-main .rounded-2xl { border-radius: 12px !important; }
