@@ -293,7 +293,7 @@ exports.getSales = async (req, res) => {
                 select: 'productName',
                 populate: { path: 'category', select: 'name' }
             })
-            .populate('user', 'shopName')
+            .populate('user', 'shopName address phone gstEnabled gstin businessState')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -359,7 +359,7 @@ exports.getPublicSale = async (req, res) => {
             },
             {
                 path: 'user',
-                select: 'shopName address phone'
+                select: 'shopName address phone gstEnabled gstin businessState'
             }
         ];
 
