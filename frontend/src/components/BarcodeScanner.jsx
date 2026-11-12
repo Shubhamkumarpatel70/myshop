@@ -125,6 +125,18 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
             }
             setStatus('ready');
             if (selectedCameraId) setCameraId(selectedCameraId);
+            // Load alternate camera choices in the background; don't delay live preview.
+            Html5Qrcode.getCameras()
+                .then(available => {
+                    if (activeRef.current && available?.length) {
+                        setCameras(available);
+                        const preferred = selectedCameraId || available.find(camera => /back|rear|environment/i.test(camera.label))?.id || available[0].id;
+                        setCameraId(preferred);
+                    }
+                })
+                .catch(() => {
+                    // Device labels may be unavailable on browsers with restricted permissions.
+                });
         } catch (error) {
             if (scannerRef.current === scanner) {
                 try { scanner.clear(); } catch { /* already cleared */ }
