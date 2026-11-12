@@ -234,7 +234,7 @@ exports.returnProduct = async (req, res) => {
 
             const alreadyReturned = Number(item.returnedQuantity || 0);
             const remainingQty = Number(item.quantity || 0) - alreadyReturned;
-            const returnQty = Number(quantity || remainingQty);
+            const returnQty = quantity === undefined || quantity === null || quantity === '' ? remainingQty : Number(quantity);
             if (!Number.isInteger(returnQty) || returnQty < 1 || returnQty > remainingQty) {
                 throw Object.assign(new Error(`Return quantity must be between 1 and ${remainingQty}.`), { statusCode: 400 });
             }
