@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
 import { CreditCard, ShieldCheck, CheckCircle2, Clock3, LockKeyhole, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { openCashfreeCheckout } from '../utils/cashfree';
+import { openCashfreeCheckout, preloadCashfreeSdk } from '../utils/cashfree';
 
 const RegistrationPayment = ({ user, onPaymentSuccess }) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -16,6 +16,8 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
     const [paymentState, setPaymentState] = useState('ready');
     const [manualScreenshot, setManualScreenshot] = useState(null);
     const [manualSubmitting, setManualSubmitting] = useState(false);
+
+    useEffect(() => { preloadCashfreeSdk(); }, []);
 
     useEffect(() => {
         let active = true;
