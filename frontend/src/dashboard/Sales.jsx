@@ -389,6 +389,31 @@ const Sales = () => {
         toast.success("Opening WhatsApp...");
     };
 
+
+    useEffect(() => {
+        if (!isSaleModalOpen) return undefined;
+        const handlePosShortcut = (event) => {
+            const target = event.target;
+            const isTyping = target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+            if (event.key === 'F2') {
+                event.preventDefault();
+                document.querySelector('[data-pos-product-search]')?.focus();
+            } else if (event.key === 'F3') {
+                event.preventDefault();
+                setIsScannerOpen(true);
+            } else if (event.key === 'Escape' && isScannerOpen) {
+                setIsScannerOpen(false);
+            } else if (event.ctrlKey && event.key === 'Enter' && !isTyping) {
+                event.preventDefault();
+                if (posStep === 1 && cart.length) setPosStep(2);
+                else if (posStep === 2) setPosStep(3);
+                else if (posStep === 3) setPosStep(4);
+            }
+        };
+        window.addEventListener('keydown', handlePosShortcut);
+        return () => window.removeEventListener('keydown', handlePosShortcut);
+    }, [isSaleModalOpen, isScannerOpen, posStep, cart.length]);
+
     const handlePrintInvoice = (sale) => {
         const printWindow = window.open('', '_blank');
         const shopInfo = sale.user || {};
@@ -696,7 +721,7 @@ const Sales = () => {
                                 <div className="flex gap-3">
                                     <div className="relative flex-1">
                                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input type="text" placeholder="Scan barcode or type product name..." className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] text-sm font-bold outline-none transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} autoFocus />
+                                        <input type="text" placeholder="Scan barcode or type product name..." data-pos-product-search className="w-full h-14 pl-12 pr-4 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] text-sm font-bold outline-none transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} autoFocus />
                                     </div>
                                     <button onClick={() => setIsScannerOpen(true)} className="p-4 bg-indigo-50 text-indigo-600 rounded-[1.25rem] hover:bg-indigo-100 transition-colors"><Scan size={24} /></button>
                                 </div>
