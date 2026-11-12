@@ -38,6 +38,9 @@ const Sales = () => {
     const [paymentConfig, setPaymentConfig] = useState(null);
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     const [utrNumber, setUtrNumber] = useState('');
+    const [splitPaymentEnabled, setSplitPaymentEnabled] = useState(false);
+    const [secondPaymentMethod, setSecondPaymentMethod] = useState('UPI');
+    const [secondPaymentAmount, setSecondPaymentAmount] = useState('');
     const [cart, setCart] = useState([]);
     const [customerInfo, setCustomerInfo] = useState({ name: 'Guest', phone: '', address: '', gstin: '', paymentMethod: 'Cash' });
     const [customerMatches, setCustomerMatches] = useState([]);
@@ -298,9 +301,24 @@ const Sales = () => {
             toast.error("Security ID (UTR) Required");
             return;
         }
+        const payableAmount = Number(calculateTotal().toFixed(2));
+        let payments = [{ mode: customerInfo.paymentMethod, amount: payableAmount }];
+        if (splitPaymentEnabled) {
+            const secondAmount = Number(secondPaymentAmount);
+            const firstAmount = Number((payableAmount - secondAmount).toFixed(2));
+            if (!Number.isFinite(secondAmount) || secondAmount <= 0 || firstAmount <= 0 || secondAmount >= payableAmount || secondPaymentMethod === customerInfo.paymentMethod) {
+                toast.error('Enter two different payment methods and valid amounts.');
+                return;
+            }
+            payments = [
+                { mode: customerInfo.paymentMethod, amount: firstAmount },
+                { mode: secondPaymentMethod, amount: secondAmount }
+            ];
+        }
         try {
             const saleData = {
                 items: cart,
+                payments,
                 customerName: customerInfo.name,
                 customerPhone: customerInfo.phone,
                 paymentMethod: customerInfo.paymentMethod,
@@ -318,6 +336,8 @@ const Sales = () => {
             setCart([]);
             setCustomerInfo({ name: 'Guest', phone: '', paymentMethod: 'Cash' });
             setUtrNumber('');
+            setSplitPaymentEnabled(false);
+            setSecondPaymentAmount('');
             setIsSaleModalOpen(false);
             setIsQrModalOpen(false);
             setPosStep(1);
@@ -813,6 +833,24 @@ const Sales = () => {
                                             <span className="text-[11px] font-black uppercase tracking-widest">{method}</span>
                                         </button>
                                     ))}
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                                    <label className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                        <span>Split this payment into two methods</span>
+                                        <input type="checkbox" checked={splitPaymentEnabled} onChange={event => setSplitPaymentEnabled(event.target.checked)} className="h-5 w-5 accent-indigo-600" />
+                                    </label>
+                                    {splitPaymentEnabled && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <label className="text-xs font-semibold text-slate-500">Second payment method
+                                                <select value={secondPaymentMethod} onChange={event => setSecondPaymentMethod(event.target.value)} className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                                                    {['Cash', 'UPI', 'Card', 'Scan & Pay', 'Udhar'].filter(method => method !== customerInfo.paymentMethod).map(method => <option key={method} value={method}>{method}</option>)}
+                                                </select>
+                                            </label>
+                                            <label className="text-xs font-semibold text-slate-500">Amount from second method (₹)
+                                                <input type="number" min="0.01" max={calculateTotal() - 0.01} step="0.01" value={secondPaymentAmount} onChange={event => setSecondPaymentAmount(event.target.value)} placeholder="Enter amount" className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex justify-between gap-4 pt-4">
                                     <button onClick={() => setPosStep(3)} className="h-14 flex-1 bg-slate-100 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px]">Review Client</button>
