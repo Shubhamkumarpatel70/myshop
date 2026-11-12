@@ -31,8 +31,8 @@ const AdminBarcodes = () => {
                 api.get('/barcodes/admin'),
                 api.get('/barcodes/admin/stats')
             ]);
-            setBarcodes(barcodeRes.data.data);
-            setShopStats(statsRes.data.data);
+            setBarcodes(Array.isArray(barcodeRes.data?.data) ? barcodeRes.data.data : []);
+            setShopStats(Array.isArray(statsRes.data?.data) ? statsRes.data.data : []);
         } catch (error) {
             toast.error("Critical Failure: Data Link Broken");
         } finally {
@@ -54,7 +54,7 @@ const AdminBarcodes = () => {
 
     const filteredBarcodes = barcodes.filter(b => {
         const matchesSearch = 
-            b.barcode.includes(searchTerm) || 
+            String(b.barcode || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
             b.shopName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             b.productName?.toLowerCase().includes(searchTerm.toLowerCase());
         
@@ -64,7 +64,7 @@ const AdminBarcodes = () => {
     });
 
     const filteredStats = shopStats.filter(s => 
-        s.shopName.toLowerCase().includes(searchTerm.toLowerCase())
+        String(s.shopName || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
