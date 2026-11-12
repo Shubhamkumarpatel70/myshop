@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
-import { openCashfreeCheckout, preloadCashfreeSdk } from '../utils/cashfree';
+import { preloadCashfreeSdk } from '../utils/cashfree';
 import Modal from '../components/Modal';
 
 const Pricing = () => {
@@ -95,9 +95,10 @@ const Pricing = () => {
         setCashfreePaying(true);
         try {
             const response = await api.post('/payments/cashfree/subscription/order', { planId: selectedPlan._id });
-            const { payment_session_id: paymentSessionId, environment } = response.data.data || {};
-            if (!paymentSessionId) throw new Error('Cashfree did not return a payment session.');
-            await openCashfreeCheckout({ paymentSessionId, environment });
+            const { order_id: orderId, payment_session_id: paymentSessionId } = response.data.data || {};
+            if (!orderId || !paymentSessionId) throw new Error('Cashfree did not return a valid payment order.');
+            setIsUpgradeModalOpen(false);
+            navigate(`/checkout?order_id=${encodeURIComponent(orderId)}`);
         } catch (error) {
             toast.error(error.response?.data?.message || error.message || 'Unable to start secure payment.');
         } finally {
