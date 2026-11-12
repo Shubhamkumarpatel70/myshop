@@ -329,8 +329,8 @@ exports.getCashfreeCheckoutOrder = async (req, res) => {
                 order_id: payment.cashfreeOrderId,
                 amount: payment.amount,
                 currency: 'INR',
-                purpose: payment.plan?.name ? `${payment.plan.name} subscription` : 'Subscription',
-                plan: payment.plan?.name || '',
+                purpose: payment.addonName || (payment.plan?.name ? `${payment.plan.name} subscription` : 'Subscription'),
+                plan: payment.plan?.name || payment.addonName || '',
                 environment: isProduction() ? 'production' : 'sandbox',
                 status: payment.status,
                 payment_session_id: sessionId || ''
@@ -366,40 +366,36 @@ const activatePaidPlan = async (orderId) => {
     }
 
     const user = await User.findById(payment.user);
-    if (!user || !payment.plan) throw new Error('Subscription owner or plan no longer exists.');
+    if (!user || (!payment.plan && !payment.addonName)) throw new Error('Subscription owner, plan, or add-on no longer exists.');
     const now = new Date();
-    const expiry = new Date(now);
-    if (payment.plan.duration === 'month') expiry.setMonth(expiry.getMonth() + 1);
-    else if (payment.plan.duration === 'year') expiry.setFullYear(expiry.getFullYear() + 1);
-    else if (payment.plan.duration === 'forever') expiry.setFullYear(expiry.getFullYear() + 50);
-    else expiry.setFullYear(expiry.getFullYear() + 1);
-
     payment.status = 'SUCCESS';
     payment.cashfreePaymentId = String(successful.cf_payment_id || '');
     payment.paymentDate = now;
     payment.gatewayResponse = successful;
     await payment.save();
 
-    user.subscriptionPlan = payment.plan.name;
-    user.planActivatedAt = now;
-    user.planExpiresAt = payment.plan.duration === 'forever' ? null : expiry;
+    let activatedItem = payment.addonName || payment.plan.name;
+    if (payment.addonName === 'Barcode Booster') {
+        user.hasBarcodeAddon = true;
+        user.subscriptionPlan = 'Enterprise';
+    } else if (payment.addonName === 'Team Expansion') {
+        user.hasStaffAddon = true;
+        user.subscriptionPlan = 'Enterprise';
+    } else if (payment.plan) {
+        const expiry = new Date(now);
+        if (payment.plan.duration === 'month') expiry.setMonth(expiry.getMonth() + 1);
+        else if (payment.plan.duration === 'year') expiry.setFullYear(expiry.getFullYear() + 1);
+        else if (payment.plan.duration === 'forever') expiry.setFullYear(expiry.getFullYear() + 50);
+        else expiry.setFullYear(expiry.getFullYear() + 1);
+        user.subscriptionPlan = payment.plan.name;
+        user.planActivatedAt = now;
+        user.planExpiresAt = payment.plan.duration === 'forever' ? null : expiry;
+        user.subscriptionHistory.push({ plan: payment.plan.name, startDate: now, endDate: payment.plan.duration === 'forever' ? null : expiry, amount: payment.amount, paymentRef: payment.cashfreePaymentId || payment.paymentId });
+    }
     user.pendingSubscription.status = 'None';
     user.pendingSubscription.rejectReason = '';
-    user.subscriptionHistory.push({
-        plan: payment.plan.name,
-        startDate: now,
-        endDate: payment.plan.duration === 'forever' ? null : expiry,
-        amount: payment.amount,
-        paymentRef: payment.cashfreePaymentId || payment.paymentId
-    });
     await user.save();
-    await AuditLog.create({
-        user: user._id,
-        shop: user._id,
-        action: 'Subscription activated by Cashfree',
-        module: 'Subscription Payment',
-        details: { paymentId: payment.paymentId, orderId, plan: payment.plan.name, amount: payment.amount }
-    });
+    await AuditLog.create({ user: user._id, shop: user._id, action: payment.addonName ? 'Add-on activated by Cashfree' : 'Subscription activated by Cashfree', module: 'Subscription Payment', details: { paymentId: payment.paymentId, orderId, item: activatedItem, amount: payment.amount } });
     return { paid: true, payment };
 };
 
@@ -407,11 +403,16 @@ exports.createSubscriptionOrder = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (!user || user.role !== 'shop_owner') return res.status(403).json({ success: false, message: 'Only shop owners can purchase a plan.' });
-        const plan = await Plan.findOne({ _id: req.body.planId, isActive: true });
-        if (!plan) return res.status(404).json({ success: false, message: 'Selected plan is unavailable.' });
-        let amount = Number(plan.price);
-        const currentPlan = await Plan.findOne({ name: user.subscriptionPlan });
-        if (currentPlan && user.planExpiresAt && new Date(user.planExpiresAt) > new Date()) {
+        const addonPrices = { 'Barcode Booster': 499, 'Team Expansion': 999 };
+        const addonName = String(req.body.addonName || '').trim();
+        const isAddon = Boolean(addonName);
+        const plan = isAddon ? null : await Plan.findOne({ _id: req.body.planId, isActive: true });
+        if (isAddon && !Object.prototype.hasOwnProperty.call(addonPrices, addonName)) return res.status(400).json({ success: false, message: 'Selected add-on is not available.' });
+        if (!isAddon && !plan) return res.status(404).json({ success: false, message: 'Selected plan is unavailable.' });
+        if (isAddon && ((addonName === 'Barcode Booster' && user.hasBarcodeAddon) || (addonName === 'Team Expansion' && user.hasStaffAddon))) return res.status(409).json({ success: false, message: 'This add-on is already active.' });
+        let amount = isAddon ? addonPrices[addonName] : Number(plan.price);
+        const currentPlan = isAddon ? null : await Plan.findOne({ name: user.subscriptionPlan });
+        if (!isAddon && currentPlan && user.planExpiresAt && new Date(user.planExpiresAt) > new Date()) {
             const activatedAt = new Date(user.planActivatedAt || user.createdAt);
             const expiresAt = new Date(user.planExpiresAt);
             const duration = expiresAt - activatedAt;
@@ -442,7 +443,7 @@ exports.createSubscriptionOrder = async (req, res) => {
                 return_url: `${(process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/checkout?order_id={order_id}&returned=1`,
                 notify_url: `${(process.env.BACKEND_URL || process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/api/payments/cashfree/webhook`
             },
-            order_note: `Stock Saathi ${plan.name} subscription`
+            order_note: isAddon ? `Stock Saathi ${addonName} add-on` : `Stock Saathi ${plan.name} subscription`
         };
         const order = await cashfreeRequest('/orders', {
             method: 'POST',
@@ -453,14 +454,15 @@ exports.createSubscriptionOrder = async (req, res) => {
             paymentId,
             cashfreeOrderId: paymentId,
             user: user._id,
-            plan: plan._id,
+            ...(plan ? { plan: plan._id } : {}),
+            ...(isAddon ? { addonName } : {}),
             amount,
             status: 'PENDING',
             gatewayResponse: { cf_order_id: order.cf_order_id },
             paymentSessionId: order.payment_session_id,
             idempotencyKey
         });
-        res.status(201).json({ success: true, data: { order_id: paymentId, payment_session_id: order.payment_session_id, environment: isProduction() ? 'production' : 'sandbox', amount, plan: plan.name } });
+        res.status(201).json({ success: true, data: { order_id: paymentId, payment_session_id: order.payment_session_id, environment: isProduction() ? 'production' : 'sandbox', amount, plan: plan?.name || addonName } });
     } catch (error) {
         console.error('Subscription Cashfree order failed:', error.message);
         res.status(error.status || 500).json({ success: false, message: error.status === 503 ? error.message : 'Unable to create subscription payment. Please try again.' });
