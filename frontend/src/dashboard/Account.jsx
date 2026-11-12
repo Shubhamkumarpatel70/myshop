@@ -138,6 +138,7 @@ const Account = () => {
                     <button type="button" onClick={installApp} className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white">Install App</button>
                 </section>
             )}
+            {user?.role === 'shop_owner' && (
             <form onSubmit={saveTaxSettings} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 space-y-5">
                 <div>
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">GST & Tax Settings</h2>
@@ -157,6 +158,7 @@ const Account = () => {
                 </div>
                 <div className="flex justify-end"><button type="submit" disabled={savingTax} className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{savingTax ? 'Saving...' : 'Save GST Settings'}</button></div>
             </form>
+            )}
         </div>
     );
 };
