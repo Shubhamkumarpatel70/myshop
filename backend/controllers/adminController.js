@@ -122,6 +122,7 @@ exports.confirmRegistrationPayment = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        if (user.role !== 'shop_owner') return res.status(403).json({ success: false, message: 'Only shop owners can complete registration payment.' });
         
         const GlobalSettings = require('../models/GlobalSettings');
         const settings = await GlobalSettings.findOne();

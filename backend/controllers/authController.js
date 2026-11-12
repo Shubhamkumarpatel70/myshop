@@ -45,6 +45,7 @@ const sendTokenResponse = async (user, statusCode, res) => {
             shopId: user.shopId,
             approvalStatus: user.approvalStatus,
             isPaymentDone: user.isPaymentDone,
+            registrationPaymentOrderId: user.registrationPaymentOrderId,
             createdAt: user.createdAt,
             token: accessToken,
             offlineHash // For offline mPin verification

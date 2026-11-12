@@ -32,7 +32,7 @@ const cashfreeRequest = async (path, options = {}) => {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-        const error = new Error(data.message || data.message || 'Cashfree request failed.');
+        const error = new Error(data.message || 'Cashfree request failed.');
         error.status = response.status >= 500 ? 502 : 400;
         throw error;
     }

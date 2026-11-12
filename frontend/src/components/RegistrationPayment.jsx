@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
 import { CreditCard, ShieldCheck, CheckCircle2, Clock3, LockKeyhole, RefreshCw } from 'lucide-react';
@@ -24,6 +24,8 @@ const loadCashfreeSdk = () => new Promise((resolve, reject) => {
 
 const RegistrationPayment = ({ user, onPaymentSuccess }) => {
     const [searchParams, setSearchParams] = useSearchParams();
+    const onPaymentSuccessRef = useRef(onPaymentSuccess);
+    onPaymentSuccessRef.current = onPaymentSuccess;
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
@@ -39,7 +41,7 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
                 setSettings(response.data.data || {});
                 if (!response.data.data?.isPaymentRequired) {
                     await api.post('/admin/confirm-payment');
-                    onPaymentSuccess?.();
+                    onPaymentSuccessRef.current?.();
                 }
             } catch (error) {
                 if (active) toast.error(error.response?.data?.message || 'Unable to load registration payment settings.');
@@ -49,7 +51,7 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
         };
         loadSettings();
         return () => { active = false; };
-    }, [onPaymentSuccess]);
+    }, []);
 
     useEffect(() => {
         const orderId = searchParams.get('order_id');
@@ -69,7 +71,7 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
                     next.delete('cf_id');
                     next.set('payment', 'success');
                     setSearchParams(next, { replace: true });
-                    window.setTimeout(() => onPaymentSuccess?.() || window.location.reload(), 900);
+                    window.setTimeout(() => onPaymentSuccessRef.current?.() || window.location.reload(), 900);
                 } else {
                     setPaymentState('pending');
                     toast('Payment is not confirmed yet. You can check again shortly.', { icon: '⏳' });
@@ -85,7 +87,7 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
         };
         verify();
         return () => { active = false; };
-    }, [searchParams, setSearchParams, onPaymentSuccess]);
+    }, [searchParams, setSearchParams]);
 
     const startPayment = async () => {
         setPaying(true);
