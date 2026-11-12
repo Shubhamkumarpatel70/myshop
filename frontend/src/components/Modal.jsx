@@ -32,7 +32,7 @@ const Modal = ({ isOpen, onClose, title, children, className = "max-w-2xl" }) =>
                         exit={{ opacity: 0, scale: 0.95, y: '-48%', x: '-50%' }}
                         transition={{ type: "spring", damping: 25, stiffness: 400 }}
                         style={{ top: '50%' }}
-                        className={`fixed left-1/2 w-[95%] ${className} max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 z-[70] rounded-[2rem] shadow-[0_20px_80px_rgba(0,0,0,0.25)] overflow-hidden border border-slate-200 dark:border-slate-800 transition-colors`}
+                        className={`fixed left-1/2 w-[95%] ${className} max-h-[calc(100dvh-2rem)] flex flex-col bg-white dark:bg-slate-900 z-[70] rounded-[2rem] shadow-[0_20px_80px_rgba(0,0,0,0.25)] overflow-hidden border border-slate-200 dark:border-slate-800 transition-colors`}
                     >
                         {/* Decorative Top Border */}
                         <div className="h-1.5 w-full bg-indigo-600 shrink-0" />
@@ -53,7 +53,7 @@ const Modal = ({ isOpen, onClose, title, children, className = "max-w-2xl" }) =>
                         </div>
 
                         {/* Content Area */}
-                        <div className="flex-1 p-6 md:p-10 overflow-y-auto custom-scrollbar min-h-0 bg-white dark:bg-slate-900">
+                        <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto overscroll-contain touch-pan-y custom-scrollbar min-h-0 bg-white dark:bg-slate-900">
                             {children}
                         </div>
                     </motion.div>
