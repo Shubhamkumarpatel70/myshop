@@ -84,7 +84,8 @@ const userSchema = new mongoose.Schema({
     hasStaffAddon: { type: Boolean, default: false },
     loginAttempts: { type: Number, default: 0 },
     lockoutUntil: { type: Date, default: null },
-    isStorefrontActive: { type: Boolean, default: true }
+    isStorefrontActive: { type: Boolean, default: true },
+    printer: { isConfigured: { type: Boolean, default: false }, isConnected: { type: Boolean, default: false }, printerName: { type: String, default: '' }, connectionType: { type: String, enum: ['usb-serial', 'system-print', 'bluetooth', 'unknown'], default: 'unknown' }, paperWidth: { type: String, enum: ['58', '80'], default: '58' }, lastSeenAt: { type: Date, default: null }, registeredAt: { type: Date, default: null } }
 }, { timestamps: true });
 
 // Helper to create slug
