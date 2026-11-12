@@ -132,99 +132,12 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
         rafRef.current = requestAnimationFrame(scanFrame);
     }, [finishScan]);
 
-    const startScanner = useCallback(async (selectedCameraId = '') => {
-        if (!isOpen || !activeRef.current) return;
-        const generation = ++generationRef.current;
-        setStatus('starting');
-        setErrorMessage('');
-        await stopScanner();
-        if (!activeRef.current || generationRef.current !== generation) return;
-
-        if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
-            setStatus('error');
-            setErrorMessage(describeCameraError(new Error('Camera API unavailable')));
-            return;
-        }
-
-        try {
-            // Request the rear camera directly. Avoid a preliminary camera-list
-            // permission prompt/query, which adds noticeable startup delay on Android.
-            const videoConstraints = selectedCameraId
-                ? { deviceId: { exact: selectedCameraId }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 } }
-                : { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 } };
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
-            if (!activeRef.current || generationRef.current !== generation) {
-                stream.getTracks().forEach(track => track.stop());
-                return;
-            }
-            streamRef.current = stream;
-            const video = videoRef.current;
-            if (!video) throw new Error('Camera preview is not ready');
-            video.srcObject = stream;
-            await video.play();
-
-            // Native BarcodeDetector is hardware/browser optimized and avoids
-            // html5-qrcode's heavier canvas decoder on supported Android browsers.
-            if ('BarcodeDetector' in window) {
-                try {
-                    const supported = await window.BarcodeDetector.getSupportedFormats();
-                    const formats = RETAIL_FORMATS.filter(format => supported.includes(format));
-                    if (formats.length) {
-                        const detector = new window.BarcodeDetector({ formats });
-                        detectorRef.current = detector;
-                        setUsingNativeScanner(true);
-                        setStatus('ready');
-                        const track = stream.getVideoTracks()[0];
-                        if (track) {
-                            const settings = track.getSettings();
-                            if (settings.deviceId) setCameraId(settings.deviceId);
-                        }
-                        startNativeDetection(detector, generation);
-                    } else {
-                        throw new Error('Retail barcode detection is not supported');
-                    }
-                } catch (nativeError) {
-                    console.debug('Native barcode detection unavailable; using fallback.', nativeError);
-                    await startHtml5Fallback(stream, generation);
-                }
-            } else {
-                await startHtml5Fallback(stream, generation);
-            }
-
-            // Populate the camera picker after the preview is already running.
-            navigator.mediaDevices.enumerateDevices?.().then(devices => {
-                if (!activeRef.current || generationRef.current !== generation) return;
-                const available = devices.filter(device => device.kind === 'videoinput');
-                setCameras(available.map((device, index) => ({
-                    id: device.deviceId,
-                    label: device.label || `Camera ${index + 1}`
-                })));
-            }).catch(() => {});
-        } catch (error) {
-            if (generationRef.current !== generation || !activeRef.current) return;
-            await stopScanner();
-            setStatus('error');
-            setErrorMessage(describeCameraError(error));
-            errorRef.current?.(error);
-        }
-    }, [isOpen, stopScanner, startNativeDetection]);
-
-    const startHtml5Fallback = async (stream, generation) => {
-        // Older browsers without BarcodeDetector use html5-qrcode as a fallback.
-        // Reuse the already-granted camera device to avoid a second permission flow.
-        const track = stream.getVideoTracks()[0];
-        const deviceId = track?.getSettings()?.deviceId;
-        if (!deviceId) throw new Error('Unable to identify the active camera');
-        if (videoRef.current) {
-            videoRef.current.pause();
-            videoRef.current.srcObject = null;
-        }
-        stream.getTracks().forEach(trackItem => trackItem.stop());
-        if (streamRef.current === stream) streamRef.current = null;
+    const startHtml5Fallback = async (selectedCameraId, generation) => {
         const scanner = new Html5Qrcode(SCAN_REGION_ID, { verbose: false });
         scannerRef.current = scanner;
+        const cameraSource = selectedCameraId || { facingMode: 'environment' };
         await scanner.start(
-            deviceId,
+            cameraSource,
             {
                 fps: 8,
                 qrbox: (width, height) => ({
@@ -246,8 +159,92 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
         }
         setUsingNativeScanner(false);
         setStatus('ready');
-        setCameraId(deviceId);
+        if (selectedCameraId) setCameraId(selectedCameraId);
+        navigator.mediaDevices?.enumerateDevices?.().then(devices => {
+            if (!activeRef.current || generationRef.current !== generation) return;
+            const available = devices.filter(device => device.kind === 'videoinput');
+            setCameras(available.map((device, index) => ({
+                id: device.deviceId,
+                label: device.label || `Camera ${index + 1}`
+            })));
+        }).catch(() => {});
     };
+
+    const startScanner = useCallback(async (selectedCameraId = '') => {
+        if (!isOpen || !activeRef.current) return;
+        const generation = ++generationRef.current;
+        setStatus('starting');
+        setErrorMessage('');
+        await stopScanner();
+        if (!activeRef.current || generationRef.current !== generation) return;
+
+        if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+            setStatus('error');
+            setErrorMessage(describeCameraError(new Error('Camera API unavailable')));
+            return;
+        }
+
+        try {
+            // Check native barcode support before opening the camera. Unsupported
+            // browsers go straight to the library fallback instead of opening,
+            // closing, and reopening the camera (which caused the long delay).
+            let detector = null;
+            if ('BarcodeDetector' in window) {
+                try {
+                    const supported = await window.BarcodeDetector.getSupportedFormats();
+                    const formats = RETAIL_FORMATS.filter(format => supported.includes(format));
+                    if (formats.length) detector = new window.BarcodeDetector({ formats });
+                } catch {
+                    detector = null;
+                }
+            }
+
+            if (!detector) {
+                await startHtml5Fallback(selectedCameraId, generation);
+                return;
+            }
+
+            const videoConstraints = selectedCameraId
+                ? { deviceId: { exact: selectedCameraId }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 } }
+                : { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 24, max: 30 } };
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
+            if (!activeRef.current || generationRef.current !== generation) {
+                stream.getTracks().forEach(track => track.stop());
+                return;
+            }
+            streamRef.current = stream;
+            const video = videoRef.current;
+            if (!video) throw new Error('Camera preview is not ready');
+            video.srcObject = stream;
+            await video.play();
+
+            detectorRef.current = detector;
+            setUsingNativeScanner(true);
+            setStatus('ready');
+            const track = stream.getVideoTracks()[0];
+            if (track) {
+                const settings = track.getSettings();
+                if (settings.deviceId) setCameraId(settings.deviceId);
+            }
+            startNativeDetection(detector, generation);
+
+            // Populate alternate cameras only after the live preview is running.
+            navigator.mediaDevices.enumerateDevices?.().then(devices => {
+                if (!activeRef.current || generationRef.current !== generation) return;
+                const available = devices.filter(device => device.kind === 'videoinput');
+                setCameras(available.map((device, index) => ({
+                    id: device.deviceId,
+                    label: device.label || `Camera ${index + 1}`
+                })));
+            }).catch(() => {});
+        } catch (error) {
+            if (generationRef.current !== generation || !activeRef.current) return;
+            await stopScanner();
+            setStatus('error');
+            setErrorMessage(describeCameraError(error));
+            errorRef.current?.(error);
+        }
+    }, [isOpen, stopScanner, startNativeDetection]);
 
     useEffect(() => {
         if (!isOpen) {
