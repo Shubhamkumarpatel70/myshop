@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const saleItemSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    productName: { type: String, trim: true, default: '' },
     quantity: { type: Number, required: true },
     price: { type: Number, required: true }, // Selling Price
     purchasePrice: { type: Number }, // Cost Price at time of sale

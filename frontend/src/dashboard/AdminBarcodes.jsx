@@ -34,7 +34,7 @@ const AdminBarcodes = () => {
             setBarcodes(Array.isArray(barcodeRes.data?.data) ? barcodeRes.data.data : []);
             setShopStats(Array.isArray(statsRes.data?.data) ? statsRes.data.data : []);
         } catch (error) {
-            toast.error("Critical Failure: Data Link Broken");
+            toast.error(error.response?.data?.message || "Could not load barcode records. Please refresh.");
         } finally {
             setLoading(false);
         }
@@ -55,7 +55,7 @@ const AdminBarcodes = () => {
     const filteredBarcodes = barcodes.filter(b => {
         const matchesSearch = 
             String(b.barcode || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-            b.shopName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (b.shopName || b.user?.shopName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             b.productName?.toLowerCase().includes(searchTerm.toLowerCase());
         
         const matchesStatus = filterStatus === 'all' ? true : b.status === filterStatus;
@@ -73,13 +73,13 @@ const AdminBarcodes = () => {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-600">
-                        <Tag size={14} /> Global Identification Registry
+                        <Tag size={14} /> Barcode Management
                     </div>
                     <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-                        Barcode <span className="text-indigo-600">Protocol</span>
+                        Product Barcodes
                     </h1>
                     <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-                        Centralized tracking of all product identifiers and global metadata generated across the platform.
+                        View and manage barcodes created by all shops.
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -168,11 +168,11 @@ const AdminBarcodes = () => {
 
                                 <div className="grid grid-cols-2 gap-4 mb-6">
                                     <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Active</p>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Barcodes</p>
                                         <p className="text-xl font-black text-slate-900 dark:text-white">{shop.totalUsed}</p>
                                     </div>
                                     <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Unlinked</p>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Not linked</p>
                                         <p className="text-xl font-black text-amber-600">{shop.unlinkedCount}</p>
                                     </div>
                                 </div>
@@ -184,7 +184,7 @@ const AdminBarcodes = () => {
                                     }}
                                     className="w-full h-11 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-slate-600 dark:text-slate-300 hover:text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-100 dark:border-slate-800 hover:border-indigo-200"
                                 >
-                                    View Full Protocol
+                                    View Barcodes
                                 </button>
                             </motion.div>
                         ))
@@ -202,9 +202,9 @@ const AdminBarcodes = () => {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Identity Details</th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Origin / Shop</th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Metadata</th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Barcode</th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop</th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Product Details</th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">Generated On</th>
                             </tr>
@@ -237,10 +237,10 @@ const AdminBarcodes = () => {
                                         <td className="px-6 py-4">
                                             <div className="space-y-1">
                                                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                                                    <Store size={14} className="text-slate-400" /> {b.shopName}
+                                                    <Store size={14} className="text-slate-400" /> {b.shopName || b.user?.shopName || 'Unknown shop'}
                                                 </p>
                                                 <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                                                    <User size={14} className="text-slate-400" /> {b.user?.ownerName || 'Unknown'}
+                                                    <User size={14} className="text-slate-400" /> {b.ownerName || b.user?.ownerName || 'Unknown'}
                                                 </p>
                                             </div>
                                         </td>
@@ -257,7 +257,7 @@ const AdminBarcodes = () => {
                                                     </span>
                                                 </div>
                                             ) : (
-                                                <span className="text-xs italic text-slate-400">No metadata linked</span>
+                                                <span className="text-xs italic text-slate-400">No product linked yet</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">

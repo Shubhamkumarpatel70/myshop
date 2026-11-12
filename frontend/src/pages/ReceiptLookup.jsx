@@ -115,7 +115,7 @@ const ReceiptLookup = () => {
                 const netAmount = Number(item.total || (item.price * item.quantity)) * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
                 return [
                     index + 1,
-                    `${item.product?.productName || item.productName || 'Product'}${returnedQty ? ` (Returned: ${returnedQty})` : ''}`,
+                    `${item.product?.productName || item.productName || (typeof item.product === 'object' ? item.product?.name : '') || 'Product'}${returnedQty ? ` (Returned: ${returnedQty})` : ''}`,
                     remainingQty,
                     `Rs. ${Number(item.price || 0).toLocaleString()}`,
                     `Rs. ${netAmount.toFixed(2)}`
