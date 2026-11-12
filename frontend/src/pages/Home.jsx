@@ -160,7 +160,7 @@ const Home = () => {
                             <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
                                 <div className="mb-3 flex items-center justify-between">
                                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('Stock Health')}</p>
-                                    <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">Your data<p>
+                                    <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">Your data</p>
                                 </div>
                                 <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800">
                                     <div className="h-full w-full rounded-full bg-indigo-600/20" />
