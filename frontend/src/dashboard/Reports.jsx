@@ -275,7 +275,8 @@ const Reports = () => {
                     )}
                     <button 
                         onClick={handleExportPDF}
-                        className="flex-1 xl:flex-none h-14 px-8 rounded-[1.25rem] bg-indigo-600 text-white text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3"
+                        disabled={!analytics || loading}
+                        className="flex-1 xl:flex-none h-14 px-8 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Download size={18} /> Download PDF Report
                     </button>
