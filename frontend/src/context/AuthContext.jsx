@@ -74,6 +74,18 @@ export const AuthProvider = ({ children }) => {
             const res = await api.post('/auth/login', payload);
             if (res.data.success) {
                 const userData = res.data;
+                // A password login cannot recreate the raw-mPIN verifier. Keep the
+                // previously provisioned offline verifier instead of overwriting it with null.
+                if (!mPin && !userData.offlineHash) {
+                    try {
+                        const previousUser = JSON.parse(localStorage.getItem('user') || 'null');
+                        userData.offlineHash = previousUser?.email?.toLowerCase() === String(email).trim().toLowerCase()
+                            ? previousUser.offlineHash || null
+                            : null;
+                    } catch {
+                        userData.offlineHash = null;
+                    }
+                }
                 localStorage.setItem('user', JSON.stringify(userData));
                 setUser(userData);
                 api.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
