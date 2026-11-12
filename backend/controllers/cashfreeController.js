@@ -117,7 +117,7 @@ exports.createRegistrationOrder = async (req, res) => {
                 customer_phone: phone
             },
             order_meta: {
-                return_url: `${frontendUrl}/dashboard?order_id={order_id}`,
+                return_url: `${frontendUrl}/checkout?order_id={order_id}&returned=1`,
                 ...(backendUrl ? { notify_url: `${backendUrl}/api/payments/cashfree/webhook` } : {})
             },
             order_note: 'StockSaathi shop registration'
@@ -210,6 +210,73 @@ exports.handleCashfreeWebhook = async (req, res) => {
 const Payment = require('../models/Payment');
 const Plan = require('../models/Plan');
 const AuditLog = require('../models/AuditLog');
+
+// Return the authenticated user's Cashfree order details for the hosted checkout page.
+// The payment session is only returned to the order owner and is never placed in the URL.
+exports.getCashfreeCheckoutOrder = async (req, res) => {
+    try {
+        const orderId = String(req.query.order_id || '').trim();
+        if (!orderId) return res.status(400).json({ success: false, message: 'Order ID is required.' });
+
+        const registration = await RegistrationPayment.findOne({
+            orderId,
+            user: req.user._id,
+            paymentMethod: 'cashfree'
+        });
+
+        if (registration) {
+            return res.json({
+                success: true,
+                data: {
+                    order_id: registration.orderId,
+                    amount: registration.amount,
+                    currency: registration.currency || 'INR',
+                    purpose: 'Registration fee',
+                    environment: registration.environment,
+                    status: registration.status,
+                    payment_session_id: registration.paymentSessionId
+                }
+            });
+        }
+
+        const payment = await Payment.findOne({
+            cashfreeOrderId: orderId,
+            user: req.user._id
+        }).populate('plan', 'name');
+
+        if (!payment) return res.status(404).json({ success: false, message: 'This payment order was not found for your account.' });
+
+        let sessionId = payment.paymentSessionId;
+        if (!sessionId && payment.status !== 'SUCCESS') {
+            const cashfreeOrder = await cashfreeRequest(`/orders/${encodeURIComponent(orderId)}`, { method: 'GET' });
+            sessionId = cashfreeOrder.payment_session_id || '';
+            if (sessionId) {
+                payment.paymentSessionId = sessionId;
+                await payment.save();
+            }
+        }
+
+        return res.json({
+            success: true,
+            data: {
+                order_id: payment.cashfreeOrderId,
+                amount: payment.amount,
+                currency: 'INR',
+                purpose: payment.plan?.name ? `${payment.plan.name} subscription` : 'Subscription',
+                plan: payment.plan?.name || '',
+                environment: isProduction() ? 'production' : 'sandbox',
+                status: payment.status,
+                payment_session_id: sessionId || ''
+            }
+        });
+    } catch (error) {
+        console.error('Cashfree checkout order lookup failed:', error.message);
+        res.status(error.status || 500).json({
+            success: false,
+            message: error.status === 503 ? error.message : 'Unable to load this payment order. Please try again.'
+        });
+    }
+};
 
 const activatePaidPlan = async (orderId) => {
     const payment = await Payment.findOne({ cashfreeOrderId: orderId }).populate('plan');
@@ -305,7 +372,7 @@ exports.createSubscriptionOrder = async (req, res) => {
                 customer_phone: phone
             },
             order_meta: {
-                return_url: `${(process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/dashboard/pricing?order_id={order_id}`,
+                return_url: `${(process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/checkout?order_id={order_id}&returned=1`,
                 notify_url: `${(process.env.BACKEND_URL || process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/api/payments/cashfree/webhook`
             },
             order_note: `Stock Saathi ${plan.name} subscription`
@@ -323,6 +390,7 @@ exports.createSubscriptionOrder = async (req, res) => {
             amount,
             status: 'PENDING',
             gatewayResponse: { cf_order_id: order.cf_order_id },
+            paymentSessionId: order.payment_session_id,
             idempotencyKey
         });
         res.status(201).json({ success: true, data: { order_id: paymentId, payment_session_id: order.payment_session_id, environment: isProduction() ? 'production' : 'sandbox', amount, plan: plan.name } });
