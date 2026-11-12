@@ -222,6 +222,23 @@ exports.getSalesAnalytics = async (req, res) => {
         });
         const totalProfit = totalRevenue - totalCost;
         const totalSalesCount = sales.length;
+        const monthlyProductMap = new Map();
+        sales.forEach(sale => (sale.items || []).forEach(item => {
+            const quantity = Math.max(0, Number(item.quantity || 0));
+            const returned = Math.min(quantity, Number(item.returnedQuantity || (item.isReturned ? quantity : 0)));
+            const soldQuantity = Math.max(0, quantity - returned);
+            if (!soldQuantity) return;
+            const productName = item.productName || 'Unnamed product';
+            const itemValue = Number(item.total || (Number(item.price || 0) * quantity));
+            const netValue = quantity > 0 ? itemValue * soldQuantity / quantity : 0;
+            const current = monthlyProductMap.get(productName) || { productName, quantity: 0, total: 0 };
+            current.quantity += soldQuantity;
+            current.total += netValue;
+            monthlyProductMap.set(productName, current);
+        }));
+        const monthlyProducts = Array.from(monthlyProductMap.values())
+            .map(item => ({ ...item, total: Number(item.total.toFixed(2)) }))
+            .sort((a, b) => b.quantity - a.quantity);
         const avgTicketSize = totalSalesCount > 0 ? Math.round(totalRevenue / totalSalesCount) : 0;
         const netMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : '0.0';
 
@@ -296,6 +313,7 @@ exports.getSalesAnalytics = async (req, res) => {
             success: true, 
             data: {
                 dailySales,
+                monthlyProducts,
                 todayReport,
                 stats: {
                     totalRevenue,
