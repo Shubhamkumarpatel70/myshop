@@ -5,13 +5,15 @@ import { Camera, CameraOff, CheckCircle2, RefreshCw, ScanLine, Keyboard, AlertCi
 const SCAN_REGION_ID = 'stocksaathi-barcode-reader';
 
 const scannerConfig = {
-    fps: 12,
+    // Retail barcode scanning: a smaller decode window and moderate FPS reduce
+    // CPU load on mid-range Android phones without making the scan feel sluggish.
+    fps: 8,
     qrbox: (width, height) => ({
-        width: Math.max(220, Math.min(Math.floor(width * 0.88), 520)),
-        height: Math.max(110, Math.min(Math.floor(height * 0.42), 220))
+        width: Math.max(220, Math.min(Math.floor(width * 0.78), 360)),
+        height: Math.max(90, Math.min(Math.floor(height * 0.34), 140))
     }),
-    aspectRatio: 1.333,
-    disableFlip: false,
+    aspectRatio: 1.777,
+    disableFlip: true,
     formatsToSupport: [
         Html5QrcodeSupportedFormats.EAN_13,
         Html5QrcodeSupportedFormats.EAN_8,
@@ -19,8 +21,7 @@ const scannerConfig = {
         Html5QrcodeSupportedFormats.UPC_E,
         Html5QrcodeSupportedFormats.CODE_128,
         Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.ITF,
-        Html5QrcodeSupportedFormats.QR_CODE
+        Html5QrcodeSupportedFormats.ITF
     ]
 };
 
@@ -123,16 +124,7 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
                 return;
             }
             setStatus('ready');
-            try {
-                const available = await Html5Qrcode.getCameras();
-                if (activeRef.current && available?.length) {
-                    setCameras(available);
-                    const activeCamera = selectedCameraId || available.find(camera => /back|rear|environment/i.test(camera.label))?.id || available[0].id;
-                    setCameraId(activeCamera);
-                }
-            } catch (cameraListError) {
-                console.debug('Camera list is unavailable.', cameraListError);
-            }
+            if (selectedCameraId) setCameraId(selectedCameraId);
         } catch (error) {
             if (scannerRef.current === scanner) {
                 try { scanner.clear(); } catch { /* already cleared */ }
@@ -142,10 +134,8 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, isOpen }) => {
             setStatus('error');
             setErrorMessage(describeCameraError(error));
             errorRef.current?.(error);
-            try {
-                const available = await Html5Qrcode.getCameras();
-                if (activeRef.current && available?.length) setCameras(available);
-            } catch { /* permission may prevent camera enumeration */ }
+            // Do not repeatedly enumerate devices after a failed camera start.
+            // The rear-camera default and manual entry remain available.
         }
     }, [isOpen, stopScanner]);
 
