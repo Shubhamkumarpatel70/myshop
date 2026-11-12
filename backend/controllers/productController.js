@@ -4,50 +4,6 @@ const InventoryLog = require('../models/InventoryLog');
 const { sendNotification } = require('../utils/notificationUtils');
 const { registerMetadata } = require('./barcodeController');
 
-exports.bulkImportProducts = async (req, res) => {
- try {
-  const rows = Array.isArray(req.body?.rows) ? req.body.rows : [];
-  if (!rows.length) return res.status(400).json({success:false,message:'No product rows supplied.'});
-  if (rows.length > 500) return res.status(400).json({success:false,message:'Maximum 500 rows per import.'});
-  const Category = require('../models/Category');
-  const owner = await User.findById(req.shopOwnerId).select('subscriptionPlan');
-  if (!owner) return res.status(404).json({success:false,message:'Shop owner not found.'});
-  const planLimits = {Free:50,Professional:5000,Enterprise:Infinity};
-  const productLimit = planLimits[owner.subscriptionPlan || 'Free'] ?? 50;
-  const startingCount = await Product.countDocuments({user:req.shopOwnerId});
-  const categories = await Category.find({user:req.shopOwnerId}).select('_id name');
-  const categoryMap = new Map();
-  categories.forEach(item => { categoryMap.set(String(item._id), String(item._id)); categoryMap.set(String(item.name).trim().toLowerCase(), String(item._id)); });
-  const results = []; let imported = 0; let created = 0;
-  for (let i=0; i<rows.length; i+=1) {
-   const row=rows[i] || {}; const rowNumber=i+2;
-   const name=String(row.productName || row['Product Name'] || '').trim();
-   const categoryId=String(row.category || row.categoryId || row['Category ID'] || '').trim();
-   const quantity=Number(row.quantity ?? row.Quantity); const price=Number(row.price ?? row['Selling Price']);
-   const purchasePrice=Number(row.purchasePrice ?? row['Purchase Price'] ?? 0); const taxRate=Number(row.taxRate ?? row['GST Rate (%)'] ?? 0);
-   const threshold=Number(row.lowStockThreshold ?? row['Low Stock Threshold'] ?? 10); const errors=[];
-   if(!name) errors.push('Product name is required.');
-   const resolvedCategoryId = categoryMap.get(categoryId) || categoryMap.get(categoryId.toLowerCase());
-   if(!resolvedCategoryId) errors.push('Category must match a category name or ID in this shop.');
-   if(!Number.isFinite(quantity)||quantity<0) errors.push('Quantity must be zero or greater.');
-   if(!Number.isFinite(price)||price<0) errors.push('Selling price must be zero or greater.');
-   if(!Number.isFinite(purchasePrice)||purchasePrice<0) errors.push('Purchase price must be zero or greater.');
-   if(!Number.isFinite(taxRate)||taxRate<0||taxRate>100) errors.push('GST rate must be between 0 and 100.');
-   if(!Number.isFinite(threshold)||threshold<0) errors.push('Low stock threshold must be zero or greater.');
-   if(errors.length){results.push({row:rowNumber,productName:name,status:'failed',errors});continue;}
-   try {
-    const barcode=String(row.barcode || row.Barcode || '').trim(); let existing=null;
-    if(barcode) existing=await Product.findOne({user:req.shopOwnerId,barcode});
-    else existing=await Product.findOne({user:req.shopOwnerId,productName:name});
-    if(!existing && startingCount+created>=productLimit){results.push({row:rowNumber,productName:name,status:'failed',errors:['Product plan limit reached.']});continue;}
-    if(existing){existing.quantity=Number(existing.quantity||0)+quantity;existing.price=price;existing.purchasePrice=purchasePrice;existing.taxRate=taxRate;existing.lowStockThreshold=threshold;await existing.save();results.push({row:rowNumber,productName:name,status:'updated',productId:existing._id});}
-    else {const product=await Product.create({productName:name.slice(0,160),category:resolvedCategoryId,quantity,price,purchasePrice,taxRate,lowStockThreshold:threshold,barcode:barcode||undefined,supplier:String(row.supplier||row.Supplier||'').slice(0,160),description:String(row.description||row.Description||'').slice(0,2000),user:req.shopOwnerId,batches:quantity>0?[{quantity,price,purchasePrice}]:[]});created+=1;results.push({row:rowNumber,productName:name,status:'created',productId:product._id});}
-    imported+=1;
-   } catch(error){results.push({row:rowNumber,productName:name,status:'failed',errors:[error.message]});}
-  }
-  return res.json({success:true,message:'Imported '+imported+' of '+rows.length+' rows.',data:{total:rows.length,imported,failed:rows.length-imported,results}});
- } catch(error){return res.status(500).json({success:false,message:error.message});}
-};
 exports.getProducts = async (req, res) => {
     try {
         let filter = req.isAdmin ? {} : { user: req.shopOwnerId };
