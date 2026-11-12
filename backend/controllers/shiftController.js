@@ -26,27 +26,38 @@ exports.openShift = async (req, res) => {
 
 exports.closeShift = async (req, res) => {
     try {
-        const { closingCash, notes } = req.body;
-        
+        const enteredClosingCash = Number(closingCash);
+        if (!Number.isFinite(enteredClosingCash) || enteredClosingCash < 0) {
+            return res.status(400).json({ success: false, message: 'Enter a valid closing cash amount.' });
+        }
+
         const shift = await Shift.findOne({ user: req.user._id, status: 'Open' });
         if (!shift) {
             return res.status(404).json({ success: false, message: 'No open shift found' });
         }
 
-        // Calculate expected totals based on sales during shift
+        const endedAt = new Date();
         const sales = await Sale.find({
             processedBy: req.user._id,
-            createdAt: { $gte: shift.startTime }
+            createdAt: { $gte: shift.startTime, $lte: endedAt }
         });
-        
-        const cashSales = sales.filter(s => s.paymentMethod === 'Cash').reduce((acc, curr) => acc + curr.totalAmount, 0);
-        const upiSales = sales.filter(s => s.paymentMethod === 'UPI').reduce((acc, curr) => acc + curr.totalAmount, 0);
-        const cardSales = sales.filter(s => s.paymentMethod === 'Card').reduce((acc, curr) => acc + curr.totalAmount, 0);
-        
-        const expectedCash = shift.openingCash + cashSales;
 
-        shift.endTime = new Date();
-        shift.closingCash = closingCash || 0;
+        // Count split payments correctly, including mixed Cash + UPI/Card sales.
+        const getPaymentTotal = (sale, modes) => {
+            if (Array.isArray(sale.payments) && sale.payments.length) {
+                return sale.payments.reduce((sum, payment) =>
+                    sum + (modes.includes(payment.mode) ? Number(payment.amount || 0) : 0), 0);
+            }
+            return modes.includes(sale.paymentMethod) ? Number(sale.totalAmount || 0) : 0;
+        };
+        const cashSales = sales.reduce((sum, sale) => sum + getPaymentTotal(sale, ['Cash']), 0);
+        const upiSales = sales.reduce((sum, sale) => sum + getPaymentTotal(sale, ['UPI', 'Scan & Pay']), 0);
+        const cardSales = sales.reduce((sum, sale) => sum + getPaymentTotal(sale, ['Card']), 0);
+        const expectedCash = Number((Number(shift.openingCash || 0) + cashSales).toFixed(2));
+
+        shift.endTime = endedAt;
+        shift.closingCash = enteredClosingCash;
+        shift.cashChange = Number((enteredClosingCash - Number(shift.openingCash || 0)).toFixed(2));
         shift.expectedCash = expectedCash;
         shift.status = 'Closed';
         shift.totalCashSales = cashSales;
@@ -86,12 +97,20 @@ exports.getCurrentShift = async (req, res) => {
                 createdAt: { $gte: shift.startTime }
             });
 
-            const totalRevenue = sales.reduce((acc, curr) => acc + curr.totalAmount, 0);
-            const cashSales = sales.filter(s => s.paymentMethod === 'Cash').reduce((acc, curr) => acc + curr.totalAmount, 0);
-            
+            const totalRevenue = sales.reduce((acc, curr) => acc + Number(curr.totalAmount || 0), 0);
+            const cashSales = sales.reduce((sum, sale) => {
+                if (Array.isArray(sale.payments) && sale.payments.length) {
+                    return sum + sale.payments.reduce((partSum, payment) =>
+                        partSum + (payment.mode === 'Cash' ? Number(payment.amount || 0) : 0), 0);
+                }
+                return sum + (sale.paymentMethod === 'Cash' ? Number(sale.totalAmount || 0) : 0);
+            }, 0);
+
             const shiftData = shift.toObject();
             shiftData.currentRevenue = totalRevenue;
-            shiftData.expectedCash = shift.openingCash + cashSales;
+            shiftData.currentCashSales = cashSales;
+            shiftData.expectedCash = Number((Number(shift.openingCash || 0) + cashSales).toFixed(2));
+            shiftData.cashChange = null;
             
             return res.json({ success: true, data: shiftData });
         }
