@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
 import { CreditCard, ShieldCheck, CheckCircle2, Clock3, LockKeyhole, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { openCashfreeCheckout, preloadCashfreeSdk } from '../utils/cashfree';
+import { preloadCashfreeSdk } from '../utils/cashfree';
 
 const RegistrationPayment = ({ user, onPaymentSuccess }) => {
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
     const onPaymentSuccessRef = useRef(onPaymentSuccess);
     onPaymentSuccessRef.current = onPaymentSuccess;
     const [settings, setSettings] = useState(null);
@@ -94,9 +95,9 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
         setPaying(true);
         try {
             const response = await api.post('/payments/registration/order');
-            const { payment_session_id: paymentSessionId, environment } = response.data.data || {};
-            if (!paymentSessionId) throw new Error('Cashfree did not return a payment session.');
-            await openCashfreeCheckout({ paymentSessionId, environment });
+            const { order_id: orderId, payment_session_id: paymentSessionId } = response.data.data || {};
+            if (!orderId || !paymentSessionId) throw new Error('Cashfree did not return a valid payment order.');
+            navigate(`/checkout?order_id=${encodeURIComponent(orderId)}`);
         } catch (error) {
             toast.error(error.response?.data?.message || error.message || 'Unable to start payment. Please try again.');
         } finally {

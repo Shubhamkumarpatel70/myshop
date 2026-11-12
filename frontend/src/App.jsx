@@ -42,6 +42,7 @@ const Customers = React.lazy(() => import('./dashboard/Customers'));
 const Suppliers = React.lazy(() => import('./dashboard/Suppliers'));
 const PurchaseOrders = React.lazy(() => import('./dashboard/PurchaseOrders'));
 const Pricing = React.lazy(() => import('./dashboard/Pricing'));
+const CashfreeCheckout = React.lazy(() => import('./pages/CashfreeCheckout'));
 const AdminSubscriptions = React.lazy(() => import('./dashboard/AdminSubscriptions'));
 const ShopBarcodes = React.lazy(() => import('./dashboard/ShopBarcodes'));
 const AdminPricing = React.lazy(() => import('./dashboard/AdminPricing'));
@@ -153,6 +154,7 @@ const AppContent = () => {
                 <Route path="/contact" element={<><Navbar /><div className="pt-28"><Contact /></div><Footer /></>} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/checkout" element={<ProtectedRoute><CashfreeCheckout /></ProtectedRoute>} />
                 <Route path="/pricing" element={<><Navbar /><div className="max-w-7xl mx-auto px-4 pt-32 pb-12"><Pricing /></div><Footer /></>} />
                 <Route path="/shop/:shopSlug" element={<PublicShop />} />
                 <Route path="/public-shop/:shopId" element={<PublicShop />} />
