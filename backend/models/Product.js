@@ -5,6 +5,7 @@ const productSchema = new mongoose.Schema({
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
     quantity: { type: Number, default: 0 },
     price: { type: Number, default: 0 }, // Selling Price
+    taxRate: { type: Number, default: 0, min: 0, max: 100 }, // GST percentage, snapshotted on each sale
     purchasePrice: { type: Number, default: 0 }, // Cost Price for P&L
     barcode: { type: String },
     supplier: { type: String },
