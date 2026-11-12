@@ -46,7 +46,6 @@ import UserTour from '../components/UserTour';
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const [darkMode, setDarkMode] = useState(false);
     const [privacyMode, setPrivacyMode] = useState(false);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -402,19 +401,7 @@ const DashboardLayout = () => {
                                     <p className="truncate text-[10px] font-bold uppercase tracking-widest">{user?.shopName || 'Workspace'}</p>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Desktop Search Integration */}
-                        <div className="hidden max-w-md flex-1 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-2.5 transition-all focus-within:border-indigo-500/30 focus-within:bg-white focus-within:shadow-lg focus-within:shadow-indigo-500/5 dark:border-white/5 dark:bg-white/5 xl:flex">
-                            <Search size={16} className="text-slate-400" />
-                            <input
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={t('Search') + '...'}
-                                className="w-full bg-transparent text-[11px] font-black uppercase tracking-widest outline-none placeholder:text-slate-400"
-                            />
-                        </div>
-
+                        </div> 
                         <div className="flex items-center gap-1.5 sm:gap-2">
                             <AnimatePresence>
                                 {!isOnline && (
@@ -474,18 +461,6 @@ const DashboardLayout = () => {
                             </div>
                         </div>
                     </div>
-
-                    <div className="border-t border-slate-100 px-4 py-3 dark:border-slate-800 xl:hidden bg-slate-50/50 dark:bg-white/5">
-                        <div className="flex items-center gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-2 dark:border-slate-700 dark:bg-slate-900 shadow-sm transition-all focus-within:border-indigo-500/30">
-                            <Search size={14} className="text-slate-400" />
-                            <input
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={t('Search') + '...'}
-                                className="w-full bg-transparent text-[10px] font-black uppercase tracking-widest outline-none placeholder:text-slate-400"
-                            />
-                        </div>
-                    </div>
                 </header>
 
                 <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 pb-28 sm:p-6 sm:pb-32 lg:pb-10">
@@ -518,7 +493,7 @@ const DashboardLayout = () => {
                                 </motion.div>
                             ) : (
                                 <motion.div key={location.pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-                                    <Outlet context={{ searchQuery }} />
+                                    <Outlet />
                                 </motion.div>
                             )}
                         </AnimatePresence>
