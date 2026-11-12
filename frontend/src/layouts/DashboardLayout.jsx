@@ -81,6 +81,7 @@ const DashboardLayout = () => {
     // intended for normal dashboard content, never payment or onboarding UI.
     useEffect(() => {
         const isAccountSetup = showOnboarding ||
+            user?.address === 'Incomplete' ||
             (user?.role === 'shop_owner' && !user?.isPaymentDone);
         const shouldApplyPrivacy = Boolean(user) && privacyMode && !isAccountSetup;
         document.documentElement.classList.toggle('privacy-mode', shouldApplyPrivacy);
