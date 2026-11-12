@@ -297,7 +297,7 @@ const Inventory = () => {
             const matchesFilter = stockFilter === 'all' ? true
                 : stockFilter === 'low' ? quantity > 0 && quantity <= threshold
                 : stockFilter === 'out' ? quantity <= 0
-                : stockFilter === 'in-stock' ? quantity > threshold
+                : stockFilter === 'in-stock' ? quantity > 0
                 : stockFilter === 'near-expiry' ? Boolean(isNearExpiry)
                 : stockFilter === 'expired' ? Boolean(isExpired)
                 : true;
