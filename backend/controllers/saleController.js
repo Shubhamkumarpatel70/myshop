@@ -133,6 +133,7 @@ exports.createSale = async (req, res) => {
             payments: Array.isArray(req.body.payments) ? req.body.payments.filter(p => p && Number(p.amount) > 0).map(p => ({ mode: p.mode, amount: Number(p.amount) })) : [],
             customerName,
             customerPhone,
+            customerGSTIN: String(req.body.customerGSTIN || '').trim().toUpperCase(),
             paymentMethod,
             utrNumber: req.body.utrNumber,
             transactionId: generateTransactionId(),
