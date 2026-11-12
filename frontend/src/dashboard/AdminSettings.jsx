@@ -3,7 +3,7 @@ import api from '../utils/api';
 import { 
     Settings, CreditCard, ShieldCheck, 
     Smartphone, QrCode, Save, Info,
-    Hammer, AlertTriangle
+    Hammer, AlertTriangle, Activity, RefreshCw, CheckCircle2, Clock3, XCircle, Webhook
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -22,9 +22,13 @@ const AdminSettings = () => {
     const [saving, setSaving] = useState(false);
     const [duration, setDuration] = useState('15');
     const [cashfreeStatus, setCashfreeStatus] = useState(null);
+    const [webhookEvents, setWebhookEvents] = useState([]);
+    const [webhookSummary, setWebhookSummary] = useState({ total: 0, processed: 0, failed: 0, pending: 0 });
+    const [webhookLoading, setWebhookLoading] = useState(false);
 
     useEffect(() => {
         fetchSettings();
+        fetchWebhookEvents();
     }, []);
 
     const fetchSettings = async () => {
@@ -41,6 +45,20 @@ const AdminSettings = () => {
             toast.error("Failed to fetch settings");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchWebhookEvents = async () => {
+        setWebhookLoading(true);
+        try {
+            const res = await api.get('/payments/cashfree/webhooks');
+            setWebhookEvents(res.data?.data || []);
+            setWebhookSummary(res.data?.summary || { total: 0, processed: 0, failed: 0, pending: 0 });
+        } catch (error) {
+            // This panel is only available to administrators; keep settings usable if logs are unavailable.
+            console.warn('Unable to load Cashfree webhook activity.', error);
+        } finally {
+            setWebhookLoading(false);
         }
     };
 
@@ -273,6 +291,66 @@ const AdminSettings = () => {
                     </button>
                 </div>
             </form>
+
+            <section className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300"><Webhook size={23} /></div>
+                        <div>
+                            <h3 className="text-lg font-black text-slate-900 dark:text-white">Cashfree Webhook Activity</h3>
+                            <p className="mt-1 text-xs text-slate-500">Payment, refund, dispute and settlement updates received by StockSaathi.</p>
+                        </div>
+                    </div>
+                    <button type="button" onClick={fetchWebhookEvents} disabled={webhookLoading} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                        <RefreshCw size={15} className={webhookLoading ? 'animate-spin' : ''} /> Refresh events
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                        { label: 'Total events', value: webhookSummary.total, icon: Activity, tone: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10' },
+                        { label: 'Processed', value: webhookSummary.processed, icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10' },
+                        { label: 'Pending', value: webhookSummary.pending, icon: Clock3, tone: 'text-amber-600 bg-amber-50 dark:bg-amber-500/10' },
+                        { label: 'Failed', value: webhookSummary.failed, icon: XCircle, tone: 'text-rose-600 bg-rose-50 dark:bg-rose-500/10' }
+                    ].map((item) => (
+                        <div key={item.label} className="rounded-2xl border border-slate-100 p-4 dark:border-slate-800">
+                            <div className={`mb-3 grid h-9 w-9 place-items-center rounded-xl ${item.tone}`}><item.icon size={17} /></div>
+                            <p className="text-2xl font-black text-slate-900 dark:text-white">{item.value}</p>
+                            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.label}</p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div className="hidden grid-cols-[1.2fr_1fr_1fr_0.8fr] gap-3 bg-slate-50 px-4 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 dark:bg-slate-800/70 sm:grid">
+                        <span>Event</span><span>Order ID</span><span>Received</span><span>Status</span>
+                    </div>
+                    {webhookLoading && webhookEvents.length === 0 ? (
+                        <div className="p-8 text-center text-sm text-slate-500">Loading webhook events…</div>
+                    ) : webhookEvents.length === 0 ? (
+                        <div className="p-8 text-center">
+                            <Activity size={28} className="mx-auto mb-2 text-slate-300" />
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">No webhook events received yet</p>
+                            <p className="mt-1 text-xs text-slate-500">Events will appear here after Cashfree sends them to your webhook URL.</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {webhookEvents.map((event) => (
+                                <div key={event.eventId} className="grid gap-2 px-4 py-4 sm:grid-cols-[1.2fr_1fr_1fr_0.8fr] sm:items-center sm:gap-3">
+                                    <div className="min-w-0">
+                                        <p className="break-words text-sm font-bold text-slate-800 dark:text-slate-100">{event.eventType || 'Unknown event'}</p>
+                                        <p className="mt-1 text-xs capitalize text-slate-500">{event.summary || event.category || 'Webhook update'}</p>
+                                    </div>
+                                    <p className="break-all text-xs text-slate-500 sm:font-medium">{event.orderId || '—'}</p>
+                                    <p className="text-xs text-slate-500">{event.createdAt ? new Date(event.createdAt).toLocaleString() : '—'}</p>
+                                    <div><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${event.status === 'PROCESSED' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : event.status === 'FAILED' ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'}`}>{event.status || 'RECEIVED'}</span></div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <p className="text-[11px] leading-5 text-slate-400">Only verified webhook requests are accepted. Refund, dispute and settlement events are recorded for admin review; they do not automatically reverse a customer payment.</p>
+            </section>
 
             <div className="p-8 bg-indigo-50 dark:bg-indigo-500/5 rounded-[2.5rem] border border-indigo-100 dark:border-indigo-500/20 flex items-start gap-4">
                 <Info size={24} className="text-indigo-600 shrink-0" />
