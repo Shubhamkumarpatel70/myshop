@@ -112,20 +112,78 @@ exports.getSalesAnalytics = async (req, res) => {
         if (paymentMethod) {
             queryFilter.paymentMethod = paymentMethod;
         }
+
+        // Always prepare today's shop report using India local time, independent of chart filters.
+        const indiaDateParts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(new Date()).reduce((parts, part) => {
+            if (part.type !== 'literal') parts[part.type] = part.value;
+            return parts;
+        }, {});
+        const todayKey = `${indiaDateParts.year}-${indiaDateParts.month}-${indiaDateParts.day}`;
+        const todayStart = new Date(`${todayKey}T00:00:00+05:30`);
+        const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+        const todaySalesDocs = await Sale.find({
+            ...queryFilter,
+            createdAt: { $gte: todayStart, $lt: tomorrowStart }
+        }).sort({ createdAt: -1 }).lean();
+
+        const todayProductsMap = new Map();
+        let todayUnitsSold = 0;
+        todaySalesDocs.forEach(sale => {
+            (sale.items || []).forEach(item => {
+                const quantity = Math.max(0, Number(item.quantity || 0));
+                const returned = Math.min(quantity, Number(item.returnedQuantity || (item.isReturned ? quantity : 0)));
+                const soldQuantity = Math.max(0, quantity - returned);
+                if (!soldQuantity) return;
+                const productName = item.productName || 'Unnamed product';
+                const itemTotal = Number(item.total || (Number(item.price || 0) * quantity));
+                const netItemTotal = quantity > 0 ? itemTotal * soldQuantity / quantity : 0;
+                const current = todayProductsMap.get(productName) || { productName, quantity: 0, total: 0 };
+                current.quantity += soldQuantity;
+                current.total += netItemTotal;
+                todayProductsMap.set(productName, current);
+                todayUnitsSold += soldQuantity;
+            });
+        });
+        const todayProducts = Array.from(todayProductsMap.values())
+            .map(item => ({ ...item, total: Number(item.total.toFixed(2)) }))
+            .sort((a, b) => b.quantity - a.quantity);
+        const todayReport = {
+            date: todayKey,
+            totalSales: Number(todayProducts.reduce((sum, product) => sum + product.total, 0).toFixed(2)),
+            totalTransactions: todaySalesDocs.length,
+            unitsSold: todayUnitsSold,
+            productsSold: todayProducts.length,
+            products: todayProducts,
+            transactions: todaySalesDocs.slice(0, 30).map(sale => ({
+                transactionId: sale.transactionId,
+                customerName: sale.customerName || 'Guest',
+                paymentMethod: sale.paymentMethod || 'Cash',
+                totalAmount: Number(sale.totalAmount || 0),
+                status: sale.status || 'Completed',
+                createdAt: sale.createdAt,
+                items: (sale.items || []).map(item => ({
+                    productName: item.productName || 'Unnamed product',
+                    quantity: Math.max(0, Number(item.quantity || 0) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0)))
+                })).filter(item => item.quantity > 0)
+            }))
+        };
         let limit = 30;
         
         if (date) {
-            const start = new Date(date);
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(date);
-            end.setHours(23, 59, 59, 999);
+            // Date filters use India local calendar days (UTC+05:30).
+            const start = new Date(`${date}T00:00:00+05:30`);
+            const end = new Date(new Date(start).getTime() + 24 * 60 * 60 * 1000 - 1);
             queryFilter.createdAt = { $gte: start, $lte: end };
         } else if (month) {
-            // format: YYYY-MM
-            const [year, monthNum] = month.split('-');
-            const start = new Date(year, monthNum - 1, 1);
-            const end = new Date(year, monthNum, 0, 23, 59, 59, 999);
+            // Keep all days, including the 31st, in the selected India-local month.
+            const [year, monthNum] = month.split('-').map(Number);
+            const start = new Date(`${month}-01T00:00:00+05:30`);
+            const nextMonth = monthNum === 12 ? `${year + 1}-01` : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
+            const end = new Date(new Date(`${nextMonth}-01T00:00:00+05:30`).getTime() - 1);
             queryFilter.createdAt = { $gte: start, $lte: end };
+            limit = 31;
         } else if (period) {
             const days = parseInt(period) || 30;
             const start = new Date();
@@ -141,7 +199,7 @@ exports.getSalesAnalytics = async (req, res) => {
             { $match: filter },
             {
                 $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Kolkata" } },
                     total: { $sum: "$totalAmount" },
                     count: { $sum: 1 }
                 }
@@ -164,6 +222,23 @@ exports.getSalesAnalytics = async (req, res) => {
         });
         const totalProfit = totalRevenue - totalCost;
         const totalSalesCount = sales.length;
+        const monthlyProductMap = new Map();
+        sales.forEach(sale => (sale.items || []).forEach(item => {
+            const quantity = Math.max(0, Number(item.quantity || 0));
+            const returned = Math.min(quantity, Number(item.returnedQuantity || (item.isReturned ? quantity : 0)));
+            const soldQuantity = Math.max(0, quantity - returned);
+            if (!soldQuantity) return;
+            const productName = item.productName || 'Unnamed product';
+            const itemValue = Number(item.total || (Number(item.price || 0) * quantity));
+            const netValue = quantity > 0 ? itemValue * soldQuantity / quantity : 0;
+            const current = monthlyProductMap.get(productName) || { productName, quantity: 0, total: 0 };
+            current.quantity += soldQuantity;
+            current.total += netValue;
+            monthlyProductMap.set(productName, current);
+        }));
+        const monthlyProducts = Array.from(monthlyProductMap.values())
+            .map(item => ({ ...item, total: Number(item.total.toFixed(2)) }))
+            .sort((a, b) => b.quantity - a.quantity);
         const avgTicketSize = totalSalesCount > 0 ? Math.round(totalRevenue / totalSalesCount) : 0;
         const netMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : '0.0';
 
@@ -209,6 +284,14 @@ exports.getSalesAnalytics = async (req, res) => {
         );
 
         const transactionGrowth = calcGrowth(currentSales.length, previousSales.length);
+        const customerSaleCounts = new Map();
+        sales.forEach(sale => {
+            const phone = String(sale.customerPhone || '').trim();
+            if (phone) customerSaleCounts.set(phone, (customerSaleCounts.get(phone) || 0) + 1);
+        });
+        const knownCustomers = customerSaleCounts.size;
+        const returningCustomers = Array.from(customerSaleCounts.values()).filter(count => count > 1).length;
+        const returningCustomerRate = knownCustomers > 0 ? Number(((returningCustomers / knownCustomers) * 100).toFixed(1)) : 0;
         
         const currentProfit = currentSales.reduce((acc, sale) => {
             const cost = sale.items.reduce((c, i) => c + ((i.purchasePrice || 0) * i.quantity), 0);
@@ -230,6 +313,8 @@ exports.getSalesAnalytics = async (req, res) => {
             success: true, 
             data: {
                 dailySales,
+                monthlyProducts,
+                todayReport,
                 stats: {
                     totalRevenue,
                     totalProfit,
@@ -239,7 +324,7 @@ exports.getSalesAnalytics = async (req, res) => {
                     revenueGrowth,
                     transactionGrowth,
                     profitGrowth,
-                    returningCustomerRate: 15 
+                    returningCustomerRate 
                 },
                 insights: {
                     peakTime: `${peakHour}:00 - ${parseInt(peakHour)+3}:00`,

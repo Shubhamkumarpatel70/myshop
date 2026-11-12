@@ -6,7 +6,7 @@ import {
     BarChart3, PieChart as PieChartIcon, 
     TrendingUp, ArrowDown, ArrowUp, 
     FileText, Calendar, Download, Target,
-    CreditCard, Activity, Zap, ShieldCheck, Clock, X
+    CreditCard, Activity, Zap, ShieldCheck, Clock, X, RefreshCw
 } from 'lucide-react';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -126,7 +126,50 @@ const Reports = () => {
             `• Stock Status: ${insights.lowStockRisk}`
         ], 14, finalY + 10);
 
-        doc.save(`business_report_${new Date().toISOString().split('T')[0]}.pdf`);
+        // Daily sales breakdown (for the selected date range/month).
+        const dailyRows = (dailySales || []).map(day => [
+            new Date(`${day._id}T00:00:00+05:30`).toLocaleDateString('en-IN'),
+            Number(day.count || 0),
+            `Rs. ${Number(day.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+        ]);
+        if (dailyRows.length) {
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setTextColor(20);
+            doc.text(monthFilter ? `Daily Sales - ${monthFilter}` : 'Daily Sales Breakdown', 14, 20);
+            doc.autoTable({
+                startY: 28,
+                head: [['Date', 'Transactions', 'Sales']],
+                body: dailyRows,
+                theme: 'striped',
+                headStyles: { fillColor: [79, 70, 229] },
+                styles: { fontSize: 9, cellPadding: 3 }
+            });
+        }
+
+        // Today's product-level details when available.
+        const pdfProducts = monthFilter ? (monthlyProducts || []) : (todayReport?.products || []);
+        if (pdfProducts.length) {
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setTextColor(20);
+            doc.text(monthFilter ? `Products Sold - ${monthFilter}` : `Products Sold - ${todayReport.date}`, 14, 20);
+            doc.autoTable({
+                startY: 28,
+                head: [['Product', 'Quantity', 'Sales']],
+                body: pdfProducts.map(product => [
+                    product.productName,
+                    Number(product.quantity || 0),
+                    `Rs. ${Number(product.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+                ]),
+                theme: 'striped',
+                headStyles: { fillColor: [79, 70, 229] },
+                styles: { fontSize: 9, cellPadding: 3 }
+            });
+        }
+
+        const filePeriod = monthFilter || dateFilter || `last_${periodFilter}_days`;
+        doc.save(`business_report_${filePeriod}.pdf`);
     };
 
     const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -154,7 +197,7 @@ const Reports = () => {
         </div>
     );
 
-    const { dailySales, stats, insights } = analytics;
+    const { dailySales, monthlyProducts, stats, insights, todayReport } = analytics;
 
     const reportCards = [
         { 
@@ -320,6 +363,122 @@ const Reports = () => {
                     </motion.div>
                 ))}
             </div>
+
+            {/* Saved month history from permanent sale records */}
+            {monthFilter && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <div className="mb-4">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Monthly Sales History</h2>
+                        <p className="mt-1 text-xs text-slate-500">Daily totals for {monthFilter}. Each day is calculated from saved sales and payment records.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 mb-5">
+                        <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800"><p className="text-xs text-slate-500">Month Sales</p><p className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">₹{Number(stats.totalRevenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p></div>
+                        <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800"><p className="text-xs text-slate-500">Transactions</p><p className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">{Number(stats.totalSalesCount || 0).toLocaleString('en-IN')}</p></div>
+                        <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800 col-span-2 sm:col-span-1"><p className="text-xs text-slate-500">Daily Records</p><p className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">{dailySales?.length || 0}</p></div>
+                    </div>
+                    {dailySales?.length ? (
+                        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                            <table className="w-full min-w-[420px] text-sm">
+                                <thead className="bg-slate-50 text-left text-xs text-slate-500 dark:bg-slate-800"><tr><th className="px-3 py-3">Date</th><th className="px-3 py-3 text-right">Transactions</th><th className="px-3 py-3 text-right">Sales</th></tr></thead>
+                                <tbody>{dailySales.map(day => (
+                                    <tr key={day._id} className="border-t border-slate-100 dark:border-slate-800">
+                                        <td className="px-3 py-3 font-semibold text-slate-800 dark:text-slate-100">{new Date(`${day._id}T00:00:00+05:30`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                        <td className="px-3 py-3 text-right text-slate-600 dark:text-slate-300">{Number(day.count || 0)}</td>
+                                        <td className="px-3 py-3 text-right font-bold text-slate-900 dark:text-white">₹{Number(day.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                                    </tr>
+                                ))}</tbody>
+                            </table>
+                        </div>
+                    ) : <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800">No sales recorded for this month.</p>}
+                    <div className="mt-6">
+                        <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Products Sold This Month</h3>
+                        {monthlyProducts?.length ? (
+                            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                                <table className="w-full min-w-[360px] text-sm">
+                                    <thead className="bg-slate-50 text-left text-xs text-slate-500 dark:bg-slate-800"><tr><th className="px-3 py-3">Product</th><th className="px-3 py-3 text-right">Qty Sold</th><th className="px-3 py-3 text-right">Sales</th></tr></thead>
+                                    <tbody>{monthlyProducts.map(product => <tr key={product.productName} className="border-t border-slate-100 dark:border-slate-800"><td className="px-3 py-3 font-semibold text-slate-800 dark:text-slate-100">{product.productName}</td><td className="px-3 py-3 text-right">{product.quantity}</td><td className="px-3 py-3 text-right font-bold">₹{Number(product.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td></tr>)}</tbody>
+                                </table>
+                            </div>
+                        ) : <p className="text-sm text-slate-500">No product sales recorded for this month.</p>}
+                    </div>
+                </section>
+            )}
+
+            {/* Live report for the current day */}
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Today's Sales</h2>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">
+                            Live records for {todayReport?.date ? new Date(`${todayReport.date}T00:00:00+05:30`).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'today'} · Updates when this report is refreshed.
+                        </p>
+                    </div>
+                    <button type="button" onClick={fetchData} disabled={loading} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                        <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Refresh
+                    </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    {[
+                        { label: 'Total Sales', value: `₹${Number(todayReport?.totalSales || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` },
+                        { label: 'Transactions', value: Number(todayReport?.totalTransactions || 0).toLocaleString('en-IN') },
+                        { label: 'Items Sold', value: Number(todayReport?.unitsSold || 0).toLocaleString('en-IN') },
+                        { label: 'Products Sold', value: Number(todayReport?.productsSold || 0).toLocaleString('en-IN') }
+                    ].map(card => (
+                        <div key={card.label} className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                            <p className="text-xs font-medium text-slate-500">{card.label}</p>
+                            <p className="mt-2 text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">{card.value}</p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+                    <div className="min-w-0">
+                        <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Products Sold Today</h3>
+                        {todayReport?.products?.length ? (
+                            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                                <table className="w-full min-w-[320px] text-sm">
+                                    <thead className="bg-slate-50 text-left text-xs text-slate-500 dark:bg-slate-800">
+                                        <tr><th className="px-3 py-3 font-semibold">Product</th><th className="px-3 py-3 text-right font-semibold">Qty Sold</th><th className="px-3 py-3 text-right font-semibold">Sales</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {todayReport.products.map((product, index) => (
+                                            <tr key={product.productName} className={index ? 'border-t border-slate-100 dark:border-slate-800' : ''}>
+                                                <td className="px-3 py-3 font-semibold text-slate-800 dark:text-slate-100">{product.productName}</td>
+                                                <td className="px-3 py-3 text-right text-slate-600 dark:text-slate-300">{product.quantity}</td>
+                                                <td className="px-3 py-3 text-right font-semibold text-slate-800 dark:text-slate-100">₹{Number(product.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800">No products sold today yet.</p>}
+                    </div>
+                    <div className="min-w-0">
+                        <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Today's Transactions</h3>
+                        {todayReport?.transactions?.length ? (
+                            <div className="space-y-2">
+                                {todayReport.transactions.map((sale, index) => (
+                                    <div key={sale.transactionId || `${sale.createdAt}-${index}`} className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{sale.customerName}</p>
+                                                <p className="mt-1 text-xs text-slate-500">{sale.transactionId ? `#${sale.transactionId}` : 'Sale'} · {new Date(sale.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} · {sale.paymentMethod}</p>
+                                            </div>
+                                            <p className="shrink-0 text-sm font-extrabold text-slate-900 dark:text-white">₹{Number(sale.totalAmount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-500">{sale.items?.map(item => `${item.productName} × ${item.quantity}`).join(', ') || 'No item details'}</p>
+                                        {sale.status && sale.status !== 'Completed' && <span className="mt-2 inline-flex rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">{sale.status}</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800">No sales recorded today yet.</p>}
+                        {Number(todayReport?.totalTransactions || 0) > 30 && <p className="mt-2 text-xs text-slate-500">Showing the latest 30 transactions.</p>}
+                    </div>
+                </div>
+            </section>
 
             {/* Quick Business Insights */}
             <motion.div 
