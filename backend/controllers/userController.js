@@ -13,10 +13,15 @@ exports.updateProfile = async (req, res) => {
         user.phone = phone || user.phone;
         user.businessType = businessType || user.businessType;
         user.address = address || user.address;
-        if (gstEnabled !== undefined) user.gstEnabled = Boolean(gstEnabled);
-        if (gstin !== undefined) user.gstin = String(gstin).trim().toUpperCase();
-        if (businessState !== undefined) user.businessState = String(businessState).trim();
-        if (user.gstEnabled && !user.gstin) return res.status(400).json({ success: false, message: 'GSTIN is required when GST is enabled.' });
+        if (gstEnabled !== undefined || gstin !== undefined || businessState !== undefined) {
+            if (req.user.role !== 'shop_owner') return res.status(403).json({ success: false, message: 'Only the shop owner can change GST settings.' });
+            if (gstEnabled !== undefined) user.gstEnabled = Boolean(gstEnabled);
+            if (gstin !== undefined) user.gstin = String(gstin).trim().toUpperCase();
+            if (businessState !== undefined) user.businessState = String(businessState).trim();
+            if (user.gstEnabled && !/^[0-9A-Z]{15}$/.test(user.gstin || '')) {
+                return res.status(400).json({ success: false, message: 'Enter a valid 15-character GSTIN to enable GST.' });
+            }
+        }
 
         const updatedUser = await user.save();
         
