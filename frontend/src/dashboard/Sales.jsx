@@ -353,7 +353,13 @@ const Sales = () => {
                 completedSale = { ...response.data.data, user: response.data.data?.user || user };
                 toast.success("Transaction successfully saved");
             }
-            handlePrintInvoice(completedSale, receiptWindow);
+            try {
+                handlePrintInvoice(completedSale, receiptWindow);
+            } catch (printError) {
+                console.error('Sale saved, but receipt printing failed:', printError);
+                if (receiptWindow && !receiptWindow.closed) receiptWindow.close();
+                toast.error('Sale saved, but the receipt could not be printed. You can print it from Registry Details.');
+            }
             setCart([]);
             setCustomerInfo({ name: 'Guest', phone: '', paymentMethod: 'Cash' });
             setUtrNumber('');
