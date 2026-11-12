@@ -67,7 +67,8 @@ const DashboardLayout = () => {
         setDarkMode(isDark);
         setPrivacyMode(isPrivacy);
         document.documentElement.classList.toggle('dark', isDark);
-        document.documentElement.classList.toggle('privacy-mode', isPrivacy);
+        // Privacy mode is applied by the flow-aware effect below, after the
+        // authenticated user's payment/onboarding state is known.
     }, []);
 
     useEffect(() => {
@@ -75,6 +76,16 @@ const DashboardLayout = () => {
             setShowOnboarding(true);
         }
     }, [user]);
+
+    // Keep registration and account setup screens readable. Privacy blur is
+    // intended for normal dashboard content, never payment or onboarding UI.
+    useEffect(() => {
+        const isAccountSetup = showOnboarding ||
+            user?.address === 'Incomplete' ||
+            (user?.role === 'shop_owner' && !user?.isPaymentDone);
+        const shouldApplyPrivacy = Boolean(user) && privacyMode && !isAccountSetup;
+        document.documentElement.classList.toggle('privacy-mode', shouldApplyPrivacy);
+    }, [privacyMode, showOnboarding, user?.role, user?.isPaymentDone]);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
