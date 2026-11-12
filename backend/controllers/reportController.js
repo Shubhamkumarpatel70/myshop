@@ -151,7 +151,7 @@ exports.getSalesAnalytics = async (req, res) => {
             .sort((a, b) => b.quantity - a.quantity);
         const todayReport = {
             date: todayKey,
-            totalSales: Number(todaySalesDocs.reduce((sum, sale) => sum + Number(sale.totalAmount || 0), 0).toFixed(2)),
+            totalSales: Number(todayProducts.reduce((sum, product) => sum + product.total, 0).toFixed(2)),
             totalTransactions: todaySalesDocs.length,
             unitsSold: todayUnitsSold,
             productsSold: todayProducts.length,
@@ -266,6 +266,14 @@ exports.getSalesAnalytics = async (req, res) => {
         );
 
         const transactionGrowth = calcGrowth(currentSales.length, previousSales.length);
+        const customerSaleCounts = new Map();
+        sales.forEach(sale => {
+            const phone = String(sale.customerPhone || '').trim();
+            if (phone) customerSaleCounts.set(phone, (customerSaleCounts.get(phone) || 0) + 1);
+        });
+        const knownCustomers = customerSaleCounts.size;
+        const returningCustomers = Array.from(customerSaleCounts.values()).filter(count => count > 1).length;
+        const returningCustomerRate = knownCustomers > 0 ? Number(((returningCustomers / knownCustomers) * 100).toFixed(1)) : 0;
         
         const currentProfit = currentSales.reduce((acc, sale) => {
             const cost = sale.items.reduce((c, i) => c + ((i.purchasePrice || 0) * i.quantity), 0);
@@ -297,7 +305,7 @@ exports.getSalesAnalytics = async (req, res) => {
                     revenueGrowth,
                     transactionGrowth,
                     profitGrowth,
-                    returningCustomerRate: 15 
+                    returningCustomerRate 
                 },
                 insights: {
                     peakTime: `${peakHour}:00 - ${parseInt(peakHour)+3}:00`,
