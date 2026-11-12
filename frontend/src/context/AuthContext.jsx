@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
         // Offline Login Logic
         if (!navigator.onLine && mPin) {
             const cachedUser = getStoredUser();
-            if (cachedUser && cachedUser.email === email && cachedUser.offlineHash) {
+            if (cachedUser && String(cachedUser.email || '').trim().toLowerCase() === String(email || '').trim().toLowerCase() && cachedUser.offlineHash) {
                 const inputHash = await hashMPin(email, mPin);
                 if (inputHash === cachedUser.offlineHash) {
                     setUser(cachedUser);
@@ -105,7 +105,7 @@ export const AuthProvider = ({ children }) => {
             const isNetworkError = !error.response || error.code === 'ERR_NETWORK' || error.message.includes('Network Error');
             
             if (isNetworkError && mPin) {
-                const cachedUser = JSON.parse(localStorage.getItem('user'));
+                const cachedUser = getStoredUser();
                 if (cachedUser && cachedUser.email === email && cachedUser.offlineHash) {
                     const inputHash = await hashMPin(email, mPin);
                     if (inputHash === cachedUser.offlineHash) {
