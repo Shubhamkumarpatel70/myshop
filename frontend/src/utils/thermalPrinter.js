@@ -1,0 +1,121 @@
+const ESC = 0x1B;
+const GS = 0x1D;
+
+const encoder = new TextEncoder();
+const money = value => `INR ${Number(value || 0).toFixed(2)}`;
+const clean = value => String(value ?? '').normalize('NFKD').replace(/[^\x20-\x7E]/g, ' ').replace(/\s+/g, ' ').trim();
+
+const wrap = (value, width) => {
+    const words = clean(value).split(' ');
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+        if (!word) continue;
+        if (word.length > width) {
+            if (line) lines.push(line);
+            line = '';
+            for (let i = 0; i < word.length; i += width) lines.push(word.slice(i, i + width));
+            continue;
+        }
+        if (line && (line.length + word.length + 1) > width) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = line ? `${line} ${word}` : word;
+        }
+    }
+    if (line) lines.push(line);
+    return lines;
+};
+
+const padRow = (left, right, width) => {
+    const a = clean(left).slice(0, width);
+    const b = clean(right).slice(0, width);
+    return a + ' '.repeat(Math.max(1, width - a.length - b.length)) + b;
+};
+
+export const isThermalPrinterSupported = () =>
+    typeof window !== 'undefined' && !!navigator.serial && window.isSecureContext;
+
+export const printThermalReceipt = async (sale, columns = 32) => {
+    if (!isThermalPrinterSupported()) {
+        throw new Error('Thermal printing needs Chrome or Edge on a secure HTTPS page with Web Serial support.');
+    }
+    if (!sale || !Array.isArray(sale.items)) throw new Error('Receipt data is not available.');
+
+    const width = columns === 48 ? 48 : 32;
+    const shop = sale.user || {};
+    const lines = [];
+    const add = value => lines.push(...wrap(value, width));
+    const divider = '-'.repeat(width);
+
+    lines.push(...[shop.shopName || 'STOCK SAATHI'].flatMap(value => wrap(value, width)));
+    lines.push(...wrap(shop.address || '', width));
+    if (shop.phone) lines.push(...wrap(`Phone: ${shop.phone}`, width));
+    if (shop.gstEnabled && shop.gstin) lines.push(...wrap(`GSTIN: ${shop.gstin}`, width));
+    lines.push(divider, 'TAX INVOICE', divider);
+    add(`Bill: ${sale.transactionId || sale._id || 'N/A'}`);
+    add(`Date: ${new Date(sale.createdAt || Date.now()).toLocaleString('en-IN')}`);
+    add(`Customer: ${sale.customerName || 'Guest'}`);
+    if (sale.customerPhone) add(`Phone: ${sale.customerPhone}`);
+    lines.push(divider);
+    add(padRow('ITEM / QTY', 'AMOUNT', width));
+    lines.push(divider);
+
+    let taxableSubtotal = 0;
+    let taxTotal = 0;
+    for (const item of sale.items) {
+        const name = item.product?.productName || item.productName || 'Item';
+        const amount = Number(item.total ?? (Number(item.price || 0) * Number(item.quantity || 0)));
+        if (!item.isReturned) {
+            taxableSubtotal += Number(item.taxableAmount ?? amount);
+            taxTotal += Number(item.taxAmount || 0);
+        }
+        const nameLines = wrap(name, width);
+        lines.push(...nameLines);
+        const qtyPrice = `  ${item.quantity} x ${Number(item.price || 0).toFixed(2)}`;
+        lines.push(...wrap(padRow(qtyPrice, money(amount), width), width));
+        if (item.isReturned) lines.push('  RETURNED');
+    }
+    lines.push(divider);
+    lines.push(padRow('SUBTOTAL', money(taxableSubtotal), width));
+    const cgst = sale.items.reduce((sum, item) => sum + Number(item.cgst || 0), 0);
+    const sgst = sale.items.reduce((sum, item) => sum + Number(item.sgst || 0), 0);
+    const igst = sale.items.reduce((sum, item) => sum + Number(item.igst || 0), 0);
+    if (cgst) lines.push(padRow('CGST', money(cgst), width));
+    if (sgst) lines.push(padRow('SGST', money(sgst), width));
+    if (igst) lines.push(padRow('IGST', money(igst), width));
+    if (!cgst && !sgst && !igst && taxTotal) lines.push(padRow('TAX', money(taxTotal), width));
+    lines.push(divider);
+    lines.push(padRow('TOTAL', money(sale.totalAmount), width));
+    add(`Payment: ${sale.paymentMethod || 'N/A'}`);
+    lines.push(divider, 'THANK YOU! VISIT AGAIN', '', '');
+
+    const bytes = [
+        ESC, 0x40,             // Initialize
+        ESC, 0x61, 0x01,       // Center
+        ESC, 0x45, 0x01,       // Bold
+        ...encoder.encode(lines[0] + '\n'),
+        ESC, 0x45, 0x00,
+        ESC, 0x61, 0x00,       // Left
+        ...encoder.encode(lines.slice(1).join('\n') + '\n'),
+        GS, 0x56, 0x41, 0x03  // Partial cut
+    ];
+
+    const port = await navigator.serial.requestPort();
+    let openedHere = false;
+    try {
+        if (!port.readable || !port.writable) {
+            await port.open({ baudRate: 9600 });
+            openedHere = true;
+        }
+        const writer = port.writable.getWriter();
+        try {
+            await writer.write(new Uint8Array(bytes));
+        } finally {
+            writer.releaseLock();
+        }
+    } finally {
+        if (openedHere) await port.close().catch(() => {});
+    }
+};
