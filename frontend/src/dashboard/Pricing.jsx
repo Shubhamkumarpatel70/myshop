@@ -36,6 +36,7 @@ const Pricing = () => {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [plans, setPlans] = useState([]);
+    const [addons, setAddons] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -50,6 +51,7 @@ const Pricing = () => {
 
     useEffect(() => {
         fetchPlans();
+        fetchAddons();
         fetchSettings();
         preloadCashfreeSdk();
     }, []);
@@ -63,6 +65,11 @@ const Pricing = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchAddons = async () => {
+        try { const res = await api.get('/subscriptions/addons'); setAddons(Array.isArray(res.data?.data) ? res.data.data : []); }
+        catch (error) { console.error('Failed to load add-ons', error); }
     };
 
     const fetchSettings = async () => {
@@ -524,124 +531,36 @@ const Pricing = () => {
                 ))}
             </div>
 
-            {/* Add-on Modules Section */}
-            {user && (
-                <div className="space-y-10 mt-20">
+            {/* Add-ons managed from Admin Pricing */}
+            {user && addons.length > 0 && (
+                <section className="space-y-10 mt-20">
                     <div className="text-center space-y-2">
                         <h2 className="text-3xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Standalone <span className="text-indigo-600">Modules</span></h2>
                         <p className="text-slate-500 font-medium">Power up your shop without changing your core plan.</p>
                     </div>
-
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        {/* Barcode Booster */}
-                        <div className="relative overflow-hidden rounded-[3rem] border border-indigo-200 bg-indigo-50/30 p-10 dark:border-indigo-500/20 dark:bg-indigo-500/5">
-                            <div className="absolute top-0 right-0 p-10 opacity-10">
-                                <QrCode size={160} className="text-indigo-600" />
-                            </div>
-                            <div className="relative z-10 flex flex-col h-full justify-between">
-                                <div>
-                                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest mb-6 shadow-lg shadow-indigo-500/20">
-                                        <Tag size={12} /> Add-on Module
-                                    </span>
-                                    <h2 className="font-outfit text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
-                                        Barcode <span className="text-indigo-600">Booster</span>
-                                    </h2>
-                                    <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 font-medium max-w-md leading-relaxed">
-                                        Unlimited barcode generation and priority registry access for your entire inventory.
-                                    </p>
-                                    
-                                    <div className="mt-8 flex items-baseline gap-1">
-                                        <span className="text-3xl font-black text-slate-900 dark:text-white">₹499</span>
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">One-time payment</span>
+                        {addons.map((addon, index) => {
+                            const active = addon.activationKey === 'barcode' ? user?.hasBarcodeAddon : addon.activationKey === 'team' ? user?.hasStaffAddon : false;
+                            const pending = user?.pendingSubscription?.plan === addon.name && user?.pendingSubscription?.status === 'Pending';
+                            const accent = index % 2 === 0 ? 'indigo' : 'violet';
+                            return <div key={addon._id} className={`relative overflow-hidden rounded-[2.5rem] border p-8 md:p-10 ${accent === 'indigo' ? 'border-indigo-200 bg-indigo-50/30 dark:border-indigo-500/20 dark:bg-indigo-500/5' : 'border-violet-200 bg-violet-50/30 dark:border-violet-500/20 dark:bg-violet-500/5'}`}>
+                                <div className="absolute right-0 top-0 p-8 opacity-10"><QrCode size={130}/></div>
+                                <div className="relative z-10 flex h-full flex-col justify-between gap-8">
+                                    <div>
+                                        <span className={`mb-5 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white ${accent === 'indigo' ? 'bg-indigo-600' : 'bg-violet-600'}`}><Tag size={12}/> Add-on Module</span>
+                                        <h2 className="font-outfit text-3xl font-black tracking-tight text-slate-900 dark:text-white">{addon.name}</h2>
+                                        <p className="mt-4 max-w-md text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-400">{addon.description}</p>
+                                        <div className="mt-7 flex items-baseline gap-2"><span className="text-3xl font-black text-slate-900 dark:text-white">₹{Number(addon.price || 0).toLocaleString('en-IN')}</span><span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{addon.billingLabel || 'One-time payment'}</span></div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {!!addon.features?.length && <ul className="space-y-2">{addon.features.map((feature, i)=><li key={i} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20"><Check size={12}/></span>{feature}</li>)}</ul>}
+                                        <button disabled={active || pending} onClick={()=>{setSelectedPlan({name:addon.name,price:Number(addon.price),isAddon:true});setIsUpgradeModalOpen(true);}} className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg transition disabled:cursor-not-allowed disabled:opacity-70 ${active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : pending ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : accent === 'indigo' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-violet-600 text-white hover:bg-violet-700'}`}>{active ? <><ShieldCheck size={16}/> Activated</> : pending ? <><Clock size={16}/> Pending</> : <><Zap size={16}/> Activate Add-on</>}</button>
                                     </div>
                                 </div>
-
-                                <div className="mt-10 flex flex-col gap-4">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={12} /></div>
-                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Unlimited Identifiers</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={12} /></div>
-                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Lifetime Validity</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        disabled={user?.hasBarcodeAddon || user?.pendingSubscription?.plan === 'Barcode Booster'}
-                                        onClick={() => {
-                                            setSelectedPlan({ name: 'Barcode Booster', price: 499, isAddon: true });
-                                            setIsUpgradeModalOpen(true);
-                                        }}
-                                        className={`w-full h-14 rounded-[1.25rem] font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-4 shadow-xl ${
-                                            user?.hasBarcodeAddon 
-                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 cursor-default' 
-                                            : user?.pendingSubscription?.plan === 'Barcode Booster'
-                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
-                                            : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 shadow-indigo-500/20'
-                                        }`}
-                                    >
-                                        {user?.hasBarcodeAddon ? <><ShieldCheck size={16} /> Activated</> : user?.pendingSubscription?.plan === 'Barcode Booster' ? <><Clock size={16} /> Pending</> : <><Zap size={16} /> Activate</>}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Team Booster */}
-                        <div className="relative overflow-hidden rounded-[3rem] border border-violet-200 bg-violet-50/30 p-10 dark:border-violet-500/20 dark:bg-violet-500/5">
-                            <div className="absolute top-0 right-0 p-10 opacity-10">
-                                <Users size={160} className="text-violet-600" />
-                            </div>
-                            <div className="relative z-10 flex flex-col h-full justify-between">
-                                <div>
-                                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest mb-6 shadow-lg shadow-violet-500/20">
-                                        <Users size={12} /> Team Module
-                                    </span>
-                                    <h2 className="font-outfit text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
-                                        Team <span className="text-violet-600">Expansion</span>
-                                    </h2>
-                                    <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 font-medium max-w-md leading-relaxed">
-                                        Scale your team infrastructure. Instantly unlock 5 additional staff slots with advanced role-based permissions.
-                                    </p>
-                                    
-                                    <div className="mt-8 flex items-baseline gap-1">
-                                        <span className="text-3xl font-black text-slate-900 dark:text-white">₹999</span>
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">One-time payment</span>
-                                    </div>
-                                </div>
-
-                                <div className="mt-10 flex flex-col gap-4">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={12} /></div>
-                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">+5 Permanent Staff Slots</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center"><Check size={12} /></div>
-                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Advanced Access Control</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        disabled={user?.hasStaffAddon || user?.pendingSubscription?.plan === 'Team Expansion'}
-                                        onClick={() => {
-                                            setSelectedPlan({ name: 'Team Expansion', price: 999, isAddon: true });
-                                            setIsUpgradeModalOpen(true);
-                                        }}
-                                        className={`w-full h-14 rounded-[1.25rem] font-black uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-4 shadow-xl ${
-                                            user?.hasStaffAddon 
-                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 cursor-default' 
-                                            : user?.pendingSubscription?.plan === 'Team Expansion'
-                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
-                                            : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-violet-600 dark:hover:bg-violet-700 shadow-violet-500/20'
-                                        }`}
-                                    >
-                                        {user?.hasStaffAddon ? <><ShieldCheck size={16} /> Activated</> : user?.pendingSubscription?.plan === 'Team Expansion' ? <><Clock size={16} /> Pending</> : <><Zap size={16} /> Activate</>}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                            </div>;
+                        })}
                     </div>
-                </div>
+                </section>
             )}
 
             {/* FAQ Section */}
