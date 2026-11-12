@@ -68,7 +68,9 @@ app.use(helmet({
         directives: {
             ...helmet.contentSecurityPolicy.getDefaultDirectives(),
             "img-src": ["'self'", "data:", "blob:", "res.cloudinary.com", "*.cloudinary.com", "api.qrserver.com"],
-            "connect-src": ["'self'", "res.cloudinary.com", "*.cloudinary.com", "api.qrserver.com"],
+            "script-src": ["'self'", "https://sdk.cashfree.com"],
+            "connect-src": ["'self'", "res.cloudinary.com", "*.cloudinary.com", "api.qrserver.com", "https://*.cashfree.com"],
+            "frame-src": ["'self'", "https://*.cashfree.com"],
         },
     },
 }));
