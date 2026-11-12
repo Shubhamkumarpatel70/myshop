@@ -554,7 +554,7 @@ const Sales = () => {
                         <div class="shop-details">
                             ${escapeHtml(shopInfo.address || 'Business Address Not Set')}<br>
                             Ph: ${escapeHtml(shopInfo.phone || 'N/A')}<br>
-                            ${shopInfo.gstEnabled ? 'GSTIN: ' + escapeHtml(shopInfo.gstin || 'Not provided') : 'GST not enabled'}
+                            ${'GSTIN: ' + escapeHtml(String(shopInfo.gstin || '').trim() || 'XXXXXXXXXXXX')}
                         </div>
                         <div class="invoice-title">TAX INVOICE</div>
                     </div>
