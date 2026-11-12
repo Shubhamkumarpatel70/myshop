@@ -148,15 +148,16 @@ const Reports = () => {
         }
 
         // Today's product-level details when available.
-        if (todayReport?.products?.length) {
+        const pdfProducts = monthFilter ? (monthlyProducts || []) : (todayReport?.products || []);
+        if (pdfProducts.length) {
             doc.addPage();
             doc.setFontSize(16);
             doc.setTextColor(20);
-            doc.text(`Products Sold - ${todayReport.date}`, 14, 20);
+            doc.text(monthFilter ? `Products Sold - ${monthFilter}` : `Products Sold - ${todayReport.date}`, 14, 20);
             doc.autoTable({
                 startY: 28,
                 head: [['Product', 'Quantity', 'Sales']],
-                body: todayReport.products.map(product => [
+                body: pdfProducts.map(product => [
                     product.productName,
                     Number(product.quantity || 0),
                     `Rs. ${Number(product.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
@@ -196,7 +197,7 @@ const Reports = () => {
         </div>
     );
 
-    const { dailySales, stats, insights, todayReport } = analytics;
+    const { dailySales, monthlyProducts, stats, insights, todayReport } = analytics;
 
     const reportCards = [
         { 
@@ -389,6 +390,17 @@ const Reports = () => {
                             </table>
                         </div>
                     ) : <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800">No sales recorded for this month.</p>}
+                    <div className="mt-6">
+                        <h3 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Products Sold This Month</h3>
+                        {monthlyProducts?.length ? (
+                            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                                <table className="w-full min-w-[360px] text-sm">
+                                    <thead className="bg-slate-50 text-left text-xs text-slate-500 dark:bg-slate-800"><tr><th className="px-3 py-3">Product</th><th className="px-3 py-3 text-right">Qty Sold</th><th className="px-3 py-3 text-right">Sales</th></tr></thead>
+                                    <tbody>{monthlyProducts.map(product => <tr key={product.productName} className="border-t border-slate-100 dark:border-slate-800"><td className="px-3 py-3 font-semibold text-slate-800 dark:text-slate-100">{product.productName}</td><td className="px-3 py-3 text-right">{product.quantity}</td><td className="px-3 py-3 text-right font-bold">₹{Number(product.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td></tr>)}</tbody>
+                                </table>
+                            </div>
+                        ) : <p className="text-sm text-slate-500">No product sales recorded for this month.</p>}
+                    </div>
                 </section>
             )}
 
