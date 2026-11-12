@@ -11,6 +11,21 @@ exports.getCustomers = async (req, res) => {
     }
 };
 
+exports.searchCustomers = async (req, res) => {
+    try {
+        const query = String(req.query.q || '').trim().slice(0, 30);
+        if (query.length < 2) return res.json({ success: true, data: [] });
+        const filter = { user: req.shopOwnerId, $or: [
+            { name: { $regex: query, $options: 'i' } },
+            { phone: { $regex: query, $options: 'i' } }
+        ] };
+        const customers = await Customer.find(filter).select('name phone email address totalSpent orderCount').sort({ lastPurchase: -1 }).limit(8);
+        res.json({ success: true, data: customers });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 exports.getCustomerDetails = async (req, res) => {
     try {
         const { phone } = req.params;
