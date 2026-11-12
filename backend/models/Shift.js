@@ -27,6 +27,10 @@ const shiftSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    cashChange: {
+        type: Number,
+        default: 0
+    },
     expectedCash: {
         type: Number,
         default: 0
