@@ -21,6 +21,7 @@ const planBadgeClass = (plan) => {
 
 const AdminSubscriptions = () => {
     const [subscriptions, setSubscriptions] = useState([]);
+    const [gatewayPayments, setGatewayPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
@@ -38,6 +39,12 @@ const AdminSubscriptions = () => {
         try {
             const res = await api.get('/subscriptions/admin/all');
             setSubscriptions(res.data.data || []);
+            try {
+                const paymentRes = await api.get('/subscriptions/admin/payments');
+                setGatewayPayments(Array.isArray(paymentRes.data?.data) ? paymentRes.data.data : []);
+            } catch (paymentError) {
+                setGatewayPayments([]);
+            }
         } catch {
             toast.error('Failed to load subscription audit data');
         } finally {
@@ -208,6 +215,19 @@ const AdminSubscriptions = () => {
                 </div>
             </div>
 
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                <div className="border-b border-slate-200 p-4 dark:border-slate-800"><h2 className="font-bold text-slate-900 dark:text-white">Cashfree Payment Verification</h2><p className="mt-1 text-xs text-slate-500">Gateway-confirmed subscription payments. Manual screenshot requests remain in the shop list below.</p></div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-[850px] w-full text-left text-sm">
+                        <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800/50"><tr><th className="px-4 py-3">Shop</th><th className="px-4 py-3">Plan</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Payment ID</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Date</th></tr></thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {gatewayPayments.length === 0 ? <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">No Cashfree subscription payments yet.</td></tr> : gatewayPayments.map(payment => (
+                                <tr key={payment._id}><td className="px-4 py-3"><p className="font-semibold text-slate-900 dark:text-white">{payment.user?.shopName || "Shop unavailable"}</p><p className="text-xs text-slate-500">{payment.user?.ownerName || payment.user?.email || ""}</p></td><td className="px-4 py-3">{payment.plan?.name || "Plan unavailable"}</td><td className="px-4 py-3 font-semibold">₹{Number(payment.amount || 0).toLocaleString("en-IN")}</td><td className="px-4 py-3 font-mono text-xs">{payment.cashfreePaymentId || payment.cashfreeOrderId}</td><td className="px-4 py-3"><span className={payment.status === "SUCCESS" ? "rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"}>{payment.status === "SUCCESS" ? "Cashfree verified" : payment.status}</span></td><td className="px-4 py-3 text-xs text-slate-500">{formatDate(payment.paymentDate || payment.createdAt)}</td></tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
             <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:p-4">
                 <div className="relative">
                     <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
