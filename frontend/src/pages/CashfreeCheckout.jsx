@@ -27,6 +27,7 @@ const CashfreeCheckout = () => {
     const [paymentStatus, setPaymentStatus] = useState('');
     const [cashfreeInstance, setCashfreeInstance] = useState(null);
     const [sdkError, setSdkError] = useState('');
+    const [statusPopup, setStatusPopup] = useState(null);
     const autoVerifyStarted = useRef(false);
 
     useEffect(() => {
@@ -89,7 +90,15 @@ const CashfreeCheckout = () => {
                 : '/payments/cashfree/subscription/verify';
             const response = await api.get(endpoint, { params: { order_id: orderId } });
             const result = response.data?.data || {};
-            setPaymentStatus(result.status || (result.paid ? 'SUCCESS' : 'PENDING'));
+            const nextStatus = String(result.status || (result.paid ? 'SUCCESS' : 'PENDING')).toUpperCase();
+            setPaymentStatus(nextStatus);
+            if (result.paid) {
+                setStatusPopup({ type: 'success', title: 'Payment successful', message: 'Your payment has been verified securely. Your account is now updated.' });
+            } else if (['FAILED', 'USER_DROPPED', 'EXPIRED'].includes(nextStatus)) {
+                setStatusPopup({ type: 'failed', title: 'Payment failed', message: 'This payment was not completed. You can retry if the payment session is still active.' });
+            } else {
+                setStatusPopup({ type: 'pending', title: 'Payment pending', message: 'We have not received final confirmation yet. If money was deducted, please wait and check the status again.' });
+            }
 
             if (result.paid) {
                 try {
@@ -185,7 +194,7 @@ const CashfreeCheckout = () => {
     }
 
     return (
-        <main className="min-h-[85vh] bg-gradient-to-b from-slate-50 via-white to-indigo-50/40 px-4 py-8 dark:from-slate-950 dark:via-slate-950 dark:to-indigo-950/20 sm:py-14">
+        <main className="min-h-[85vh] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-100/70 via-slate-50 to-white px-4 py-8 dark:from-indigo-950/50 dark:via-slate-950 dark:to-slate-950 sm:py-14">
             <div className="mx-auto w-full max-w-3xl">
                 <button type="button" onClick={() => navigate(-1)} className="mb-6 inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                     <ArrowLeft size={17} /> Back
@@ -200,8 +209,8 @@ const CashfreeCheckout = () => {
                     <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">Review your order details, then continue to Cashfree’s secure payment page.</p>
                 </header>
 
-                <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_25px_80px_rgba(15,23,42,0.09)] dark:border-slate-800 dark:bg-slate-900">
-                    <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-indigo-700 to-violet-600 px-5 py-5 text-white sm:px-8">
+                <section className="overflow-hidden rounded-[2rem] border border-white/80 bg-white/95 shadow-[0_28px_90px_rgba(30,41,59,0.13)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 dark:ring-slate-800">
+                    <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 px-5 py-6 text-white sm:px-8">
                         <div>
                             <p className="text-xs font-bold uppercase tracking-widest text-indigo-100">Payment order</p>
                             <p className="mt-1 break-all text-sm font-extrabold sm:text-base">{order.order_id}</p>
@@ -210,7 +219,7 @@ const CashfreeCheckout = () => {
                     </div>
 
                     <div className="space-y-5 p-5 sm:p-8">
-                        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50 sm:p-5">
+                        <div className="rounded-[1.4rem] border border-slate-100 bg-gradient-to-br from-slate-50 to-indigo-50/60 p-5 dark:border-slate-800 dark:from-slate-800/80 dark:to-indigo-950/30 sm:p-6">
                             <p className="text-xs font-bold uppercase tracking-widest text-slate-500">You are paying for</p>
                             <p className="mt-2 text-lg font-extrabold text-slate-900 dark:text-white">{order.purpose}</p>
                             {order.plan && <p className="mt-1 text-sm text-slate-500">Plan: {order.plan}</p>}
@@ -240,7 +249,7 @@ const CashfreeCheckout = () => {
                                         The previous payment attempt did not complete. You can retry this order if Cashfree still accepts the session.
                                     </div>
                                 )}
-                                <button type="button" onClick={handlePay} disabled={opening || !order.payment_session_id || verifying || !cashfreeInstance} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-4 text-sm font-extrabold text-white shadow-lg shadow-indigo-600/20 transition hover:-translate-y-0.5 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+                                <button type="button" onClick={handlePay} disabled={opening || !order.payment_session_id || verifying || !cashfreeInstance} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-[1.25rem] bg-indigo-600 px-5 py-4 text-sm font-extrabold text-white shadow-lg shadow-indigo-600/20 transition hover:-translate-y-0.5 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
                                     {opening ? <><RefreshCw size={18} className="animate-spin" /> Opening Cashfree…</> : !cashfreeInstance ? <><RefreshCw size={18} className="animate-spin" /> Preparing secure payment…</> : <><LockKeyhole size={18} /> Continue to secure payment</>}
                                 </button>
                                 {!order.payment_session_id && <p className="text-center text-xs font-semibold text-rose-600">Payment session is unavailable. Please start a fresh payment from your dashboard.</p>}
@@ -270,6 +279,43 @@ const CashfreeCheckout = () => {
 
                 <p className="mt-6 text-center text-xs leading-5 text-slate-400">Do not refresh or close the page while Cashfree is processing your payment. A successful payment is confirmed only after server-side verification.</p>
             </div>
+
+            <style>{`
+                @keyframes paymentStatusEnter {
+                    from { opacity: 0; transform: translateY(18px) scale(.94); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                @keyframes paymentStatusIcon {
+                    0% { transform: scale(.5) rotate(-12deg); opacity: .3; }
+                    70% { transform: scale(1.12) rotate(4deg); opacity: 1; }
+                    100% { transform: scale(1) rotate(0); }
+                }
+                .payment-status-pop { animation: paymentStatusEnter .28s cubic-bezier(.2,.8,.2,1) both; }
+                .payment-status-icon { animation: paymentStatusIcon .45s cubic-bezier(.2,.8,.2,1) .08s both; }
+                @media (prefers-reduced-motion: reduce) {
+                    .payment-status-pop, .payment-status-icon { animation: none; }
+                }
+            `}</style>
+            {statusPopup && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm" role="presentation">
+                    <section role="dialog" aria-modal="true" aria-labelledby="payment-status-title" className="payment-status-pop w-full max-w-md overflow-hidden rounded-[2rem] border border-white/70 bg-white p-7 text-center shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:p-8">
+                        <div className={`mx-auto mb-5 grid h-20 w-20 place-items-center rounded-full ${statusPopup.type === 'success' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400' : statusPopup.type === 'failed' ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400'}`}>
+                            {statusPopup.type === 'success' ? <CheckCircle2 size={42} className="payment-status-icon" /> : statusPopup.type === 'failed' ? <XCircle size={42} className="payment-status-icon" /> : <Clock3 size={42} className="payment-status-icon" />}
+                        </div>
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">StockSaathi · Payment update</p>
+                        <h2 id="payment-status-title" className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{statusPopup.title}</h2>
+                        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{statusPopup.message}</p>
+                        <div className="mt-7 flex flex-col gap-2 sm:flex-row">
+                            {statusPopup.type === 'success' ? (
+                                <Link to="/dashboard" className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-emerald-700">Go to dashboard</Link>
+                            ) : (
+                                <button type="button" onClick={() => { setStatusPopup(null); if (statusPopup.type === 'pending') verifyPayment(true); }} className="min-h-12 flex-1 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-indigo-700">{statusPopup.type === 'failed' ? 'Try again' : 'Check again'}</button>
+                            )}
+                            <button type="button" onClick={() => setStatusPopup(null)} className="min-h-12 flex-1 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Close</button>
+                        </div>
+                    </section>
+                </div>
+            )}
         </main>
     );
 };
