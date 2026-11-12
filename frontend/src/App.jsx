@@ -30,6 +30,7 @@ const PublicShop = React.lazy(() => import('./dashboard/PublicShop'));
 import ReceiptLookup from './pages/ReceiptLookup';
 import ShopFinder from './pages/ShopFinder';
 const PaymentSettings = React.lazy(() => import('./dashboard/PaymentSettings'));
+const ThermalPrinter = React.lazy(() => import('./dashboard/ThermalPrinter'));
 const AdminApprovals = React.lazy(() => import('./dashboard/AdminApprovals'));
 const AdminSettings = React.lazy(() => import('./dashboard/AdminSettings'));
 const Account = React.lazy(() => import('./dashboard/Account'));
@@ -207,6 +208,11 @@ const AppContent = () => {
                     <Route path="sales" element={<Sales />} />
                     <Route path="reports" element={<Reports />} />
                     <Route path="payment-settings" element={<PaymentSettings />} />
+                    <Route path="thermal-printer" element={
+                        <RoleProtectedRoute roles={['shop_owner']}>
+                            <ThermalPrinter />
+                        </RoleProtectedRoute>
+                    } />
                     <Route path="account" element={<Account />} />
                     <Route path="shifts" element={<Shifts />} />
                     <Route path="ledger" element={<StockLedger />} />
