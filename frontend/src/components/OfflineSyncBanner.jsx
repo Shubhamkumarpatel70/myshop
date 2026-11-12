@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Cloud, CloudOff, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import {
