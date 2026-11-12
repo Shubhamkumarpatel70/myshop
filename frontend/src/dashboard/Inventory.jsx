@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Papa from 'papaparse';
 import { useOutletContext, Link } from 'react-router-dom';
 import api, { BASE_URL } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,8 @@ const Inventory = () => {
     const [limitMetadata, setLimitMetadata] = useState({ type: 'product', isTrialUsed: false });
     const [editingProduct, setEditingProduct] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [importingCsv, setImportingCsv] = useState(false);
+    const [importResult, setImportResult] = useState(null);
     const [unlinkedBarcodes, setUnlinkedBarcodes] = useState([]);
     const [showBarcodePicker, setShowBarcodePicker] = useState(false);
     const [formData, setFormData] = useState({
@@ -204,6 +207,36 @@ const Inventory = () => {
         }
     };
 
+
+    const handleImportCsv = (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setImportResult(null);
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: header => header.trim(),
+            complete: async parsed => {
+                const rows = (parsed.data || []).filter(row => Object.values(row).some(value => String(value ?? '').trim() !== ''));
+                if (parsed.errors?.length) { toast.error('CSV could not be read. Check the file format.'); return; }
+                if (!rows.length) { toast.error('The CSV file has no product rows.'); return; }
+                setImportingCsv(true);
+                try {
+                    const response = await api.post('/products/bulk-import', { rows });
+                    setImportResult(response.data?.data || null);
+                    await fetchData();
+                    toast.success(response.data?.message || 'Import completed.');
+                } catch (error) {
+                    toast.error(error.response?.data?.message || 'Unable to import products.');
+                } finally {
+                    setImportingCsv(false);
+                    event.target.value = '';
+                }
+            },
+            error: () => { toast.error('Unable to read this CSV file.'); event.target.value = ''; }
+        });
+    };
+
     const handleExport = () => {
         const headers = ["Product Name", "Category", "Quantity", "Selling Price", "Purchase Price", "GST Rate (%)", "Barcode", "Expiry Date"];
         const csvRows = [
@@ -256,6 +289,26 @@ const Inventory = () => {
 
     return (
         <div className="space-y-8 pb-10 font-jakarta px-1">
+
+            {importResult && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div><h2 className="font-bold text-slate-900 dark:text-white">CSV Import Results</h2><p className="mt-1 text-xs text-slate-500">{importResult.imported} imported · {importResult.failed} failed · {importResult.total} rows checked</p></div>
+                        <button type="button" onClick={() => setImportResult(null)} className="text-sm font-semibold text-indigo-600">Close</button>
+                    </div>
+                    {importResult.results?.some(row => row.status === 'failed') && (
+                        <div className="mt-4 max-h-64 overflow-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                            {importResult.results.filter(row => row.status === 'failed').map(row => (
+                                <div key={row.row} className="border-b border-slate-100 p-3 text-sm last:border-0 dark:border-slate-800">
+                                    <p className="font-semibold text-slate-800 dark:text-slate-100">Row {row.row}: {row.productName || 'Unnamed product'}</p>
+                                    <p className="mt-1 text-xs text-rose-600">{(row.errors || []).join(' ')}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
+
             {/* Warehouse Intelligence Header */}
             <div className="bg-white dark:bg-slate-900 rounded-[1.25rem] p-6 sm:p-10 border border-slate-100 dark:border-slate-800 shadow-sm">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10">
@@ -272,6 +325,11 @@ const Inventory = () => {
                         </p>
                     </div>
                     <div className="flex w-full sm:w-auto gap-3 flex-wrap">
+
+                        <label className="flex-1 sm:flex-none h-14 px-6 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] border border-indigo-100 dark:border-indigo-500/20 hover:bg-indigo-100 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <Upload size={18} /> {importingCsv ? 'Importing...' : 'Import CSV'}
+                            <input type="file" accept=".csv,text/csv" className="hidden" disabled={importingCsv} onChange={handleImportCsv} />
+                        </label>
                         <button
                             onClick={handleExport}
                             className="flex-1 sm:flex-none h-14 px-6 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] border border-slate-100 dark:border-slate-800 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
