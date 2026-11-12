@@ -17,12 +17,17 @@ const {
     toggleSuspension,
     getRevenueStats,
     deletePlan,
-    getSubscriptionPayments
+    getSubscriptionPayments,
+    getAddons,
+    getPublicAddons,
+    upsertAddon,
+    deleteAddon
 } = require('../controllers/subscriptionController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 // Public
 router.get('/plans', getPublicPlans);
+router.get('/addons', protect, getPublicAddons);
 
 // Shop Owner
 router.post('/request', protect, requestUpgrade);
@@ -34,6 +39,9 @@ router.post('/cancel', protect, requestCancellation);
 router.get('/admin/requests', protect, adminOnly, getPendingRequests);
 router.post('/admin/verify', protect, adminOnly, verifySubscription);
 router.post('/admin/plans', protect, adminOnly, upsertPlan);
+router.get('/admin/addons', protect, adminOnly, getAddons);
+router.post('/admin/addons', protect, adminOnly, upsertAddon);
+router.delete('/admin/addons/:id', protect, adminOnly, deleteAddon);
 router.delete('/admin/plans/:id', protect, adminOnly, deletePlan);
 router.get('/admin/all', protect, adminOnly, getSubscriptions);
 router.get('/admin/payments', protect, adminOnly, getSubscriptionPayments);
