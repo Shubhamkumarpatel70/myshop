@@ -53,6 +53,7 @@ const Sales = () => {
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [returnReasonInput, setReturnReasonInput] = useState('');
+    const [returnQuantity, setReturnQuantity] = useState('1');
     const [itemToReturn, setItemToReturn] = useState(null);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -191,7 +192,7 @@ const Sales = () => {
             const res = await api.post('/sales/return-product', {
                 saleId: viewingSale._id,
                 productId: itemToReturn.product?._id || itemToReturn.product,
-                quantity: itemToReturn.quantity,
+                quantity: Number(returnQuantity),
                 returnReason: returnReasonInput
             });
 
@@ -199,7 +200,9 @@ const Sales = () => {
                 toast.success("Registry Adjusted: Product Returned");
                 setIsReturnModalOpen(false);
                 setReturnReasonInput('');
+                setReturnQuantity('1');
                 setItemToReturn(null);
+                await fetchProducts();
                 fetchSales(page, false);
                 setIsViewModalOpen(false);
             }
@@ -316,6 +319,11 @@ const Sales = () => {
                 { mode: secondPaymentMethod, amount: secondAmount }
             ];
         }
+        const receiptWindow = window.open('', '_blank');
+        if (!receiptWindow) {
+            toast.error('Please allow pop-ups to print the receipt.');
+            return;
+        }
         try {
             const saleData = {
                 items: cart,
@@ -326,14 +334,26 @@ const Sales = () => {
                 utrNumber: utrNumber,
                 customerGSTIN: customerInfo.gstin
             };
+            let completedSale;
             if (!navigator.onLine) {
                 await posStore.saveOfflineSale(saleData);
-                toast.success("Offline Active: Sale cached locally");
+                completedSale = {
+                    ...saleData,
+                    _id: `OFFLINE-${Date.now()}`,
+                    transactionId: `OFFLINE-${Date.now()}`,
+                    createdAt: new Date().toISOString(),
+                    totalAmount: payableAmount,
+                    items: cart.map(item => ({ ...item, total: Number((Number(item.price) * Number(item.quantity) * (1 + (user?.gstEnabled ? Number(item.taxRate || 0) / 100 : 0))).toFixed(2)) })),
+                    user
+                };
+                toast.success("Offline sale saved. Receipt is marked as pending sync.");
                 syncOfflineSales();
             } else {
-                await api.post('/sales', saleData);
-                toast.success("Transaction Successfully Saved");
+                const response = await api.post('/sales', saleData);
+                completedSale = { ...response.data.data, user: response.data.data?.user || user };
+                toast.success("Transaction successfully saved");
             }
+            handlePrintInvoice(completedSale, receiptWindow);
             setCart([]);
             setCustomerInfo({ name: 'Guest', phone: '', paymentMethod: 'Cash' });
             setUtrNumber('');
@@ -351,6 +371,7 @@ const Sales = () => {
             }
             fetchProducts();
         } catch (error) {
+            if (receiptWindow && !receiptWindow.closed) receiptWindow.close();
             if (error.response?.status === 403 && error.response?.data?.message?.toLowerCase().includes('shift')) {
                 setIsShiftModalOpen(true);
                 toast.error("Shift Required to committing transaction");
@@ -424,8 +445,9 @@ const Sales = () => {
         }
     };
 
-    const handlePrintInvoice = (sale) => {
-        const printWindow = window.open('', '_blank');
+    const handlePrintInvoice = (sale, targetWindow = null) => {
+        const printWindow = targetWindow || window.open('', '_blank');
+        if (!printWindow) { toast.error('Allow pop-ups to print the receipt.'); return; }
         const shopInfo = sale.user || {};
 
         let subtotal = 0;
@@ -570,6 +592,7 @@ const Sales = () => {
                         <div>Goods once sold cannot be returned.</div>
                         <div style="margin-top: 5px; font-weight: 900; color: #1e293b; letter-spacing: 1px;">THANK YOU! VISIT AGAIN</div>
                         <div style="font-size: 5pt; margin-top: 10px;">Computer Generated Invoice</div>
+                        <div style="font-size: 7pt; margin-top: 7px; font-weight: 900; color: #4f46e5;">Powered by ASKC TECHNOLOGIES</div>
                     </div>
                 </body>
             </html>
@@ -939,6 +962,8 @@ const Sales = () => {
                                                     <button
                                                         onClick={() => {
                                                             setItemToReturn(item);
+                                                            setReturnQuantity(String(Math.max(1, Number(item.quantity || 1) - Number(item.returnedQuantity || 0))));
+                                                            setReturnReasonInput('');
                                                             setIsReturnModalOpen(true);
                                                         }}
                                                         className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors inline-flex items-center gap-1 cursor-pointer"
@@ -994,6 +1019,8 @@ const Sales = () => {
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('This will restock inventory and record a refund.')}</p>
                     </div>
                     <div className="space-y-3 text-left">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Return quantity (max {Math.max(0, Number(itemToReturn?.quantity || 0) - Number(itemToReturn?.returnedQuantity || 0))})</label>
+                        <input type="number" min="1" max={Math.max(1, Number(itemToReturn?.quantity || 1) - Number(itemToReturn?.returnedQuantity || 0))} step="1" required value={returnQuantity} onChange={event => setReturnQuantity(event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">{t('Reason for Return')}</label>
                         <textarea required placeholder={t('Damage, Expiry, Exchange...')} className="w-full p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-rose-500 outline-none h-32 resize-none font-bold dark:text-white transition-all" value={returnReasonInput} onChange={(e) => setReturnReasonInput(e.target.value)} />
                     </div>
