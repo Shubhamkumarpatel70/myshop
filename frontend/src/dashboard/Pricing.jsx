@@ -91,7 +91,7 @@ const Pricing = () => {
     };
 
     const startCashfreePayment = async () => {
-        if (!selectedPlan?._id) return toast.error('Select a valid plan.');
+        if (!selectedPlan?._id && !selectedPlan?.isAddon) return toast.error('Select a valid plan or add-on.');
         setCashfreePaying(true);
         try {
             const response = await api.post('/payments/cashfree/subscription/order', selectedPlan.isAddon ? { addonName: selectedPlan.name } : { planId: selectedPlan._id });
