@@ -47,6 +47,7 @@ const AdminStaff = React.lazy(() => import('./dashboard/AdminStaff'));
 const AdminPurchaseOrders = React.lazy(() => import('./dashboard/AdminPurchaseOrders'));
 const PODetails = React.lazy(() => import('./dashboard/PODetails'));
 const AdminRevenue = React.lazy(() => import('./dashboard/AdminRevenue'));
+const SystemHealth = React.lazy(() => import('./dashboard/SystemHealth'));
 const AdminBarcodes = React.lazy(() => import('./dashboard/AdminBarcodes'));
 const StockLedger = React.lazy(() => import('./dashboard/StockLedger'));
 import SplashScreen from './components/SplashScreen';
@@ -258,6 +259,7 @@ const AppContent = () => {
                             <PODetails />
                         </RoleProtectedRoute>
                     } />
+                    <Route path="admin/system-health" element={<RoleProtectedRoute roles={['super_admin']}><SystemHealth /></RoleProtectedRoute>} />
                     <Route path="admin/revenue" element={
                         <RoleProtectedRoute roles={['super_admin']}>
                             <AdminRevenue />
