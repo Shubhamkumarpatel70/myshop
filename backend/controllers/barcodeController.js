@@ -124,9 +124,16 @@ exports.getBarcodes = async (req, res) => {
     try {
         const barcodes = await Barcode.find()
             .sort({ createdAt: -1 })
-            .populate('user', 'ownerName shopName');
-            
-        res.json({ success: true, data: barcodes });
+            .populate('user', 'ownerName shopName')
+            .lean();
+
+        const data = barcodes.map(barcode => ({
+            ...barcode,
+            shopName: barcode.shopName || barcode.user?.shopName || 'Unknown shop',
+            ownerName: barcode.user?.ownerName || 'Unknown'
+        }));
+
+        res.json({ success: true, data });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -149,7 +156,7 @@ exports.getAdminBarcodeStats = async (req, res) => {
                 shopName: shop.shopName,
                 subscriptionPlan: shop.subscriptionPlan,
                 hasBarcodeAddon: shop.hasBarcodeAddon,
-                totalUsed: shop.barcodeUsedCount,
+                totalUsed: shopBarcodes.length,
                 unlinkedCount
             };
         });
