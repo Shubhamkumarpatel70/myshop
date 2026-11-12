@@ -389,7 +389,7 @@ const activatePaidPlan = async (orderId) => {
     if (!user || (!payment.plan && !payment.addonName)) throw new Error('Subscription owner, plan, or add-on no longer exists.');
     const now = payment.paymentDate || new Date();
     const paymentRef = String(successful.cf_payment_id || payment.cashfreePaymentId || payment.paymentId);
-    const activationKey = payment.addonActivationKey || '';
+    const activationKey = payment.addonActivationKey || (payment.addonName === 'Barcode Booster' ? 'barcode' : payment.addonName === 'Team Expansion' ? 'team' : '');
     const alreadyApplied = activationKey === 'barcode'
         ? Boolean(user.hasBarcodeAddon)
         : activationKey === 'team'
