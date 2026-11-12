@@ -613,8 +613,8 @@ const Sales = () => {
                         ${totalCgst > 0 ? `<div class="summary-row"><span>CGST</span><span>₹${totalCgst.toFixed(2)}</span></div>` : ''}
                         ${totalSgst > 0 ? `<div class="summary-row"><span>SGST</span><span>₹${totalSgst.toFixed(2)}</span></div>` : ''}
                         <div class="summary-row">
-                            <span>Discount${Number(sale.discountAmount || 0) > 0 && sale.discountType === 'percentage' ? ' (' + Number(sale.discountValue) + '%)' : ''}</span>
-                            <span>${Number(sale.discountAmount || 0) > 0 ? '-' : ''}₹${Number(sale.discountAmount || 0).toFixed(2)}</span>
+                            <span>Discount</span>
+                            <span>${Number(sale.discountAmount || 0) > 0 ? ('- ₹' + Number(sale.discountAmount).toFixed(2) + (sale.discountType === 'percentage' ? ' (' + Number(sale.discountValue) + '%)' : '')) : 'N/A'}</span>
                         </div>
                         <div class="summary-row total">
                             <span>TOTAL</span>
