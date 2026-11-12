@@ -3,8 +3,11 @@ const Sale = require('../models/Sale');
 
 exports.openShift = async (req, res) => {
     try {
-        const { openingCash } = req.body;
-        
+        const openingCashAmount = Number(req.body.openingCash);
+        if (!Number.isFinite(openingCashAmount) || openingCashAmount < 0) {
+            return res.status(400).json({ success: false, message: 'Enter a valid starting cash amount.' });
+        }
+
         // Check if there is already an open shift for this user
         const existingShift = await Shift.findOne({ user: req.user._id, status: 'Open' });
         if (existingShift) {
@@ -14,7 +17,8 @@ exports.openShift = async (req, res) => {
         const shift = await Shift.create({
             user: req.user._id,
             shop: req.shopOwnerId,
-            openingCash: openingCash || 0,
+            openingCash: openingCashAmount,
+            expectedCash: openingCashAmount,
             status: 'Open'
         });
 
@@ -26,6 +30,7 @@ exports.openShift = async (req, res) => {
 
 exports.closeShift = async (req, res) => {
     try {
+        const { closingCash, notes } = req.body;
         const enteredClosingCash = Number(closingCash);
         if (!Number.isFinite(enteredClosingCash) || enteredClosingCash < 0) {
             return res.status(400).json({ success: false, message: 'Enter a valid closing cash amount.' });
