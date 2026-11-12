@@ -1,5 +1,6 @@
 const Customer = require('../models/Customer');
 const Sale = require('../models/Sale');
+const escapeRegex = value => value.replace(/[^a-zA-Z0-9 ]/g, char => '\\' + char);
 
 exports.getCustomers = async (req, res) => {
     try {
@@ -15,9 +16,10 @@ exports.searchCustomers = async (req, res) => {
     try {
         const query = String(req.query.q || '').trim().slice(0, 30);
         if (query.length < 2) return res.json({ success: true, data: [] });
+        const safeQuery = escapeRegex(query);
         const filter = { user: req.shopOwnerId, $or: [
-            { name: { $regex: query, $options: 'i' } },
-            { phone: { $regex: query, $options: 'i' } }
+            { name: { $regex: safeQuery, $options: 'i' } },
+            { phone: { $regex: safeQuery, $options: 'i' } }
         ] };
         const customers = await Customer.find(filter).select('name phone email address totalSpent orderCount').sort({ lastPurchase: -1 }).limit(8);
         res.json({ success: true, data: customers });
