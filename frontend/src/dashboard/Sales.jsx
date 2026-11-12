@@ -974,10 +974,11 @@ const Sales = () => {
                                 <Printer size={20} className="text-indigo-600" />
                             </div>
                             {isThermalPrinterSupported() ? (
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button onClick={() => handleThermalPrint(viewingSale, 32)} className="rounded-xl bg-indigo-600 px-3 py-3 text-xs font-bold text-white">Print 58mm</button>
-                                    <button onClick={() => handleThermalPrint(viewingSale, 48)} className="rounded-xl bg-indigo-600 px-3 py-3 text-xs font-bold text-white">Print 80mm</button>
-                                </div>
+                                <button onClick={() => {
+                                    let width = '58';
+                                    try { width = JSON.parse(localStorage.getItem('stocksaathi_thermal_printer_settings') || '{}').paperWidth || '58'; } catch { width = '58'; }
+                                    handleThermalPrint(viewingSale, width === '80' ? 48 : 32);
+                                }} className="w-full rounded-xl bg-indigo-600 px-3 py-3 text-xs font-bold text-white hover:bg-indigo-700">Print receipt · {(() => { try { return JSON.parse(localStorage.getItem('stocksaathi_thermal_printer_settings') || '{}').paperWidth || '58'; } catch { return '58'; } })()}mm</button>
                             ) : <p className="text-xs text-amber-700 dark:text-amber-300">Direct serial printing is not available in this browser. Use Physical Bill with your system printer, or open Stock Saathi in Chrome/Edge on HTTPS.</p>}
                         </div>
                     </div>
