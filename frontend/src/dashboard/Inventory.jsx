@@ -68,7 +68,7 @@ const Inventory = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setFormData(prev => ({ ...prev, productImage: res.data.url }));
-            toast.success("Asset Sync Successful");
+            toast.success("Product photo uploaded.");
         } catch (error) {
             toast.error("Handshake failed");
         } finally {
@@ -203,7 +203,7 @@ const Inventory = () => {
                 toast.success("Product deleted.");
                 fetchData();
             } catch (error) {
-                toast.error("Decommissioning failed");
+                toast.error("Could not delete product.");
             }
         }
     };
@@ -428,7 +428,7 @@ const Inventory = () => {
                                                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t("Expiration")}</p>
                                             </div>
                                         ) : (
-                                            <span className="text-[9px] font-black text-slate-300 uppercase italic">{t("Lifetime Asset")}</span>
+                                            <span className="text-[9px] font-black text-slate-300 uppercase italic">{"Total Stock"}</span>
                                         )}
                                     </td>
                                     <td className="px-8 py-6">
@@ -570,7 +570,7 @@ const Inventory = () => {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Batch Number</label>
-                            <input type="text" placeholder="Enter batch number" className="h-14 w-full rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.batchNumber || ''} onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value.trimStart() })} />
+                            <input type="text" required placeholder="Enter batch number" className="h-14 w-full rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.batchNumber || ''} onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value.trimStart() })} />
                             <p className="text-xs text-slate-500">This number will be saved with this stock batch.</p>
                         </div>
                         <div className="space-y-2">
@@ -610,10 +610,10 @@ const Inventory = () => {
                                     />
                                     <Tag className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                 </div>
-                                <button type="button" onClick={() => setShowBarcodePicker(!showBarcodePicker)} className="h-14 w-14 flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-[1.25rem] border border-slate-100 dark:border-slate-700 text-indigo-600 shadow-sm" title="Vault">
+                                <button type="button" onClick={() => setShowBarcodePicker(!showBarcodePicker)} className="h-14 w-14 flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-[1.25rem] border border-slate-100 dark:border-slate-700 text-indigo-600 shadow-sm" title="Choose saved barcode">
                                     <Layers size={20} />
                                 </button>
-                                <button type="button" onClick={() => setIsScannerOpen(true)} className="h-14 w-14 flex items-center justify-center bg-indigo-600 rounded-[1.25rem] text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700" title="Vision">
+                                <button type="button" onClick={() => setIsScannerOpen(true)} className="h-14 w-14 flex items-center justify-center bg-indigo-600 rounded-[1.25rem] text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700" title="Scan barcode">
                                     <Scan size={20} />
                                 </button>
                             </div>
@@ -626,7 +626,7 @@ const Inventory = () => {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         className="absolute z-50 mt-4 w-full max-h-64 overflow-y-auto rounded-[1.25rem] border border-slate-100 bg-white p-3 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
                                     >
-                                        <div className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50 mb-2">{t("Identifier Vault")}</div>
+                                        <div className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50 mb-2">{"Saved Barcodes"}</div>
                                         {unlinkedBarcodes.length > 0 ? (
                                             unlinkedBarcodes.map(bc => (
                                                 <button
@@ -645,7 +645,7 @@ const Inventory = () => {
                                         ) : (
                                             <div className="py-10 text-center space-y-2">
                                                 <AlertCircle size={24} className="mx-auto text-slate-200" />
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase">{t("Vault is Empty")}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase">{"No saved barcodes available"}</p>
                                             </div>
                                         )}
                                     </motion.div>
@@ -679,7 +679,7 @@ const Inventory = () => {
                 </form>
             </Modal>
 
-            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title={t("Vision Uplink")} className="max-w-lg">
+            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title={"Scan Barcode"} className="max-w-lg">
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 mb-6">
                     <p className="text-xs font-medium text-slate-500 text-center leading-relaxed">{t("Position the barcode within the viewport for synchronization.")}</p>
                 </div>
