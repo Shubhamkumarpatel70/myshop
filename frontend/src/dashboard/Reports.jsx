@@ -126,7 +126,49 @@ const Reports = () => {
             `• Stock Status: ${insights.lowStockRisk}`
         ], 14, finalY + 10);
 
-        doc.save(`business_report_${new Date().toISOString().split('T')[0]}.pdf`);
+        // Daily sales breakdown (for the selected date range/month).
+        const dailyRows = (dailySales || []).map(day => [
+            new Date(`${day._id}T00:00:00+05:30`).toLocaleDateString('en-IN'),
+            Number(day.count || 0),
+            `Rs. ${Number(day.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+        ]);
+        if (dailyRows.length) {
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setTextColor(20);
+            doc.text(monthFilter ? `Daily Sales - ${monthFilter}` : 'Daily Sales Breakdown', 14, 20);
+            doc.autoTable({
+                startY: 28,
+                head: [['Date', 'Transactions', 'Sales']],
+                body: dailyRows,
+                theme: 'striped',
+                headStyles: { fillColor: [79, 70, 229] },
+                styles: { fontSize: 9, cellPadding: 3 }
+            });
+        }
+
+        // Today's product-level details when available.
+        if (todayReport?.products?.length) {
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setTextColor(20);
+            doc.text(`Products Sold - ${todayReport.date}`, 14, 20);
+            doc.autoTable({
+                startY: 28,
+                head: [['Product', 'Quantity', 'Sales']],
+                body: todayReport.products.map(product => [
+                    product.productName,
+                    Number(product.quantity || 0),
+                    `Rs. ${Number(product.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+                ]),
+                theme: 'striped',
+                headStyles: { fillColor: [79, 70, 229] },
+                styles: { fontSize: 9, cellPadding: 3 }
+            });
+        }
+
+        const filePeriod = monthFilter || dateFilter || `last_${periodFilter}_days`;
+        doc.save(`business_report_${filePeriod}.pdf`);
     };
 
     const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -320,6 +362,35 @@ const Reports = () => {
                     </motion.div>
                 ))}
             </div>
+
+            {/* Saved month history from permanent sale records */}
+            {monthFilter && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <div className="mb-4">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Monthly Sales History</h2>
+                        <p className="mt-1 text-xs text-slate-500">Daily totals for {monthFilter}. Each day is calculated from saved sales and payment records.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 mb-5">
+                        <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800"><p className="text-xs text-slate-500">Month Sales</p><p className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">₹{Number(stats.totalRevenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p></div>
+                        <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800"><p className="text-xs text-slate-500">Transactions</p><p className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">{Number(stats.totalSalesCount || 0).toLocaleString('en-IN')}</p></div>
+                        <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800 col-span-2 sm:col-span-1"><p className="text-xs text-slate-500">Daily Records</p><p className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">{dailySales?.length || 0}</p></div>
+                    </div>
+                    {dailySales?.length ? (
+                        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                            <table className="w-full min-w-[420px] text-sm">
+                                <thead className="bg-slate-50 text-left text-xs text-slate-500 dark:bg-slate-800"><tr><th className="px-3 py-3">Date</th><th className="px-3 py-3 text-right">Transactions</th><th className="px-3 py-3 text-right">Sales</th></tr></thead>
+                                <tbody>{dailySales.map(day => (
+                                    <tr key={day._id} className="border-t border-slate-100 dark:border-slate-800">
+                                        <td className="px-3 py-3 font-semibold text-slate-800 dark:text-slate-100">{new Date(`${day._id}T00:00:00+05:30`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                        <td className="px-3 py-3 text-right text-slate-600 dark:text-slate-300">{Number(day.count || 0)}</td>
+                                        <td className="px-3 py-3 text-right font-bold text-slate-900 dark:text-white">₹{Number(day.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                                    </tr>
+                                ))}</tbody>
+                            </table>
+                        </div>
+                    ) : <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800">No sales recorded for this month.</p>}
+                </section>
+            )}
 
             {/* Live report for the current day */}
             <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
