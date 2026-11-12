@@ -17,6 +17,8 @@ import { posStore } from '../utils/posStore';
 import Skeleton from '../components/Skeleton';
 import { useLanguage } from '../context/LanguageContext';
 
+const escapeHtml = (value) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+
 const Sales = () => {
     const { t } = useLanguage();
     const navigate = useNavigate();
@@ -364,9 +366,11 @@ const Sales = () => {
 
         let subtotal = 0;
         let returnsTotal = 0;
+        let totalTax = 0;
 
         const itemsHtml = sale.items.map(item => {
-            const itemTotal = item.price * item.quantity;
+            const itemTotal = Number(item.total ?? (item.price * item.quantity));
+            totalTax += Number(item.taxAmount || 0);
             if (item.isReturned) {
                 returnsTotal += itemTotal;
             } else {
@@ -377,7 +381,7 @@ const Sales = () => {
                 <tr style="${item.isReturned ? 'background-color: #fff1f2; opacity: 0.7;' : ''}">
                     <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">
                         <div style="font-weight: 800; color: #1e293b; font-size: 10pt; text-transform: uppercase; ${item.isReturned ? 'text-decoration: line-through;' : ''}">
-                            ${item.product?.productName || item.productName}
+                            ${escapeHtml(item.product?.productName || item.productName)}
                         </div>
                     </td>
                     <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700; color: #475569; ${item.isReturned ? 'text-decoration: line-through;' : ''}">${item.quantity}</td>
@@ -425,11 +429,11 @@ const Sales = () => {
                 </head>
                 <body onload="window.print(); window.close();">
                     <div class="header">
-                        <h1 class="shop-name">${shopInfo.shopName || 'RETAIL SAATHI'}</h1>
+                        <h1 class="shop-name">${escapeHtml(shopInfo.shopName || 'RETAIL SAATHI')}</h1>
                         <div class="shop-details">
-                            ${shopInfo.address || 'Business Address Not Set'}<br>
-                            Ph: ${shopInfo.phone || 'N/A'}<br>
-                            GSTIN: 27AAAAA0000A1Z5 (U)
+                            ${escapeHtml(shopInfo.address || 'Business Address Not Set')}<br>
+                            Ph: ${escapeHtml(shopInfo.phone || 'N/A')}<br>
+                            ${shopInfo.gstEnabled ? 'GSTIN: ' + escapeHtml(shopInfo.gstin || 'Not provided') : 'GST not enabled'}
                         </div>
                         <div class="invoice-title">TAX INVOICE</div>
                     </div>
@@ -437,11 +441,11 @@ const Sales = () => {
                     <div class="bill-info">
                         <div class="info-row">
                             <span class="label">Billed To:</span>
-                            <span class="value">${sale.customerName}</span>
+                            <span class="value">${escapeHtml(sale.customerName || 'Guest')}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Contact:</span>
-                            <span class="value">+91 ${sale.customerPhone || 'N/A'}</span>
+                            <span class="value">+91 ${escapeHtml(sale.customerPhone || 'N/A')}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Invoice No:</span>
@@ -479,13 +483,13 @@ const Sales = () => {
                             <span style="color: #64748b;">Sub-Total</span>
                             <span style="font-weight: 700;">₹${subtotal.toLocaleString()}</span>
                         </div>
-                        <div class="summary-row">
-                            <span style="color: #64748b;">GST (0%)</span>
-                            <span style="font-weight: 700;">₹0.00</span>
+                        <div class="summary-row" style="${totalTax > 0 ? '' : 'display:none;'}">
+                            <span style="color: #64748b;">${sale.taxType === 'inter-state' ? 'IGST' : 'CGST + SGST'}</span>
+                            <span style="font-weight: 700;">₹${totalTax.toFixed(2)}</span>
                         </div>
                         <div class="summary-row total">
                             <span>TOTAL</span>
-                            <span>₹${subtotal.toLocaleString()}</span>
+                            <span>₹${Number(sale.totalAmount || (subtotal + totalTax)).toLocaleString()}</span>
                         </div>
                         <div style="font-size: 7pt; text-align: center; color: #64748b; margin-top: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                             Payment: ${sale.paymentMethod}
