@@ -306,7 +306,7 @@ exports.createSubscriptionOrder = async (req, res) => {
             },
             order_meta: {
                 return_url: `${(process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/dashboard/pricing?order_id={order_id}`,
-                ...(process.env.BACKEND_URL ? { notify_url: `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/payments/cashfree/webhook` } : {})
+                notify_url: `${(process.env.BACKEND_URL || process.env.FRONTEND_URL || 'https://myshop-53hn.onrender.com').replace(/\/$/, '')}/api/payments/cashfree/webhook`
             },
             order_note: `Stock Saathi ${plan.name} subscription`
         };
