@@ -113,7 +113,7 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
             const response = await api.get('/payments/registration/verify', { params: { order_id: orderId } });
             if (response.data?.data?.paid) {
                 setPaymentState('success');
-                toast.success('Payment verified. Your account will continue to approval.');
+                toast.success('Payment verified. Your dashboard is now unlocked.');
                 window.setTimeout(() => onPaymentSuccess?.() || window.location.reload(), 800);
             } else {
                 setPaymentState('pending');
@@ -143,7 +143,7 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
 
     if (user?.isPaymentDone || paymentState === 'success') return (
         <div className="mx-auto grid min-h-[60vh] max-w-xl place-items-center px-5 text-center">
-            <div><CheckCircle2 className="mx-auto mb-5 text-emerald-500" size={56}/><h2 className="text-3xl font-black">Payment verified</h2><p className="mt-3 text-slate-500">Your registration payment is complete. Shop approval remains a separate step.</p></div>
+            <div><CheckCircle2 className="mx-auto mb-5 text-emerald-500" size={56}/><h2 className="text-3xl font-black">Payment verified</h2><p className="mt-3 text-slate-500">Your Cashfree payment is verified. Your dashboard is ready to use.</p></div>
         </div>
     );
 
@@ -186,7 +186,7 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
                     <ol className="mt-5 space-y-5 text-sm text-slate-300">
                         <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">1</span><span>{(settings?.paymentVerificationMode || 'manual') === 'cashfree' ? 'Complete payment on Cashfree’s hosted checkout.' : 'Pay using the displayed UPI ID or QR and upload the screenshot.'}</span></li>
                         <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">2</span><span>{(settings?.paymentVerificationMode || 'manual') === 'cashfree' ? 'StockSaathi verifies the payment directly with Cashfree.' : 'An admin reviews your payment screenshot and confirms it.'}</span></li>
-                        <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">3</span><span>Your shop then proceeds through the admin approval process.</span></li>
+                        {(settings?.paymentVerificationMode || 'manual') !== 'cashfree' && <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">3</span><span>Your shop then proceeds through the admin approval process.</span></li>}
                     </ol>
                     <div className="mt-8 border-t border-white/10 pt-5 text-xs text-slate-400"><p className="flex items-center gap-2"><ShieldCheck size={14}/> Encrypted, hosted payment page</p><p className="mt-2">Need help? {settings?.supportPhone || 'Contact support'}</p></div>
                 </aside>
