@@ -459,26 +459,28 @@ const Sales = () => {
 
         const itemsHtml = sale.items.map(item => {
             const itemTotal = Number(item.total ?? (item.price * item.quantity));
-            totalTax += Number(item.taxAmount || 0);
-            totalCgst += Number(item.cgst || 0);
-            totalSgst += Number(item.sgst || 0);
-            totalIgst += Number(item.igst || 0);
-            if (item.isReturned) {
-                returnsTotal += itemTotal;
-            } else {
-                subtotal += Number(item.taxableAmount ?? itemTotal);
-            }
+            const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
+            const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
+            const ratio = Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0;
+            const netItemTotal = itemTotal * ratio;
+            totalTax += Number(item.taxAmount || 0) * ratio;
+            totalCgst += Number(item.cgst || 0) * ratio;
+            totalSgst += Number(item.sgst || 0) * ratio;
+            totalIgst += Number(item.igst || 0) * ratio;
+            subtotal += Number(item.taxableAmount ?? itemTotal) * ratio;
+            returnsTotal += itemTotal - netItemTotal;
 
             return `
-                <tr style="${item.isReturned ? 'background-color: #fff1f2; opacity: 0.7;' : ''}">
+                <tr style="${returnedQty ? 'background-color: #fff1f2; opacity: 0.85;' : ''}">
                     <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">
-                        <div style="font-weight: 800; color: #1e293b; font-size: 10pt; text-transform: uppercase; ${item.isReturned ? 'text-decoration: line-through;' : ''}">
+                        <div style="font-weight: 800; color: #1e293b; font-size: 10pt; text-transform: uppercase;">
                             ${escapeHtml(item.product?.productName || item.productName)}
                         </div>
+                        ${returnedQty ? `<small style="color:#e11d48;">Returned: ${returnedQty}</small>` : ''}
                     </td>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700; color: #475569; ${item.isReturned ? 'text-decoration: line-through;' : ''}">${item.quantity}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 700; color: #475569; ${item.isReturned ? 'text-decoration: line-through;' : ''}">₹${item.price.toLocaleString()}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 900; color: #1e293b; ${item.isReturned ? 'text-decoration: line-through;' : ''}">₹${itemTotal.toLocaleString()}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700; color: #475569;">${remainingQty}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 700; color: #475569;">₹${item.price.toLocaleString()}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 900; color: #1e293b;">₹${netItemTotal.toFixed(2)}</td>
                 </tr>
             `;
         }).join('');
@@ -558,15 +560,20 @@ const Sales = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            ${sale.items.map((item) => `
-                                <tr style="${item.isReturned ? 'text-decoration: line-through; opacity: 0.5;' : ''}">
-                                    <td>
-                                        <div style="font-weight: 700; color: #0f172a;">${item.product?.productName || item.productName}</div>
-                                    </td>
-                                    <td class="text-center">${item.quantity}</td>
-                                    <td class="text-right">₹${(item.price * item.quantity).toLocaleString()}</td>
-                                </tr>
-                            `).join('')}
+                            ${sale.items.map((item) => {
+                                const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
+                                const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
+                                const netAmount = Number(item.total || (item.price * item.quantity)) * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
+                                return `
+                                    <tr>
+                                        <td>
+                                            <div style="font-weight: 700; color: #0f172a;">${escapeHtml(item.product?.productName || item.productName)}${returnedQty ? ` <small>(Returned: ${returnedQty})</small>` : ''}</div>
+                                        </td>
+                                        <td class="text-center">${remainingQty}</td>
+                                        <td class="text-right">₹${netAmount.toFixed(2)}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
 
@@ -580,7 +587,7 @@ const Sales = () => {
                         ${totalSgst > 0 ? `<div class="summary-row"><span>SGST</span><span>₹${totalSgst.toFixed(2)}</span></div>` : ''}
                         <div class="summary-row total">
                             <span>TOTAL</span>
-                            <span>₹${Number(sale.totalAmount || (subtotal + totalTax)).toLocaleString()}</span>
+                            <span>₹${Number((subtotal + totalTax).toFixed(2)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                         </div>
                         <div style="font-size: 7pt; text-align: center; color: #64748b; margin-top: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                             Payment: ${sale.paymentMethod}
@@ -955,8 +962,10 @@ const Sales = () => {
                                             <td className="px-6 py-4">
                                                 <p className="font-black text-slate-900 dark:text-white uppercase tracking-tight">{item.product?.productName || item.productName}</p>
                                             </td>
-                                            <td className="px-6 py-4 text-center font-bold">{item.quantity}</td>
-                                            <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-white">₹{(item.price * item.quantity).toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-center font-bold">{Math.max(0, Number(item.quantity || 0) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0)))}
+                                                {Number(item.returnedQuantity || 0) > 0 && <span className="block text-[9px] text-rose-500">Returned: {item.returnedQuantity}</span>}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-white">₹{(Number(item.total || (item.price * item.quantity)) * (Number(item.quantity) > 0 ? Math.max(0, Number(item.quantity) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0))) / Number(item.quantity) : 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                                             <td className="px-6 py-4 text-right">
                                                 {item.isReturned ? (
                                                     <span className="text-[9px] font-black text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2.5 py-1 rounded-lg uppercase tracking-widest">{t('Returned')}</span>
@@ -990,7 +999,12 @@ const Sales = () => {
                             </div>
                             <div className="text-center sm:text-right">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Total Settlement')}</p>
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">₹{viewingSale.totalAmount.toLocaleString()}</p>
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">₹{viewingSale.items.reduce((sum, item) => {
+                                    const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
+                                    const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
+                                    const itemTotal = Number(item.total || (item.price * item.quantity));
+                                    return sum + itemTotal * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
+                                }, 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
                             </div>
                         </div>
 
