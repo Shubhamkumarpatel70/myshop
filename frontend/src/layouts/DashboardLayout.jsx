@@ -143,7 +143,7 @@ const DashboardLayout = () => {
         { name: t('Shops'), icon: Store, path: '/dashboard/shops', roles: ['super_admin'], priority: true, description: t('All registered shops'), group: 'admin-core' },
         { name: t('Approvals'), icon: ShieldCheck, path: '/dashboard/admin/approvals', roles: ['super_admin'], priority: true, description: t('Shop verification list'), group: 'admin-core' },
         { name: t('Staff'), icon: Users, path: '/dashboard/admin/staff', roles: ['super_admin'], description: t('Monitor all shop employees'), group: 'admin-core' },
-        { name: t('Barcodes'), icon: Tag, path: '/dashboard/admin/barcodes', roles: ['super_admin'], description: t('Global identifier registry'), group: 'admin-core' },
+        { name: t('Barcodes'), icon: Tag, path: '/dashboard/admin/barcodes', roles: ['super_admin'], description: t('Manage product barcodes'), group: 'admin-core' },
         { name: t('Subscriptions'), icon: CreditCard, path: '/dashboard/admin/subscriptions', roles: ['super_admin'], description: t('Manage shop subscriptions'), group: 'admin-core' },
         { name: t('Sales'), icon: ShoppingCart, path: '/dashboard/admin/sales', roles: ['super_admin'], priority: true, description: t('View all shop sales'), group: 'admin-ops' },
         { name: t('Inventory'), icon: Package, path: '/dashboard/admin/inventory', roles: ['super_admin'], priority: true, description: t('View stock across shops'), group: 'admin-ops' },
