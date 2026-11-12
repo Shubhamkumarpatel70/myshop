@@ -172,3 +172,19 @@ exports.getPublicShopDetails = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+
+exports.updatePrinterStatus = async (req, res) => {
+    try {
+        const ownerId = req.user.role === 'shop_owner' ? req.user._id : req.user.createdBy;
+        if (!ownerId) return res.status(403).json({ success: false, message: 'Only shop accounts can register a printer.' });
+        const owner = await User.findById(ownerId);
+        if (!owner || owner.role !== 'shop_owner') return res.status(404).json({ success: false, message: 'Shop not found.' });
+        const { isConnected, printerName, connectionType, paperWidth } = req.body || {};
+        if (typeof isConnected !== 'boolean') return res.status(400).json({ success: false, message: 'Printer connection status is required.' });
+        const allowed = ['usb-serial', 'system-print', 'bluetooth', 'unknown'];
+        owner.printer = { isConfigured: true, isConnected, printerName: String(printerName || '').trim().slice(0, 120), connectionType: allowed.includes(connectionType) ? connectionType : 'unknown', paperWidth: paperWidth === '80' ? '80' : '58', lastSeenAt: new Date(), registeredAt: owner.printer?.registeredAt || new Date() };
+        await owner.save();
+        res.json({ success: true, message: 'Printer status saved.', data: owner.printer });
+    } catch (error) { res.status(500).json({ success: false, message: error.message || 'Could not save printer status.' }); }
+};

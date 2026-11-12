@@ -33,6 +33,7 @@ const PaymentSettings = React.lazy(() => import('./dashboard/PaymentSettings'));
 const ThermalPrinter = React.lazy(() => import('./dashboard/ThermalPrinter'));
 const AdminApprovals = React.lazy(() => import('./dashboard/AdminApprovals'));
 const AdminSettings = React.lazy(() => import('./dashboard/AdminSettings'));
+const AdminPrinters = React.lazy(() => import('./dashboard/AdminPrinters'));
 const Account = React.lazy(() => import('./dashboard/Account'));
 const AdminShopFinder = React.lazy(() => import('./dashboard/AdminShopFinder'));
 const AdminOrderFinder = React.lazy(() => import('./dashboard/AdminOrderFinder'));
@@ -193,6 +194,11 @@ const AppContent = () => {
                     <Route path="admin/settings" element={
                         <RoleProtectedRoute roles={['super_admin']}>
                             <AdminSettings />
+                        </RoleProtectedRoute>
+                    } />
+                    <Route path="admin/printers" element={
+                        <RoleProtectedRoute roles={['super_admin']}>
+                            <AdminPrinters />
                         </RoleProtectedRoute>
                     } />
                     <Route path="admin/shop-finder" element={

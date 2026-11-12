@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Printer, Usb, Bluetooth, CheckCircle2, AlertCircle, RefreshCw, Settings2, ReceiptText, ShieldCheck, TestTube2, Save, Info, Smartphone, Cable } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { connectThermalPrinter, getAuthorizedThermalPrinters, isThermalPrinterSupported, printThermalReceipt } from '../utils/thermalPrinter';
 
@@ -28,7 +29,28 @@ const ThermalPrinter = () => {
             setPrinterName(ports.length ? 'Previously authorised serial printer' : '');
         } catch { setConnected(false); setPrinterName(''); }
     };
+    const reportPrinterStatus = async (isConnected, name = printerName, type = 'usb-serial') => {
+        try {
+            await api.put('/users/printer-status', {
+                isConnected,
+                printerName: name,
+                connectionType: type,
+                paperWidth: settings.paperWidth
+            });
+        } catch (error) {
+            console.warn('Printer status could not be synced:', error.response?.data?.message || error.message);
+        }
+    };
+
     useEffect(() => { refreshConnection(); }, []);
+
+    // Send a heartbeat while this shop dashboard has an authorised printer connected.
+    useEffect(() => {
+        if (!connected) return undefined;
+        reportPrinterStatus(true, printerName, 'usb-serial');
+        const heartbeat = window.setInterval(() => reportPrinterStatus(true, printerName, 'usb-serial'), 60000);
+        return () => window.clearInterval(heartbeat);
+    }, [connected, printerName, settings.paperWidth]);
 
     const saveSettings = () => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
@@ -42,6 +64,7 @@ const ThermalPrinter = () => {
             const result = await connectThermalPrinter();
             setConnected(true);
             setPrinterName(result.name);
+            await reportPrinterStatus(true, result.name, 'usb-serial');
             toast.success('Printer permission granted. You can now test print.');
         } catch (error) {
             if (error.name !== 'NotFoundError') toast.error(error.message || 'Could not connect printer.');
@@ -69,6 +92,7 @@ const ThermalPrinter = () => {
                 popup.document.close();
                 popup.focus();
                 popup.print();
+                await reportPrinterStatus(true, 'System print dialog', 'system-print');
                 toast.success('Select your thermal printer in the print dialog.');
             }
         } catch (error) { toast.error(error.message || 'Test print failed.'); }

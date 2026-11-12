@@ -8,7 +8,8 @@ const {
     updateGlobalSettings,
     confirmRegistrationPayment,
     getShopById,
-    impersonateUser
+    impersonateUser,
+    getShopPrinterStatuses
 } = require('../controllers/adminController');
 
 // Publicly accessible settings (for maintenance check and payment info)
@@ -22,6 +23,7 @@ router.post('/confirm-payment', confirmRegistrationPayment);
 
 // Admin only routes
 router.get('/pending-approvals', admin, getPendingApprovals);
+router.get('/shop-printers', admin, getShopPrinterStatuses);
 router.put('/approvals/:id', admin, updateApprovalStatus);
 router.get('/shop-lookup/:shopId', admin, getShopById);
 router.post('/impersonate/:id', admin, impersonateUser);

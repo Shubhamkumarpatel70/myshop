@@ -53,6 +53,7 @@ const Sales = () => {
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [returnReasonInput, setReturnReasonInput] = useState('');
+    const [returnQuantity, setReturnQuantity] = useState('1');
     const [itemToReturn, setItemToReturn] = useState(null);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -85,7 +86,7 @@ const Sales = () => {
         if (!navigator.onLine || isSyncing || offlineSales.length === 0) return;
 
         setIsSyncing(true);
-        const toastId = toast.loading(`Uplinking ${offlineSales.length} cached transactions...`);
+        const toastId = toast.loading(`Syncing ${offlineSales.length} saved sales...`);
         for (const sale of offlineSales) {
             try {
                 const { id, ...saleData } = sale;
@@ -176,14 +177,14 @@ const Sales = () => {
                 setProducts(cachedProducts);
                 toast.success("Inventory sync");
             } else {
-                toast.error("Cloud connection required for initialization");
+                toast.error("Connect to the internet to start.");
             }
         }
     };
 
     const handleReturn = async () => {
         if (!itemToReturn || !returnReasonInput) {
-            toast.error("Protocol Error: Reason required");
+            toast.error("Please enter a return reason.");
             return;
         }
 
@@ -191,20 +192,22 @@ const Sales = () => {
             const res = await api.post('/sales/return-product', {
                 saleId: viewingSale._id,
                 productId: itemToReturn.product?._id || itemToReturn.product,
-                quantity: itemToReturn.quantity,
+                quantity: Number(returnQuantity),
                 returnReason: returnReasonInput
             });
 
             if (res.data.success) {
-                toast.success("Registry Adjusted: Product Returned");
+                toast.success("Product returned. Stock has been updated.");
                 setIsReturnModalOpen(false);
                 setReturnReasonInput('');
+                setReturnQuantity('1');
                 setItemToReturn(null);
+                await fetchProducts();
                 fetchSales(page, false);
                 setIsViewModalOpen(false);
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || "Return Protocol Failed");
+            toast.error(error.response?.data?.message || "Could not process the return.");
         }
     };
 
@@ -316,6 +319,11 @@ const Sales = () => {
                 { mode: secondPaymentMethod, amount: secondAmount }
             ];
         }
+        const receiptWindow = window.open('', '_blank');
+        if (!receiptWindow) {
+            toast.error('Please allow pop-ups to print the receipt.');
+            return;
+        }
         try {
             const saleData = {
                 items: cart,
@@ -326,13 +334,31 @@ const Sales = () => {
                 utrNumber: utrNumber,
                 customerGSTIN: customerInfo.gstin
             };
+            let completedSale;
             if (!navigator.onLine) {
                 await posStore.saveOfflineSale(saleData);
-                toast.success("Offline Active: Sale cached locally");
+                completedSale = {
+                    ...saleData,
+                    _id: `OFFLINE-${Date.now()}`,
+                    transactionId: `OFFLINE-${Date.now()}`,
+                    createdAt: new Date().toISOString(),
+                    totalAmount: payableAmount,
+                    items: cart.map(item => ({ ...item, total: Number((Number(item.price) * Number(item.quantity) * (1 + (user?.gstEnabled ? Number(item.taxRate || 0) / 100 : 0))).toFixed(2)) })),
+                    user
+                };
+                toast.success("Offline sale saved. Receipt is marked as pending sync.");
                 syncOfflineSales();
             } else {
-                await api.post('/sales', saleData);
-                toast.success("Transaction Successfully Saved");
+                const response = await api.post('/sales', saleData);
+                completedSale = { ...response.data.data, user: response.data.data?.user || user };
+                toast.success("Transaction successfully saved");
+            }
+            try {
+                handlePrintInvoice(completedSale, receiptWindow);
+            } catch (printError) {
+                console.error('Sale saved, but receipt printing failed:', printError);
+                if (receiptWindow && !receiptWindow.closed) receiptWindow.close();
+                toast.error('Sale saved, but the receipt could not be printed. You can print it from Sale Details.');
             }
             setCart([]);
             setCustomerInfo({ name: 'Guest', phone: '', paymentMethod: 'Cash' });
@@ -351,11 +377,12 @@ const Sales = () => {
             }
             fetchProducts();
         } catch (error) {
+            if (receiptWindow && !receiptWindow.closed) receiptWindow.close();
             if (error.response?.status === 403 && error.response?.data?.message?.toLowerCase().includes('shift')) {
                 setIsShiftModalOpen(true);
-                toast.error("Shift Required to committing transaction");
+                toast.error("Please open a shift before completing a sale.");
             } else {
-                toast.error(error.response?.data?.message || "Protocol Failure");
+                toast.error(error.response?.data?.message || "Something went wrong. Please try again.");
             }
         }
     };
@@ -424,8 +451,9 @@ const Sales = () => {
         }
     };
 
-    const handlePrintInvoice = (sale) => {
-        const printWindow = window.open('', '_blank');
+    const handlePrintInvoice = (sale, targetWindow = null) => {
+        const printWindow = targetWindow || window.open('', '_blank');
+        if (!printWindow) { toast.error('Allow pop-ups to print the receipt.'); return; }
         const shopInfo = sale.user || {};
 
         let subtotal = 0;
@@ -437,26 +465,28 @@ const Sales = () => {
 
         const itemsHtml = sale.items.map(item => {
             const itemTotal = Number(item.total ?? (item.price * item.quantity));
-            totalTax += Number(item.taxAmount || 0);
-            totalCgst += Number(item.cgst || 0);
-            totalSgst += Number(item.sgst || 0);
-            totalIgst += Number(item.igst || 0);
-            if (item.isReturned) {
-                returnsTotal += itemTotal;
-            } else {
-                subtotal += Number(item.taxableAmount ?? itemTotal);
-            }
+            const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
+            const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
+            const ratio = Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0;
+            const netItemTotal = itemTotal * ratio;
+            totalTax += Number(item.taxAmount || 0) * ratio;
+            totalCgst += Number(item.cgst || 0) * ratio;
+            totalSgst += Number(item.sgst || 0) * ratio;
+            totalIgst += Number(item.igst || 0) * ratio;
+            subtotal += Number(item.taxableAmount ?? itemTotal) * ratio;
+            returnsTotal += itemTotal - netItemTotal;
 
             return `
-                <tr style="${item.isReturned ? 'background-color: #fff1f2; opacity: 0.7;' : ''}">
+                <tr style="${returnedQty ? 'background-color: #fff1f2; opacity: 0.85;' : ''}">
                     <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">
-                        <div style="font-weight: 800; color: #1e293b; font-size: 10pt; text-transform: uppercase; ${item.isReturned ? 'text-decoration: line-through;' : ''}">
+                        <div style="font-weight: 800; color: #1e293b; font-size: 10pt; text-transform: uppercase;">
                             ${escapeHtml(item.product?.productName || item.productName)}
                         </div>
+                        ${returnedQty ? `<small style="color:#e11d48;">Returned: ${returnedQty}</small>` : ''}
                     </td>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700; color: #475569; ${item.isReturned ? 'text-decoration: line-through;' : ''}">${item.quantity}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 700; color: #475569; ${item.isReturned ? 'text-decoration: line-through;' : ''}">₹${item.price.toLocaleString()}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 900; color: #1e293b; ${item.isReturned ? 'text-decoration: line-through;' : ''}">₹${itemTotal.toLocaleString()}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700; color: #475569;">${remainingQty}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 700; color: #475569;">₹${item.price.toLocaleString()}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 900; color: #1e293b;">₹${netItemTotal.toFixed(2)}</td>
                 </tr>
             `;
         }).join('');
@@ -536,15 +566,20 @@ const Sales = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            ${sale.items.map((item) => `
-                                <tr style="${item.isReturned ? 'text-decoration: line-through; opacity: 0.5;' : ''}">
-                                    <td>
-                                        <div style="font-weight: 700; color: #0f172a;">${item.product?.productName || item.productName}</div>
-                                    </td>
-                                    <td class="text-center">${item.quantity}</td>
-                                    <td class="text-right">₹${(item.price * item.quantity).toLocaleString()}</td>
-                                </tr>
-                            `).join('')}
+                            ${sale.items.map((item) => {
+                                const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
+                                const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
+                                const netAmount = Number(item.total || (item.price * item.quantity)) * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
+                                return `
+                                    <tr>
+                                        <td>
+                                            <div style="font-weight: 700; color: #0f172a;">${escapeHtml(item.product?.productName || item.productName)}${returnedQty ? ` <small>(Returned: ${returnedQty})</small>` : ''}</div>
+                                        </td>
+                                        <td class="text-center">${remainingQty}</td>
+                                        <td class="text-right">₹${netAmount.toFixed(2)}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
 
@@ -558,18 +593,21 @@ const Sales = () => {
                         ${totalSgst > 0 ? `<div class="summary-row"><span>SGST</span><span>₹${totalSgst.toFixed(2)}</span></div>` : ''}
                         <div class="summary-row total">
                             <span>TOTAL</span>
-                            <span>₹${Number(sale.totalAmount || (subtotal + totalTax)).toLocaleString()}</span>
+                            <span>₹${Number((subtotal + totalTax).toFixed(2)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                         </div>
                         <div style="font-size: 7pt; text-align: center; color: #64748b; margin-top: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                             Payment: ${sale.paymentMethod}
                         </div>
+                        ${Array.isArray(sale.payments) && sale.payments.length > 1 ? sale.payments.map(payment => `<div class="summary-row"><span>${escapeHtml(payment.mode)} paid</span><span>₹${Number(payment.amount || 0).toFixed(2)}</span></div>`).join('') : ''}
+                        ${sale.customerGSTIN ? `<div style="font-size:7pt;margin-top:6px;">Customer GSTIN: ${escapeHtml(sale.customerGSTIN)}</div>` : ''}
                     </div>
 
                     <div class="footer">
                         <div class="terms">Terms & Conditions</div>
-                        <div>Goods once sold cannot be returned.</div>
+                        <div>Returns are subject to the shop return policy.</div>
                         <div style="margin-top: 5px; font-weight: 900; color: #1e293b; letter-spacing: 1px;">THANK YOU! VISIT AGAIN</div>
                         <div style="font-size: 5pt; margin-top: 10px;">Computer Generated Invoice</div>
+                        <div style="font-size: 7pt; margin-top: 7px; font-weight: 900; color: #4f46e5;">Powered by ASKC TECHNOLOGIES</div>
                     </div>
                 </body>
             </html>
@@ -600,13 +638,13 @@ const Sales = () => {
                                     {!isOnline ? <Globe size={18} /> : <RefreshCcw size={18} className={isSyncing ? 'animate-spin' : ''} />}
                                 </div>
                                 <div>
-                                    <p className="text-xs font-black uppercase tracking-widest">{!isOnline ? 'Offline Active' : 'Synchronization Pending'}</p>
+                                    <p className="text-xs font-black uppercase tracking-widest">{!isOnline ? 'Working offline' : 'Sales waiting to sync'}</p>
                                     <p className="text-[10px] font-bold opacity-90 uppercase tracking-tight">{pendingSyncCount} transaction(s) queued in local registry.</p>
                                 </div>
                             </div>
                             {isOnline && pendingSyncCount > 0 && (
                                 <button onClick={syncOfflineSales} disabled={isSyncing} className="px-4 py-2 bg-white text-indigo-600 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50">
-                                    {isSyncing ? 'Uplinking...' : 'Sync Now'}
+                                    {isSyncing ? 'Syncing...' : 'Sync Now'}
                                 </button>
                             )}
                         </div>
@@ -620,10 +658,10 @@ const Sales = () => {
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <div className="h-1 w-8 bg-indigo-400 rounded-[1.25rem]"></div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">Checkout Terminal</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600">New Sale</span>
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white uppercase">POS <span className="text-indigo-600">Terminal</span></h1>
-                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">High-performance transaction engine for your retail ecosystem.</p>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Create sales, take payments, and print receipts.</p>
                     </div>
                     <button onClick={() => { setPosStep(1); setIsSaleModalOpen(true); }} className="h-14 px-10 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
                         <Plus size={20} /> New Sale
@@ -631,11 +669,11 @@ const Sales = () => {
                 </div>
             </div>
 
-            {/* Tactical Control Bar */}
+            {/* Sales Filters */}
             <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Registry Period</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Month</span>
                         <div className="relative group">
                             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-600 group-focus-within:scale-110 transition-transform pointer-events-none" size={16} />
                             <input type="month" className="h-11 w-full sm:w-44 pl-11 pr-3 rounded-[1.25rem] border border-slate-300 bg-white text-[10px] font-black uppercase tracking-widest outline-none focus:border-indigo-600 dark:bg-slate-950 dark:border-white/5 dark:text-white shadow-sm transition-all" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} />
@@ -643,7 +681,7 @@ const Sales = () => {
                     </div>
                     <form onSubmit={handleTransactionSearch} className="flex gap-2 lg:w-80">
                         <div className="flex flex-col gap-1.5 flex-1">
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Archive Search</span>
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Search Sales</span>
                             <div className="relative group">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
                                 <input type="text" placeholder="ID, Name, or Mobile..." className="h-11 w-full rounded-[1.25rem] border border-slate-300 bg-white pl-11 pr-3 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 shadow-sm" value={transactionSearch} onChange={(e) => setTransactionSearch(e.target.value)} />
@@ -654,16 +692,16 @@ const Sales = () => {
                 </div>
             </div>
 
-            {/* Sales Registry */}
+            {/* Sales History */}
             <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                 <div className="overflow-x-auto">
                     <table className="min-w-[980px] w-full text-left">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-800/50">
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Transaction ID</th>
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Client</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Receipt Number</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Customer</th>
                                 <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">Qty</th>
-                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Settlement</th>
+                                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Payment</th>
                                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
                                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
                             </tr>
@@ -706,7 +744,7 @@ const Sales = () => {
 
             {/* POS UI Modal - 4 Steps */}
             <Modal isOpen={isSaleModalOpen} onClose={() => { setIsSaleModalOpen(false); setPosStep(1); }} title="New Sale" className="max-w-4xl">
-                <div className="space-y-6">
+                <div className="ss-pos-flow space-y-6">
                     {/* Stepper */}
                     <div className="flex items-center justify-between px-4 pt-2">
                         {[1, 2, 3, 4].map(step => (
@@ -722,7 +760,7 @@ const Sales = () => {
                         <span className={posStep === 1 ? 'text-indigo-600' : ''}>Catalog</span>
                         <span className={posStep === 2 ? 'text-indigo-600' : ''}>Cart Items</span>
                         <span className={posStep === 3 ? 'text-indigo-600' : ''}>Customer</span>
-                        <span className={posStep === 4 ? 'text-indigo-600' : ''}>Settlement</span>
+                        <span className={posStep === 4 ? 'text-indigo-600' : ''}>Payment</span>
                     </div>
 
                     <AnimatePresence mode="wait">
@@ -828,7 +866,7 @@ const Sales = () => {
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Client Full Name</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Customer Full Name</label>
                                         <div className="relative">
                                             <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                             <input type="text" className="w-full h-16 pl-14 pr-6 bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-indigo-500 rounded-[1.25rem] font-black text-lg outline-none transition-all dark:text-white" value={customerInfo.name} onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })} placeholder="Walk-in Guest" />
@@ -888,8 +926,8 @@ const Sales = () => {
                                     )}
                                 </div>
                                 <div className="flex justify-between gap-4 pt-4">
-                                    <button onClick={() => setPosStep(3)} className="h-14 flex-1 bg-slate-100 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px]">Review Client</button>
-                                    <button onClick={handleCheckout} className="h-14 flex-[2] bg-emerald-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">Complete Transaction <ShieldCheck size={18} /></button>
+                                    <button onClick={() => setPosStep(3)} className="h-14 flex-1 bg-slate-100 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px]">Review Customer</button>
+                                    <button onClick={handleCheckout} className="h-14 flex-[2] bg-emerald-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">Confirm Payment &amp; Print Receipt <ShieldCheck size={18} /></button>
                                 </div>
                             </motion.div>
                         )}
@@ -898,7 +936,7 @@ const Sales = () => {
             </Modal>
 
             {/* Existing View Modal */}
-            <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Registry Details" className="max-w-2xl">
+            <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Sale Details" className="max-w-2xl">
                 {viewingSale && (
                     <div className="space-y-8">
                         <div className="flex justify-between items-start">
@@ -930,21 +968,28 @@ const Sales = () => {
                                             <td className="px-6 py-4">
                                                 <p className="font-black text-slate-900 dark:text-white uppercase tracking-tight">{item.product?.productName || item.productName}</p>
                                             </td>
-                                            <td className="px-6 py-4 text-center font-bold">{item.quantity}</td>
-                                            <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-white">₹{(item.price * item.quantity).toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-center font-bold">{Math.max(0, Number(item.quantity || 0) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0)))}
+                                                {Number(item.returnedQuantity || 0) > 0 && <span className="block text-[9px] text-rose-500">Returned: {item.returnedQuantity}</span>}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-black text-slate-900 dark:text-white">₹{(Number(item.total || (item.price * item.quantity)) * (Number(item.quantity) > 0 ? Math.max(0, Number(item.quantity) - Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0))) / Number(item.quantity) : 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                                             <td className="px-6 py-4 text-right">
                                                 {item.isReturned ? (
                                                     <span className="text-[9px] font-black text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2.5 py-1 rounded-lg uppercase tracking-widest">{t('Returned')}</span>
                                                 ) : (
-                                                    <button
-                                                        onClick={() => {
-                                                            setItemToReturn(item);
-                                                            setIsReturnModalOpen(true);
-                                                        }}
-                                                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors inline-flex items-center gap-1 cursor-pointer"
-                                                    >
-                                                        <Undo2 size={12} /> {t('Return')}
-                                                    </button>
+                                                    <>
+                                                        {Number(item.returnedQuantity || 0) > 0 && <span className="block mb-1 text-[9px] font-bold text-amber-600">Returned {item.returnedQuantity}/{item.quantity}</span>}
+                                                        <button
+                                                            onClick={() => {
+                                                                setItemToReturn(item);
+                                                                setReturnQuantity(String(Math.max(1, Number(item.quantity || 1) - Number(item.returnedQuantity || 0))));
+                                                                setReturnReasonInput('');
+                                                                setIsReturnModalOpen(true);
+                                                            }}
+                                                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                            <Undo2 size={12} /> {t('Return remaining')}
+                                                        </button>
+                                                    </>
                                                 )}
                                             </td>
                                         </tr>
@@ -955,12 +1000,17 @@ const Sales = () => {
 
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                             <div className="text-center sm:text-left">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Settlement Mode')}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Payment Mode')}</p>
                                 <p className="text-sm font-black text-emerald-600 uppercase tracking-widest">{t(viewingSale.paymentMethod)}</p>
                             </div>
                             <div className="text-center sm:text-right">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Total Settlement')}</p>
-                                <p className="text-3xl font-black text-slate-900 dark:text-white">₹{viewingSale.totalAmount.toLocaleString()}</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('Total Payment')}</p>
+                                <p className="text-3xl font-black text-slate-900 dark:text-white">₹{viewingSale.items.reduce((sum, item) => {
+                                    const returnedQty = Number(item.returnedQuantity || (item.isReturned ? item.quantity : 0));
+                                    const remainingQty = Math.max(0, Number(item.quantity || 0) - returnedQty);
+                                    const itemTotal = Number(item.total || (item.price * item.quantity));
+                                    return sum + itemTotal * (Number(item.quantity) > 0 ? remainingQty / Number(item.quantity) : 0);
+                                }, 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
                             </div>
                         </div>
 
@@ -986,14 +1036,16 @@ const Sales = () => {
             </Modal>
 
             {/* Return & Scanner Modals */}
-            <Modal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} title={t('Registry Adjustment')} className="max-w-md">
+            <Modal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} title={t('Return Product')} className="max-w-md">
                 <div className="py-6 space-y-8 text-center">
                     <div className="w-24 h-24 bg-rose-100 text-rose-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl shadow-rose-500/10"><Undo2 size={40} /></div>
                     <div className="space-y-2">
-                        <h4 className="text-2xl font-black uppercase tracking-tight">{t('Initiate Return?')}</h4>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('This will restock inventory and record a refund.')}</p>
+                        <h4 className="text-2xl font-black uppercase tracking-tight">{t('Return this product?')}</h4>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('Returned items will be added back to stock and recorded in inventory history.')}</p>
                     </div>
                     <div className="space-y-3 text-left">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Return quantity (max {Math.max(0, Number(itemToReturn?.quantity || 0) - Number(itemToReturn?.returnedQuantity || 0))})</label>
+                        <input type="number" min="1" max={Math.max(1, Number(itemToReturn?.quantity || 1) - Number(itemToReturn?.returnedQuantity || 0))} step="1" required value={returnQuantity} onChange={event => setReturnQuantity(event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">{t('Reason for Return')}</label>
                         <textarea required placeholder={t('Damage, Expiry, Exchange...')} className="w-full p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border-2 border-transparent focus:border-rose-500 outline-none h-32 resize-none font-bold dark:text-white transition-all" value={returnReasonInput} onChange={(e) => setReturnReasonInput(e.target.value)} />
                     </div>
@@ -1004,10 +1056,10 @@ const Sales = () => {
                 </div>
             </Modal>
 
-            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Optical Scan Terminal" className="max-w-lg">
+            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title="Scan Barcode" className="max-w-lg">
                 <div className="p-4">
                     <BarcodeScanner isOpen={isScannerOpen} onScanSuccess={handleScanSuccess} onScanError={(err) => console.error(err)} />
-                    <p className="mt-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Position barcode within the frame</p>
+                    <p className="mt-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Place the barcode inside the frame.</p>
                 </div>
             </Modal>
 

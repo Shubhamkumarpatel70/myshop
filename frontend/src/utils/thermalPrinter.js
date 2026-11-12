@@ -86,32 +86,45 @@ export const printThermalReceipt = async (sale, columns = 32) => {
 
     let taxableSubtotal = 0;
     let taxTotal = 0;
+    let netTotal = 0;
     for (const item of sale.items) {
         const name = item.product?.productName || item.productName || 'Item';
-        const amount = Number(item.total ?? (Number(item.price || 0) * Number(item.quantity || 0)));
-        if (!item.isReturned) {
-            taxableSubtotal += Number(item.taxableAmount ?? amount);
-            taxTotal += Number(item.taxAmount || 0);
-        }
+        const quantity = Number(item.quantity || 0);
+        const returnedQty = Number(item.returnedQuantity || (item.isReturned ? quantity : 0));
+        const remainingQty = Math.max(0, quantity - returnedQty);
+        const ratio = quantity > 0 ? remainingQty / quantity : 0;
+        const amount = Number(item.total ?? (Number(item.price || 0) * quantity)) * ratio;
+        taxableSubtotal += Number(item.taxableAmount ?? (Number(item.price || 0) * quantity)) * ratio;
+        taxTotal += Number(item.taxAmount || 0) * ratio;
+        netTotal += amount;
         const nameLines = wrap(name, width);
         lines.push(...nameLines);
-        const qtyPrice = `  ${item.quantity} x ${Number(item.price || 0).toFixed(2)}`;
+        const qtyPrice = `  ${remainingQty} x ${Number(item.price || 0).toFixed(2)}`;
         lines.push(...wrap(padRow(qtyPrice, money(amount), width), width));
-        if (item.isReturned) lines.push('  RETURNED');
+        if (returnedQty > 0) lines.push(...wrap(`  RETURNED: ${returnedQty}`, width));
     }
     lines.push(divider);
     lines.push(padRow('SUBTOTAL', money(taxableSubtotal), width));
-    const cgst = sale.items.reduce((sum, item) => sum + Number(item.cgst || 0), 0);
-    const sgst = sale.items.reduce((sum, item) => sum + Number(item.sgst || 0), 0);
-    const igst = sale.items.reduce((sum, item) => sum + Number(item.igst || 0), 0);
+    const returnedRatio = item => {
+        const quantity = Number(item.quantity || 0);
+        const returnedQty = Number(item.returnedQuantity || (item.isReturned ? quantity : 0));
+        return quantity > 0 ? Math.max(0, quantity - returnedQty) / quantity : 0;
+    };
+    const cgst = sale.items.reduce((sum, item) => sum + Number(item.cgst || 0) * returnedRatio(item), 0);
+    const sgst = sale.items.reduce((sum, item) => sum + Number(item.sgst || 0) * returnedRatio(item), 0);
+    const igst = sale.items.reduce((sum, item) => sum + Number(item.igst || 0) * returnedRatio(item), 0);
     if (cgst) lines.push(padRow('CGST', money(cgst), width));
     if (sgst) lines.push(padRow('SGST', money(sgst), width));
     if (igst) lines.push(padRow('IGST', money(igst), width));
     if (!cgst && !sgst && !igst && taxTotal) lines.push(padRow('TAX', money(taxTotal), width));
     lines.push(divider);
-    lines.push(padRow('TOTAL', money(sale.totalAmount), width));
+    lines.push(padRow('TOTAL', money(netTotal), width));
     add(`Payment: ${sale.paymentMethod || 'N/A'}`);
-    lines.push(divider, ...wrap(printerSettings.footer || 'THANK YOU! VISIT AGAIN', width), '', '');
+    if (Array.isArray(sale.payments) && sale.payments.length > 1) {
+        for (const payment of sale.payments) add(`${payment.mode}: ${money(payment.amount)}`);
+    }
+    if (sale.customerGSTIN) add(`Customer GSTIN: ${sale.customerGSTIN}`);
+    lines.push(divider, ...wrap(printerSettings.footer || 'THANK YOU! VISIT AGAIN', width), ...wrap('Powered by ASKC TECHNOLOGIES', width), '', '');
 
     const bytes = [
         ESC, 0x40,             // Initialize

@@ -189,3 +189,19 @@ exports.impersonateUser = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+
+exports.getShopPrinterStatuses = async (req, res) => {
+    try {
+        const shops = await User.find({ role: 'shop_owner' }).select('shopName ownerName email phone shopId isSuspended printer').sort({ shopName: 1 }).lean();
+        const now = Date.now();
+        const data = shops.map(shop => {
+            const p = shop.printer || {};
+            const lastSeen = p.lastSeenAt ? new Date(p.lastSeenAt).getTime() : 0;
+            const active = Boolean(p.isConfigured && p.isConnected && lastSeen && now - lastSeen <= 3 * 60 * 1000);
+            return { _id: shop._id, shopName: shop.shopName, ownerName: shop.ownerName, email: shop.email, phone: shop.phone, shopId: shop.shopId, isSuspended: shop.isSuspended,
+                printer: { isConfigured: Boolean(p.isConfigured), printerName: p.printerName || '', connectionType: p.connectionType || 'unknown', paperWidth: p.paperWidth || '58', lastSeenAt: p.lastSeenAt || null, status: !p.isConfigured ? 'no-printer' : active ? 'active' : 'inactive' } };
+        });
+        res.json({ success: true, data, summary: { totalShops: data.length, active: data.filter(s => s.printer.status === 'active').length, inactive: data.filter(s => s.printer.status === 'inactive').length, noPrinter: data.filter(s => s.printer.status === 'no-printer').length } });
+    } catch (error) { res.status(500).json({ success: false, message: error.message || 'Could not load printer status.' }); }
+};

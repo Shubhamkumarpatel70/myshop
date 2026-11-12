@@ -68,7 +68,7 @@ const Inventory = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setFormData(prev => ({ ...prev, productImage: res.data.url }));
-            toast.success("Asset Sync Successful");
+            toast.success("Product photo uploaded.");
         } catch (error) {
             toast.error("Handshake failed");
         } finally {
@@ -114,7 +114,7 @@ const Inventory = () => {
                     productName: productName || prev.productName,
                     productImage: productImage || prev.productImage
                 }));
-                toast.success("Identity Detected: Details Pre-filled");
+                toast.success("Product details added from barcode.");
             }
         } catch (error) {
         }
@@ -124,7 +124,7 @@ const Inventory = () => {
         setIsScannerOpen(false);
         setFormData(prev => ({ ...prev, barcode: decodedText }));
         handleBarcodeLookup(decodedText);
-        toast.success("Uplink Successful: Barcode Synced");
+        toast.success("Barcode scanned successfully.");
     };
 
     const handleOpenModal = async (product = null) => {
@@ -147,7 +147,7 @@ const Inventory = () => {
                 expiryDate: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
                 lowStockThreshold: product.lowStockThreshold,
                 description: product.description || '',
-                batchNumber: '',
+                batchNumber: product.batches?.[product.batches.length - 1]?.batchNumber || '',
                 productImage: product.productImage || '',
                 purchasePrice: product.purchasePrice || 0,
                 taxRate: product.taxRate || 0,
@@ -180,10 +180,10 @@ const Inventory = () => {
         try {
             if (editingProduct) {
                 await api.put(`/products/${editingProduct._id}`, formData);
-                toast.success("Inventory List Updated");
+                toast.success("Product updated.");
             } else {
                 await api.post('/products', formData);
-                toast.success("New Product Registered");
+                toast.success("Product added and stock saved.");
             }
             fetchData();
             setIsModalOpen(false);
@@ -192,18 +192,18 @@ const Inventory = () => {
                 setLimitMetadata({ type: 'product', isTrialUsed: error.response.data.isTrialUsed });
                 setIsLimitModalOpen(true);
             } else {
-                toast.error(error.response?.data?.message || "Protocol Failure");
+                toast.error(error.response?.data?.message || "Could not save product.");
             }
         }
     };
 
-    const handleDelete = async (id) => {        if (window.confirm("Confirm decommissioning of this asset?")) {
+    const handleDelete = async (id) => {        if (window.confirm("Are you sure you want to delete this product?")) {
             try {
                 await api.delete(`/products/${id}`);
-                toast.success("Asset Decommissioned");
+                toast.success("Product deleted.");
                 fetchData();
             } catch (error) {
-                toast.error("Decommissioning failed");
+                toast.error("Could not delete product.");
             }
         }
     };
@@ -317,13 +317,13 @@ const Inventory = () => {
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{t("Real-time Warehouse Intelligence")}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{t("Stock Overview")}</p>
                         </div>
                         <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-none">
-                            {t("Stock")} <span className="text-indigo-600">{t("Inventory")}</span>
+                            {"Stock"} <span className="text-indigo-600">{"Inventory"}</span>
                         </h1>
                         <p className="text-slate-500 text-xs sm:text-sm font-medium max-w-2xl leading-relaxed">
-                            {t("Complete catalog oversight with real-time health metrics, expiry tracking, and procurement automation.")}
+                            {t("Manage products, check stock levels, and track expiry dates.")}
                         </p>
                     </div>
                     <div className="flex w-full sm:w-auto gap-3 flex-wrap">
@@ -352,7 +352,7 @@ const Inventory = () => {
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
                         <input
                             type="text"
-                            placeholder={t("Identify product by name, category or identifier...")}
+                            placeholder={t("Search by product name, category or barcode...")}
                             className="w-full h-14 pl-16 pr-6 rounded-[1.25rem] bg-slate-50 dark:bg-slate-800 border-none font-bold text-xs sm:text-sm outline-none focus:ring-4 focus:ring-indigo-500/5 transition-all dark:bg-slate-800 dark:text-white"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -408,7 +408,7 @@ const Inventory = () => {
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="text-sm font-black text-slate-900 dark:text-white truncate max-w-[200px]">{product.productName}</p>
-                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{product.barcode || t("NO IDENTIFIER")}</p>
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{product.barcode || t("NO BARCODE")}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -425,10 +425,10 @@ const Inventory = () => {
                                                 <p className={`text-sm font-black leading-none ${new Date(product.expiryDate) < new Date() ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
                                                     {formatDate(product.expiryDate)}
                                                 </p>
-                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t("Expiration")}</p>
+                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t("Expiry Date")}</p>
                                             </div>
                                         ) : (
-                                            <span className="text-[9px] font-black text-slate-300 uppercase italic">{t("Lifetime Asset")}</span>
+                                            <span className="text-[9px] font-black text-slate-300 uppercase italic">{"Total Stock"}</span>
                                         )}
                                     </td>
                                     <td className="px-8 py-6">
@@ -515,7 +515,7 @@ const Inventory = () => {
             </div>
 
             {/* Product Configuration Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingProduct ? t('Modify Asset') : t('Register Asset')} className="max-w-4xl">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingProduct ? 'Edit Product' : 'Add Product'} className="max-w-4xl">
                 <form onSubmit={handleSubmit} className="space-y-8 py-4">
                     <div className="grid grid-cols-1 gap-8 rounded-[1.25rem] border border-slate-100 bg-slate-50/50 p-6 dark:border-slate-800 dark:bg-slate-800/40 sm:grid-cols-[200px_1fr]">
                         <div className="relative mx-auto">
@@ -541,43 +541,48 @@ const Inventory = () => {
                             </div>
                         </div>
                         <div className="flex flex-col justify-center space-y-3">
-                            <h4 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">{t("Asset Identity")}</h4>
-                            <p className="text-sm text-slate-500 font-medium leading-relaxed">{t("Assign a visual identifier to this product. High-quality imagery improves catalog navigation and cashier efficiency.")}</p>
+                            <h4 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">{"Product Photo"}</h4>
+                            <p className="text-sm text-slate-500 font-medium leading-relaxed">{"Add a photo to help you identify this product."}</p>
                             <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-widest">
-                                <Zap size={14} /> {t("AI Recognition Active")}
+                                <Zap size={14} /> {"Photo added"}
                             </div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Product Designation")}</label>
-                            <input type="text" required placeholder="e.g. Premium Cotton Shirt" className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.productName} onChange={(e) => setFormData({ ...formData, productName: e.target.value })} />
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">{"Product Name"}</label>
+                            <input type="text" required placeholder="e.g. Cotton Shirt" className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.productName} onChange={(e) => setFormData({ ...formData, productName: e.target.value })} />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Logical Category")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Category"}</label>
                             <div className="relative">
                                 <select required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 appearance-none dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-                                    <option value="">{t("Select Domain")}</option>
+                                    <option value="">{"Select a category"}</option>
                                     {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
                                 </select>
                                 <ChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 rotate-90" size={18} />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Bin Quantity")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Stock Quantity"}</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Threshold Alert")}</label>
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Batch Number</label>
+                            <input type="text" required placeholder="Enter batch number" className="h-14 w-full rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.batchNumber || ''} onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value.trimStart() })} />
+                            <p className="text-xs text-slate-500">This number will be saved with this stock batch.</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Low Stock Alert At</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.lowStockThreshold} onChange={(e) => setFormData({ ...formData, lowStockThreshold: parseInt(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Sale Valuation (₹)")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Selling Price (₹)"}</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Procurement Cost (₹)")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Purchase Price (₹)"}</label>
                             <input type="number" required className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.purchasePrice} onChange={(e) => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) })} />
                         </div>
                         <div className="space-y-2">
@@ -591,11 +596,11 @@ const Inventory = () => {
                             </select>
                         </div>
                         <div className="space-y-2 relative">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Global Identifier (Barcode)")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Barcode (Optional)"}</label>
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
                                     <input
-                                        type="text"                                        placeholder={t("Scan or Type")}
+                                        type="text"                                        placeholder={"Scan or enter barcode"}
                                         className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 pr-12 text-sm font-bold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                                         value={formData.barcode}
                                         onChange={(e) => {
@@ -605,10 +610,10 @@ const Inventory = () => {
                                     />
                                     <Tag className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                                 </div>
-                                <button type="button" onClick={() => setShowBarcodePicker(!showBarcodePicker)} className="h-14 w-14 flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-[1.25rem] border border-slate-100 dark:border-slate-700 text-indigo-600 shadow-sm" title="Vault">
+                                <button type="button" onClick={() => setShowBarcodePicker(!showBarcodePicker)} className="h-14 w-14 flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-[1.25rem] border border-slate-100 dark:border-slate-700 text-indigo-600 shadow-sm" title="Choose saved barcode">
                                     <Layers size={20} />
                                 </button>
-                                <button type="button" onClick={() => setIsScannerOpen(true)} className="h-14 w-14 flex items-center justify-center bg-indigo-600 rounded-[1.25rem] text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700" title="Vision">
+                                <button type="button" onClick={() => setIsScannerOpen(true)} className="h-14 w-14 flex items-center justify-center bg-indigo-600 rounded-[1.25rem] text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700" title="Scan barcode">
                                     <Scan size={20} />
                                 </button>
                             </div>
@@ -621,7 +626,7 @@ const Inventory = () => {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         className="absolute z-50 mt-4 w-full max-h-64 overflow-y-auto rounded-[1.25rem] border border-slate-100 bg-white p-3 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
                                     >
-                                        <div className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50 mb-2">{t("Identifier Vault")}</div>
+                                        <div className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-50 mb-2">{"Saved Barcodes"}</div>
                                         {unlinkedBarcodes.length > 0 ? (
                                             unlinkedBarcodes.map(bc => (
                                                 <button
@@ -640,7 +645,7 @@ const Inventory = () => {
                                         ) : (
                                             <div className="py-10 text-center space-y-2">
                                                 <AlertCircle size={24} className="mx-auto text-slate-200" />
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase">{t("Vault is Empty")}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase">{"No saved barcodes available"}</p>
                                             </div>
                                         )}
                                     </motion.div>
@@ -648,7 +653,7 @@ const Inventory = () => {
                             </AnimatePresence>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t("Asset Expiration")}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{"Expiry Date (Optional)"}</label>
                             <div className="relative">
                                 <input type="date" className="h-14 w-full rounded-[1.25rem] border border-slate-200 bg-white px-5 text-sm font-bold outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-900 dark:text-white" value={formData.expiryDate} onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })} />
                                 <Calendar className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={18} />
@@ -668,13 +673,13 @@ const Inventory = () => {
                     </section>
 
                     <div className="pt-6 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-4">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-14 rounded-[1.25rem] border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">{t("Cancel Operation")}</button>
-                        <button type="submit" className="h-14 rounded-[1.25rem] bg-indigo-600 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all">{editingProduct ? t('Commit Changes') : t('Confirm Entry')}</button>
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="h-14 rounded-[1.25rem] border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">{"Cancel"}</button>
+                        <button type="submit" className="h-14 rounded-[1.25rem] bg-indigo-600 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all">{editingProduct ? 'Save Changes' : 'Add Product'}</button>
                     </div>
                 </form>
             </Modal>
 
-            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title={t("Vision Uplink")} className="max-w-lg">
+            <Modal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} title={"Scan Barcode"} className="max-w-lg">
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-[1.25rem] border border-slate-100 dark:border-slate-800 mb-6">
                     <p className="text-xs font-medium text-slate-500 text-center leading-relaxed">{t("Position the barcode within the viewport for synchronization.")}</p>
                 </div>
