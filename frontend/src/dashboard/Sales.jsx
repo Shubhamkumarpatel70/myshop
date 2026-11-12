@@ -17,6 +17,7 @@ import { posStore } from '../utils/posStore';
 import Skeleton from '../components/Skeleton';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { isThermalPrinterSupported, printThermalReceipt } from '../utils/thermalPrinter';
 
 const escapeHtml = (value) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 
@@ -413,6 +414,15 @@ const Sales = () => {
         window.addEventListener('keydown', handlePosShortcut);
         return () => window.removeEventListener('keydown', handlePosShortcut);
     }, [isSaleModalOpen, isScannerOpen, posStep, cart.length]);
+
+    const handleThermalPrint = async (sale, columns) => {
+        try {
+            await printThermalReceipt(sale, columns);
+            toast.success('Receipt sent to thermal printer.');
+        } catch (error) {
+            toast.error(error.message || 'Could not print to thermal printer.');
+        }
+    };
 
     const handlePrintInvoice = (sale) => {
         const printWindow = window.open('', '_blank');
@@ -957,6 +967,18 @@ const Sales = () => {
                         <div className="grid grid-cols-2 gap-4 pt-4">
                             <button onClick={() => handlePrintInvoice(viewingSale)} className="h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl"><Printer size={18} /> {t('Physical Bill')}</button>
                             <button onClick={() => handleShare(viewingSale)} className="h-14 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all shadow-xl"><Share2 size={18} /> {t('Digital Bill')}</button>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <div><p className="text-sm font-bold text-slate-900 dark:text-white">Direct thermal printer</p><p className="text-xs text-slate-500 dark:text-slate-400">Serial printer support • Chrome/Edge • HTTPS</p></div>
+                                <Printer size={20} className="text-indigo-600" />
+                            </div>
+                            {isThermalPrinterSupported() ? (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={() => handleThermalPrint(viewingSale, 32)} className="rounded-xl bg-indigo-600 px-3 py-3 text-xs font-bold text-white">Print 58mm</button>
+                                    <button onClick={() => handleThermalPrint(viewingSale, 48)} className="rounded-xl bg-indigo-600 px-3 py-3 text-xs font-bold text-white">Print 80mm</button>
+                                </div>
+                            ) : <p className="text-xs text-amber-700 dark:text-amber-300">Direct serial printing is not available in this browser. Use Physical Bill with your system printer, or open Stock Saathi in Chrome/Edge on HTTPS.</p>}
                         </div>
                     </div>
                 )}
