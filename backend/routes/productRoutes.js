@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { 
-    getProducts, createProduct, updateProduct, deleteProduct, bulkImportProducts, 
+    getProducts, createProduct, updateProduct, deleteProduct, 
     getPublicProducts, getPublicProductsByShop, getInventoryLogs
 } = require('../controllers/productController');
+const { bulkImportProducts } = require('../controllers/bulkImportController');
 const { protect } = require('../middleware/authMiddleware');
 const { checkProductLimit } = require('../middleware/limitMiddleware');
 
