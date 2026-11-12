@@ -100,10 +100,12 @@ exports.verifySubscription = async (req, res) => {
             const isAddon = user.pendingSubscription.isAddon;
 
             if (isAddon) {
-                if (requestedPlan === 'Barcode Booster') {
+                const addon = await Addon.findOne({ name: requestedPlan });
+                const activationKey = addon?.activationKey || (requestedPlan === 'Barcode Booster' ? 'barcode' : requestedPlan === 'Team Expansion' ? 'team' : 'none');
+                if (activationKey === 'barcode') {
                     user.hasBarcodeAddon = true;
                     user.subscriptionPlan = 'Enterprise';
-                } else if (requestedPlan === 'Team Expansion') {
+                } else if (activationKey === 'team') {
                     user.hasStaffAddon = true;
                     user.subscriptionPlan = 'Enterprise';
                 }
