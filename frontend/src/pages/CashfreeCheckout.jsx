@@ -57,7 +57,7 @@ const CashfreeCheckout = () => {
     }, [orderId]);
 
     useEffect(() => {
-        if (!order?.environment || isPaidStatus(order.status)) return undefined;
+        if (!order?.environment || ['SUCCESS', 'PAID'].includes(String(order.status || '').toUpperCase())) return undefined;
         let active = true;
         setCashfreeInstance(null);
         setSdkError('');
