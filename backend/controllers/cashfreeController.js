@@ -239,8 +239,20 @@ exports.createSubscriptionOrder = async (req, res) => {
         if (!user || user.role !== 'shop_owner') return res.status(403).json({ success: false, message: 'Only shop owners can purchase a plan.' });
         const plan = await Plan.findOne({ _id: req.body.planId, isActive: true });
         if (!plan) return res.status(404).json({ success: false, message: 'Selected plan is unavailable.' });
-        const amount = Number(plan.price);
-        if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, message: 'Plan price is not configured.' });
+        let amount = Number(plan.price);
+        const currentPlan = await Plan.findOne({ name: user.subscriptionPlan });
+        if (currentPlan && user.planExpiresAt && new Date(user.planExpiresAt) > new Date()) {
+            const activatedAt = new Date(user.planActivatedAt || user.createdAt);
+            const expiresAt = new Date(user.planExpiresAt);
+            const duration = expiresAt - activatedAt;
+            if (duration > 0) {
+                const usedRatio = Math.min(1, Math.max(0, (Date.now() - activatedAt.getTime()) / duration));
+                const credit = Math.floor(Number(currentPlan.price || 0) * (1 - usedRatio));
+                amount = Math.max(0, amount - credit);
+            }
+        }
+        amount = Number(amount.toFixed(2));
+        if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, message: 'The selected plan has no payable balance after applying your remaining plan credit.' });
         const phone = String(user.phone || '').replace(/\\D/g, '').slice(-10);
         if (phone.length !== 10) return res.status(400).json({ success: false, message: 'A valid 10-digit mobile number is required.' });
 
