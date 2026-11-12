@@ -31,6 +31,8 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
     const [paying, setPaying] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [paymentState, setPaymentState] = useState('ready');
+    const [manualScreenshot, setManualScreenshot] = useState(null);
+    const [manualSubmitting, setManualSubmitting] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -88,6 +90,20 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
         verify();
         return () => { active = false; };
     }, [searchParams, setSearchParams]);
+
+    const submitManualPayment = async () => {
+        if (!manualScreenshot) return toast.error('Please select your payment screenshot first.');
+        setManualSubmitting(true);
+        try {
+            const formData = new FormData();
+            formData.append('screenshot', manualScreenshot);
+            await api.post('/auth/submit-payment', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            toast.success('Payment proof submitted. Admin will verify it manually.');
+            setPaymentState('submitted');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Unable to submit payment proof.');
+        } finally { setManualSubmitting(false); }
+    };
 
     const startPayment = async () => {
         setPaying(true);
@@ -153,7 +169,7 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
                 <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"><CreditCard size={30}/></div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">StockSaathi · by ASKC Technologies</p>
                 <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">{user?.approvalStatus === 'Rejected' ? 'Complete registration payment' : 'One secure step to get started'}</h1>
-                <p className="mt-3 text-sm leading-6 text-slate-500">Pay the one-time registration fee using Cashfree’s secure hosted checkout. Your dashboard unlocks only after the server verifies the payment.</p>
+                <p className="mt-3 text-sm leading-6 text-slate-500">{(settings?.paymentVerificationMode || 'manual') === 'cashfree' ? 'Pay the one-time registration fee using Cashfree’s secure hosted checkout. Your dashboard unlocks only after the server verifies the payment.' : 'Pay using the admin UPI ID or QR code and submit your payment screenshot for manual review.'}</p>
             </div>
 
             <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -163,18 +179,29 @@ const RegistrationPayment = ({ user, onPaymentSuccess }) => {
                         <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">Secure checkout</span>
                     </div>
                     {user?.approvalStatus === 'Rejected' && user?.rejectionReason && <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"><strong>Review required:</strong> {user.rejectionReason}</div>}
+                    {(settings?.paymentVerificationMode || 'manual') === 'cashfree' ? (<>
                     <button onClick={startPayment} disabled={paying || verifying || Number(settings?.regFee || 0) <= 0} className="mt-8 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-indigo-600 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
                         {paying ? <><RefreshCw size={18} className="animate-spin"/> Connecting to Cashfree…</> : <><CreditCard size={18}/> Pay ₹{Number(settings?.regFee || 0).toLocaleString('en-IN')} securely</>}
                     </button>
                     {(searchParams.get('order_id') || user?.registrationPaymentOrderId || paymentState === 'pending') && <button onClick={checkPayment} disabled={verifying} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">{verifying ? <RefreshCw size={16} className="animate-spin"/> : <Clock3 size={16}/>} Check payment status</button>}
                     <div className="mt-6 flex items-start gap-3 rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300"><LockKeyhole size={16} className="mt-0.5 shrink-0 text-emerald-600"/><p>Card, UPI and supported payment methods are handled by Cashfree. We never store your card or UPI credentials.</p></div>
+                    </>) : (<div className="mt-8 space-y-4">
+                        {settings?.qrCode && <img src={settings.qrCode} alt="Registration payment QR" className="mx-auto h-48 w-48 rounded-xl border bg-white object-contain p-2" />}
+                        {settings?.upiId && <p className="text-center text-sm font-semibold">UPI ID: <span className="select-all">{settings.upiId}</span></p>}
+                        {paymentState === 'submitted' ? <p className="rounded-xl bg-amber-50 p-4 text-center text-sm font-semibold text-amber-700">Payment proof submitted. Waiting for admin verification.</p> : <>
+                            <label className="block text-sm font-semibold">Upload payment screenshot</label>
+                            <input type="file" accept="image/*" onChange={e => setManualScreenshot(e.target.files?.[0] || null)} className="block w-full text-sm" />
+                            <button onClick={submitManualPayment} disabled={!manualScreenshot || manualSubmitting} className="w-full rounded-xl bg-indigo-600 px-5 py-4 text-sm font-bold text-white disabled:opacity-60">{manualSubmitting ? 'Submitting…' : 'Submit Payment Proof'}</button>
+                        </>}
+                    </div>)}
+
                 </section>
                 <aside className="rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
                     <ShieldCheck size={28} className="text-emerald-400"/>
                     <h2 className="mt-5 text-xl font-bold">How activation works</h2>
                     <ol className="mt-5 space-y-5 text-sm text-slate-300">
-                        <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">1</span><span>Complete payment on Cashfree’s hosted checkout.</span></li>
-                        <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">2</span><span>StockSaathi verifies the payment directly with Cashfree.</span></li>
+                        <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">1</span><span>{(settings?.paymentVerificationMode || 'manual') === 'cashfree' ? 'Complete payment on Cashfree’s hosted checkout.' : 'Pay using the displayed UPI ID or QR and upload the screenshot.'}</span></li>
+                        <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">2</span><span>{(settings?.paymentVerificationMode || 'manual') === 'cashfree' ? 'StockSaathi verifies the payment directly with Cashfree.' : 'An admin reviews your payment screenshot and confirms it.'}</span></li>
                         <li className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/10 font-bold text-white">3</span><span>Your shop then proceeds through the admin approval process.</span></li>
                     </ol>
                     <div className="mt-8 border-t border-white/10 pt-5 text-xs text-slate-400"><p className="flex items-center gap-2"><ShieldCheck size={14}/> Encrypted, hosted payment page</p><p className="mt-2">Need help? {settings?.supportPhone || 'Contact support'}</p></div>
