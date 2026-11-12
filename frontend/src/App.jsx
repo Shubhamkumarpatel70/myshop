@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import api from './utils/api';
+import './utils/pwaInstall';
 import PWAHandler from './components/PWAHandler';
 import Home from './pages/Home';
 import About from './pages/About';
