@@ -78,6 +78,7 @@ exports.createSale = async (req, res) => {
 
             processedItems.push({
                 product: product._id,
+                productName: product.productName,
                 quantity: item.quantity,
                 price: item.price,
                 purchasePrice: product.purchasePrice || 0,
@@ -196,7 +197,10 @@ exports.createSale = async (req, res) => {
         });
         await activeShift.save();
 
-        await sale.populate('user', 'shopName address phone gstEnabled gstin businessState');
+        await sale.populate([
+            { path: 'items.product', select: 'productName' },
+            { path: 'user', select: 'shopName address phone gstEnabled gstin businessState' }
+        ]);
         res.status(201).json({ success: true, data: sale });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
