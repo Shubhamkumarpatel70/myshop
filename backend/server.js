@@ -79,6 +79,19 @@ app.use(helmet({
 app.use(morgan('dev'));
 app.use('/uploads', express.static('uploads'));
 app.use('/api', limiter);
+
+// Explicit webhook endpoint health check at the application level.
+// Cashfree sends signed POST requests; GET is only for checking deployment/routing.
+app.get('/api/payments/cashfree/webhook', (req, res) => {
+    res.status(200).json({
+        success: true,
+        service: 'stocksaathi-backend',
+        message: 'Cashfree webhook endpoint is active.',
+        endpoint: '/api/payments/cashfree/webhook',
+        acceptedMethod: 'POST',
+        note: 'Use POST with Cashfree webhook signature headers for actual event delivery.'
+    });
+});
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
