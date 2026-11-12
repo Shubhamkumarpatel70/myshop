@@ -12,9 +12,12 @@ const AdminPricing = () => {
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingPlan, setEditingPlan] = useState(null);
+    const [addons, setAddons] = useState([]);
+    const [editingAddon, setEditingAddon] = useState(null);
 
     useEffect(() => {
         fetchPlans();
+        fetchAddons();
     }, []);
 
     const fetchPlans = async () => {
@@ -26,6 +29,25 @@ const AdminPricing = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchAddons = async () => {
+        try { const res = await api.get('/subscriptions/admin/addons'); setAddons(Array.isArray(res.data?.data) ? res.data.data : []); }
+        catch { toast.error('Failed to load add-ons'); }
+    };
+
+    const handleSaveAddon = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await api.post('/subscriptions/admin/addons', editingAddon);
+            if (res.data.success) { toast.success('Add-on saved'); setEditingAddon(null); fetchAddons(); }
+        } catch (error) { toast.error(error.response?.data?.message || 'Unable to save add-on'); }
+    };
+
+    const handleDeleteAddon = async (id) => {
+        if (!window.confirm('Delete this add-on?')) return;
+        try { await api.delete(`/subscriptions/admin/addons/${id}`); toast.success('Add-on deleted'); fetchAddons(); }
+        catch { toast.error('Unable to delete add-on'); }
     };
 
     const handleSave = async (e) => {
@@ -118,6 +140,39 @@ const AdminPricing = () => {
                     </div>
                 ))}
             </div>
+
+
+            <section className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div><h2 className="text-2xl font-black">Standalone Add-ons</h2><p className="text-sm text-slate-500">Create and manage optional modules shown on the shop pricing page.</p></div>
+                    <button onClick={() => setEditingAddon({ name: '', description: '', price: 0, billingLabel: 'One-time payment', features: [], activationKey: 'none', isActive: true })} className="btn btn-primary h-12 px-6 rounded-xl"><Plus size={18}/> Add Add-on</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {addons.map(addon => <div key={addon._id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+                        <div className="flex justify-between gap-3"><div><h3 className="font-black text-lg">{addon.name}</h3><p className="text-xs text-slate-500 mt-1">{addon.isActive ? 'Active' : 'Hidden from shops'}</p></div><span className="font-black text-xl">₹{addon.price}</span></div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-3">{addon.description}</p>
+                        <div className="flex gap-2 mt-5"><button onClick={() => setEditingAddon({...addon, features: addon.features || []})} className="flex-1 rounded-xl bg-slate-100 dark:bg-slate-800 py-2 text-sm font-bold">Edit</button><button onClick={() => handleDeleteAddon(addon._id)} className="rounded-xl px-4 py-2 text-sm font-bold text-rose-600 bg-rose-50 dark:bg-rose-500/10">Delete</button></div>
+                    </div>)}
+                    {!addons.length && <p className="text-sm text-slate-500">No add-ons created yet.</p>}
+                </div>
+            </section>
+            {editingAddon && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
+                <motion.div initial={{opacity:0, scale:0.96}} animate={{opacity:1, scale:1}} className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-950 p-7">
+                    <h2 className="text-2xl font-black mb-6">{editingAddon._id ? 'Edit Add-on' : 'Create Add-on'}</h2>
+                    <form onSubmit={handleSaveAddon} className="space-y-4">
+                        <label className="block text-xs font-bold">Add-on name<input required maxLength="80" className="input-field mt-1 h-12 rounded-xl" value={editingAddon.name} onChange={e=>setEditingAddon({...editingAddon,name:e.target.value})}/></label>
+                        <label className="block text-xs font-bold">Description<textarea required maxLength="500" className="input-field mt-1 rounded-xl" rows="3" value={editingAddon.description} onChange={e=>setEditingAddon({...editingAddon,description:e.target.value})}/></label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <label className="block text-xs font-bold">Price (₹)<input required min="1" type="number" className="input-field mt-1 h-12 rounded-xl" value={editingAddon.price} onChange={e=>setEditingAddon({...editingAddon,price:Number(e.target.value)})}/></label>
+                            <label className="block text-xs font-bold">Price label<input maxLength="40" className="input-field mt-1 h-12 rounded-xl" value={editingAddon.billingLabel} onChange={e=>setEditingAddon({...editingAddon,billingLabel:e.target.value})}/></label>
+                        </div>
+                        <label className="block text-xs font-bold">Included features (one per line)<textarea rows="3" className="input-field mt-1 rounded-xl" value={(editingAddon.features || []).join('\n')} onChange={e=>setEditingAddon({...editingAddon,features:e.target.value.split('\n')})}/></label>
+                        <label className="block text-xs font-bold">Feature activation<select className="input-field mt-1 h-12 rounded-xl" value={editingAddon.activationKey} onChange={e=>setEditingAddon({...editingAddon,activationKey:e.target.value})}><option value="none">Display and payment only</option><option value="barcode">Unlock Barcode Booster</option><option value="team">Unlock Team Expansion</option></select></label>
+                        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editingAddon.isActive !== false} onChange={e=>setEditingAddon({...editingAddon,isActive:e.target.checked})}/> Show on shop pricing page</label>
+                        <div className="flex gap-3 pt-2"><button type="button" onClick={()=>setEditingAddon(null)} className="flex-1 rounded-xl bg-slate-100 dark:bg-slate-800 py-3 font-bold">Cancel</button><button type="submit" className="flex-1 rounded-xl bg-indigo-600 py-3 font-bold text-white">Save Add-on</button></div>
+                    </form>
+                </motion.div>
+            </div>}
 
             {editingPlan && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
