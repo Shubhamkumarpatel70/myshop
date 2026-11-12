@@ -7,7 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { openCashfreeCheckout, preloadCashfreeSdk } from '../utils/cashfree';
+import { openCashfreeCheckout, prepareCashfreeCheckout } from '../utils/cashfree';
 
 const formatAmount = (amount) => Number(amount || 0).toLocaleString('en-IN', {
     minimumFractionDigits: 2,
@@ -25,11 +25,9 @@ const CashfreeCheckout = () => {
     const [opening, setOpening] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [paymentStatus, setPaymentStatus] = useState('');
+    const [cashfreeInstance, setCashfreeInstance] = useState(null);
+    const [sdkError, setSdkError] = useState('');
     const autoVerifyStarted = useRef(false);
-
-    useEffect(() => {
-        preloadCashfreeSdk();
-    }, []);
 
     useEffect(() => {
         let active = true;
@@ -57,6 +55,17 @@ const CashfreeCheckout = () => {
         loadOrder();
         return () => { active = false; };
     }, [orderId]);
+
+    useEffect(() => {
+        if (!order?.environment || ['SUCCESS', 'PAID'].includes(String(order.status || '').toUpperCase())) return undefined;
+        let active = true;
+        setCashfreeInstance(null);
+        setSdkError('');
+        prepareCashfreeCheckout({ environment: order.environment })
+            .then(instance => { if (active) setCashfreeInstance(instance); })
+            .catch(error => { if (active) setSdkError(error.message || 'Unable to prepare secure checkout.'); });
+        return () => { active = false; };
+    }, [order?.environment, order?.status]);
 
     const verifyPayment = useCallback(async (showToast = true) => {
         if (!orderId) return;
@@ -94,22 +103,43 @@ const CashfreeCheckout = () => {
         verifyPayment(false);
     }, [order, returnedFromGateway, verifyPayment]);
 
-    const handlePay = async () => {
+    const handlePay = () => {
         if (!order?.payment_session_id) {
             toast.error('This order has no active Cashfree payment session. Create a new payment order.');
             return;
         }
         if (paymentStatus === 'SUCCESS' || paymentStatus === 'PAID') return;
+        if (!cashfreeInstance) {
+            toast.error(sdkError || 'Secure payment is still loading. Please wait and try again.');
+            return;
+        }
+
         setOpening(true);
         try {
-            await openCashfreeCheckout({
-                paymentSessionId: order.payment_session_id,
-                environment: order.environment
+            // Call checkout immediately in the click event. Do not await SDK loading
+            // here: mobile browsers can block redirects after an async delay.
+            const checkoutResult = openCashfreeCheckout({
+                cashfree: cashfreeInstance,
+                paymentSessionId: order.payment_session_id
             });
+            Promise.resolve(checkoutResult)
+                .catch(error => toast.error(error.message || 'Cashfree checkout could not be opened.'))
+                .finally(() => setOpening(false));
         } catch (error) {
-            toast.error(error.message || 'Cashfree checkout could not be opened. Please try again.');
-        } finally {
             setOpening(false);
+            toast.error(error.message || 'Cashfree checkout could not be opened. Please try again.');
+        }
+    };
+
+    const retryCashfreeSdk = async () => {
+        setSdkError('');
+        setCashfreeInstance(null);
+        try {
+            const instance = await prepareCashfreeCheckout({ environment: order?.environment });
+            setCashfreeInstance(instance);
+        } catch (error) {
+            setSdkError(error.message || 'Unable to prepare secure checkout.');
+            toast.error(error.message || 'Unable to load Cashfree. Check your internet and retry.');
         }
     };
 
@@ -196,10 +226,11 @@ const CashfreeCheckout = () => {
                                         The previous payment attempt did not complete. You can retry this order if Cashfree still accepts the session.
                                     </div>
                                 )}
-                                <button type="button" onClick={handlePay} disabled={opening || !order.payment_session_id || verifying} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-4 text-sm font-extrabold text-white shadow-lg shadow-indigo-600/20 transition hover:-translate-y-0.5 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
-                                    {opening ? <><RefreshCw size={18} className="animate-spin" /> Opening Cashfree…</> : <><LockKeyhole size={18} /> Continue to secure payment</>}
+                                <button type="button" onClick={handlePay} disabled={opening || !order.payment_session_id || verifying || !cashfreeInstance} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-4 text-sm font-extrabold text-white shadow-lg shadow-indigo-600/20 transition hover:-translate-y-0.5 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+                                    {opening ? <><RefreshCw size={18} className="animate-spin" /> Opening Cashfree…</> : !cashfreeInstance ? <><RefreshCw size={18} className="animate-spin" /> Preparing secure payment…</> : <><LockKeyhole size={18} /> Continue to secure payment</>}
                                 </button>
                                 {!order.payment_session_id && <p className="text-center text-xs font-semibold text-rose-600">Payment session is unavailable. Please start a fresh payment from your dashboard.</p>}
+                                {sdkError && <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300"><p>{sdkError}</p><button type="button" onClick={retryCashfreeSdk} className="mt-2 font-bold underline">Retry loading Cashfree</button></div>}
                             </>
                         )}
 
