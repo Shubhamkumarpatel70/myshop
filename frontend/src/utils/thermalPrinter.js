@@ -88,7 +88,7 @@ export const printThermalReceipt = async (sale, columns = 32) => {
     let taxTotal = 0;
     let netTotal = 0;
     for (const item of sale.items) {
-        const name = item.product?.productName || item.productName || 'Item';
+        const name = item.product?.productName || item.productName || (typeof item.product === 'object' ? item.product?.name : '') || 'Product';
         const quantity = Number(item.quantity || 0);
         const returnedQty = Number(item.returnedQuantity || (item.isReturned ? quantity : 0));
         const remainingQty = Math.max(0, quantity - returnedQty);
