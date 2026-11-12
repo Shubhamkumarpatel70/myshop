@@ -91,10 +91,10 @@ const Pricing = () => {
     };
 
     const startCashfreePayment = async () => {
-        if (!selectedPlan?._id) return toast.error('Select a valid plan.');
+        if (!selectedPlan?._id && !selectedPlan?.isAddon) return toast.error('Select a valid plan or add-on.');
         setCashfreePaying(true);
         try {
-            const response = await api.post('/payments/cashfree/subscription/order', { planId: selectedPlan._id });
+            const response = await api.post('/payments/cashfree/subscription/order', selectedPlan.isAddon ? { addonName: selectedPlan.name } : { planId: selectedPlan._id });
             const { order_id: orderId, payment_session_id: paymentSessionId } = response.data.data || {};
             if (!orderId || !paymentSessionId) throw new Error('Cashfree did not return a valid payment order.');
             setIsUpgradeModalOpen(false);
@@ -488,117 +488,24 @@ const Pricing = () => {
             </div>
 
             <Modal isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} title="Complete Subscription" className="max-w-4xl">
-                <div className="py-6 space-y-10">
-                    {prorationData && user?.subscriptionPlan !== selectedPlan?.name && (
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="rounded-3xl border-2 border-emerald-100 bg-emerald-50/50 p-6 dark:border-emerald-500/20 dark:bg-emerald-500/5">
-                            <div className="flex items-center gap-4 text-emerald-700 dark:text-emerald-300">
-                                <ShieldCheck size={24} />
-                                <div>
-                                    <p className="text-lg font-black uppercase tracking-tight">Prorated Credit: ₹{prorationData.credit.toLocaleString()}</p>
-                                    <p className="text-xs font-bold opacity-80">We've adjusted the price based on your current active plan usage.</p>
-                                </div>
+                <div className="space-y-6 py-5">
+                    {selectedPlan && (
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/60">
+                            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Subscription summary</p>
+                            <div className="mt-3 flex items-center justify-between gap-3">
+                                <div><h3 className="text-xl font-black text-slate-900 dark:text-white">{selectedPlan.name}</h3><p className="mt-1 text-sm text-slate-500">Secure payment powered by Cashfree</p></div>
+                                <p className="text-2xl font-black text-slate-900 dark:text-white">₹{(prorationData?.finalPrice ?? selectedPlan.price ?? 0).toLocaleString("en-IN")}</p>
                             </div>
-                        </motion.div>
+                            {prorationData && user?.subscriptionPlan !== selectedPlan?.name && <p className="mt-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400">₹{prorationData.credit.toLocaleString("en-IN")} remaining-plan credit applied.</p>}
+                        </div>
                     )}
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        {/* Left Side: Payment Details */}
-                        <div className="space-y-8">
-                            <div className="rounded-[2.5rem] bg-indigo-600 p-8 text-white shadow-2xl shadow-indigo-500/20 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-80">Final Payable Amount</p>
-                                <h3 className="mt-2 font-outfit text-6xl font-black tracking-tighter">₹{(prorationData?.finalPrice || selectedPlan?.price || 0).toLocaleString()}</h3>
-                                <div className="mt-8 p-4 bg-white/10 backdrop-blur-md rounded-[1.25rem] border border-white/10 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest opacity-60">UPI Merchant ID</p>
-                                        <p className="font-bold text-sm">{settings?.upiId || 'stocksaathi@upi'}</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(settings?.upiId || 'stocksaathi@upi');
-                                            toast.success('Merchant ID Copied');
-                                        }}
-                                        className="p-2.5 bg-white text-indigo-600 rounded-[1.25rem] hover:scale-110 transition-all shadow-lg"
-                                    >
-                                        <ExternalLink size={16} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <button type="button" onClick={startCashfreePayment} disabled={cashfreePaying || cashfreeVerifying || !selectedPlan?._id} className="w-full h-14 rounded-2xl bg-emerald-600 text-white font-bold flex items-center justify-center gap-3 hover:bg-emerald-700 disabled:opacity-60">
-                                <ShieldCheck size={18} /> {cashfreePaying ? 'Opening secure checkout...' : cashfreeVerifying ? 'Verifying payment...' : 'Pay securely with Cashfree'}
-                            </button>
-                            <p className="text-xs text-slate-500 text-center">Cashfree verifies payment automatically and activates your plan. Manual UPI proof remains available below.</p>
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em] ml-4">Payment Proof</label>
-                                <div className="relative group rounded-[1.25rem] border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-hidden min-h-[220px] transition-all hover:border-indigo-500">
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        className="absolute inset-0 cursor-pointer opacity-0 z-10" 
-                                        onChange={handleScreenshotUpload} 
-                                        disabled={uploading} 
-                                    />
-                                    {screenshot ? (
-                                        <img src={screenshot} alt="Payment proof" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-6 text-center">
-                                            <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-[1.25rem] flex items-center justify-center mb-4 shadow-sm">
-                                                <Upload size={28} />
-                                            </div>
-                                            <p className="text-xs font-bold uppercase tracking-widest">Tap to upload screenshot</p>
-                                            <p className="text-[9px] mt-1 opacity-60">PNG, JPG, JPEG accepted</p>
-                                        </div>
-                                    )}
-                                    {uploading && (
-                                        <div className="absolute inset-0 grid place-items-center bg-white/70 backdrop-blur-sm dark:bg-slate-900/70 z-20">
-                                            <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Side: QR Code & Steps */}
-                        <div className="space-y-8">
-                            <div className="bg-slate-950 rounded-[3rem] p-8 flex flex-col items-center text-white relative overflow-hidden group shadow-2xl">
-                                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent"></div>
-                                <div className="relative z-10 w-full flex flex-col items-center">
-                                    <div className="w-full aspect-square max-w-[200px] bg-white rounded-[2rem] p-4 flex items-center justify-center mb-6 shadow-2xl">
-                                        <img 
-                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`upi://pay?pa=${settings?.upiId || 'stocksaathi@upi'}&pn=StockSaathi&am=${prorationData?.finalPrice || selectedPlan?.price || 0}&cu=INR`)}`} 
-                                            alt="Payment QR" 
-                                            className="w-full h-full object-contain" 
-                                        />
-                                    </div>
-                                    <div className="text-center space-y-2">
-                                        <h4 className="text-lg font-black uppercase tracking-tight leading-none">Scan & Pay Now</h4>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Automated Payment Routing</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="p-8 bg-slate-50 dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-100 dark:border-white/5 space-y-4">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs">1</div>
-                                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 leading-relaxed">Scan QR code using any UPI app (GPay, PhonePe, Paytm, etc.)</p>
-                                </div>
-                                <div className="flex items-start gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs">2</div>
-                                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 leading-relaxed">Upload the successful payment screenshot in the proof section.</p>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={handleSubmitRequest}
-                                disabled={submitting || !screenshot}
-                                className="w-full h-18 bg-indigo-600 text-white rounded-[1.25rem] font-black uppercase text-xs tracking-[0.3em] shadow-2xl shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
-                            >
-                                {submitting ? 'Authenticating...' : <><Zap size={20} /> Initialize License</>}
-                            </button>
-                        </div>
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
+                        <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 shrink-0 text-emerald-600" size={21} /><div><p className="font-bold text-emerald-800 dark:text-emerald-300">Automatic payment verification</p><p className="mt-1 text-sm leading-6 text-emerald-700 dark:text-emerald-400">After Cashfree confirms your payment, StockSaathi verifies it with the server and activates the subscription automatically. No screenshot or admin approval is required.</p></div></div>
                     </div>
+                    <button type="button" onClick={startCashfreePayment} disabled={cashfreePaying || cashfreeVerifying || (!selectedPlan?._id && !selectedPlan?.isAddon)} className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-5 py-4 font-extrabold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
+                        <ShieldCheck size={19} />{cashfreePaying ? "Creating secure payment…" : cashfreeVerifying ? "Verifying payment…" : "Continue to Cashfree"}
+                    </button>
+                    <p className="text-center text-xs leading-5 text-slate-500">You will be redirected to Cashfree’s secure checkout. Your plan is activated only after successful server-side payment verification.</p>
                 </div>
             </Modal>
 
