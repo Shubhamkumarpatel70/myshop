@@ -375,10 +375,16 @@ const Sales = () => {
         let subtotal = 0;
         let returnsTotal = 0;
         let totalTax = 0;
+        let totalCgst = 0;
+        let totalSgst = 0;
+        let totalIgst = 0;
 
         const itemsHtml = sale.items.map(item => {
             const itemTotal = Number(item.total ?? (item.price * item.quantity));
             totalTax += Number(item.taxAmount || 0);
+            totalCgst += Number(item.cgst || 0);
+            totalSgst += Number(item.sgst || 0);
+            totalIgst += Number(item.igst || 0);
             if (item.isReturned) {
                 returnsTotal += itemTotal;
             } else {
@@ -491,10 +497,9 @@ const Sales = () => {
                             <span style="color: #64748b;">Sub-Total</span>
                             <span style="font-weight: 700;">₹${subtotal.toLocaleString()}</span>
                         </div>
-                        <div class="summary-row" style="${totalTax > 0 ? '' : 'display:none;'}">
-                            <span style="color: #64748b;">${sale.taxType === 'inter-state' ? 'IGST' : 'CGST + SGST'}</span>
-                            <span style="font-weight: 700;">₹${totalTax.toFixed(2)}</span>
-                        </div>
+                        ${totalIgst > 0 ? `<div class="summary-row"><span>IGST</span><span>₹${totalIgst.toFixed(2)}</span></div>` : ''}
+                        ${totalCgst > 0 ? `<div class="summary-row"><span>CGST</span><span>₹${totalCgst.toFixed(2)}</span></div>` : ''}
+                        ${totalSgst > 0 ? `<div class="summary-row"><span>SGST</span><span>₹${totalSgst.toFixed(2)}</span></div>` : ''}
                         <div class="summary-row total">
                             <span>TOTAL</span>
                             <span>₹${Number(sale.totalAmount || (subtotal + totalTax)).toLocaleString()}</span>
