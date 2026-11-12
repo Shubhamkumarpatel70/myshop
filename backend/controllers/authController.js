@@ -15,14 +15,15 @@ const generateTokens = (id) => {
 
 const crypto = require('crypto');
 
-const sendTokenResponse = async (user, statusCode, res) => {
+const sendTokenResponse = async (user, statusCode, res, rawMPin = null) => {
     const { accessToken, refreshToken } = generateTokens(user._id);
 
     // Save refresh token to database
     user.refreshToken = refreshToken;
     await user.save();
 
-    const offlineHash = user.mPin ? crypto.createHash('sha256').update(user.email + user.mPin).digest('hex') : null;
+    // Match the browser's offline verifier: SHA-256(email + raw 4-digit mPIN), never the bcrypt hash stored in MongoDB.
+    const offlineHash = rawMPin ? crypto.createHash('sha256').update(user.email + String(rawMPin)).digest('hex') : null;
 
     const cookieOptions = {
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
@@ -65,8 +66,9 @@ exports.register = async (req, res) => {
             return res.status(400).json({ success: false, errors: errors.array() });
         }
         const { shopName, ownerName, email, phone, password, mPin, businessType, address, aadharNumber, aadharFront, aadharBack } = req.body;
+        const normalizedEmail = String(email || '').trim().toLowerCase();
  
-        const userExists = await User.findOne({ email });
+        const userExists = await User.findOne({ email: normalizedEmail });
         if (userExists) {
             return res.status(400).json({ success: false, message: 'User already exists' });
         }
@@ -74,7 +76,7 @@ exports.register = async (req, res) => {
         const user = await User.create({
             shopName,
             ownerName,
-            email,
+            email: normalizedEmail,
             phone,
             password,
             mPin,
@@ -86,7 +88,7 @@ exports.register = async (req, res) => {
         });
 
         if (user) {
-            await sendTokenResponse(user, 201, res);
+            await sendTokenResponse(user, 201, res, mPin);
         }
     } catch (error) {
         console.error("Registration Error:", error);
@@ -104,7 +106,8 @@ exports.login = async (req, res) => {
             return res.status(400).json({ success: false, errors: errors.array() });
         }
         const { email, password, mPin } = req.body;
-        const user = await User.findOne({ email }).select('+refreshToken +mPin +password +loginAttempts +lockoutUntil');
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail }).select('+refreshToken +mPin +password +loginAttempts +lockoutUntil');
 
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid email or password' });
@@ -139,7 +142,7 @@ exports.login = async (req, res) => {
             user.lockoutUntil = null;
             await user.save();
 
-            await sendTokenResponse(user, 200, res);
+            await sendTokenResponse(user, 200, res, mPin || null);
         } else {
             // Increment attempts
             user.loginAttempts = (user.loginAttempts || 0) + 1;
@@ -233,7 +236,8 @@ exports.checkLockout = async (req, res) => {
         const { email } = req.query;
         if (!email) return res.status(400).json({ success: false });
 
-        const user = await User.findOne({ email }).select('lockoutUntil');
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail }).select('lockoutUntil');
         if (user && user.lockoutUntil && user.lockoutUntil > Date.now()) {
             const remainingSeconds = Math.ceil((user.lockoutUntil - Date.now()) / 1000);
             return res.json({ 
