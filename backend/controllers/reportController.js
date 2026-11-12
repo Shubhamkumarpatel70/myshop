@@ -172,17 +172,18 @@ exports.getSalesAnalytics = async (req, res) => {
         let limit = 30;
         
         if (date) {
-            const start = new Date(date);
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(date);
-            end.setHours(23, 59, 59, 999);
+            // Date filters use India local calendar days (UTC+05:30).
+            const start = new Date(`${date}T00:00:00+05:30`);
+            const end = new Date(new Date(start).getTime() + 24 * 60 * 60 * 1000 - 1);
             queryFilter.createdAt = { $gte: start, $lte: end };
         } else if (month) {
-            // format: YYYY-MM
-            const [year, monthNum] = month.split('-');
-            const start = new Date(year, monthNum - 1, 1);
-            const end = new Date(year, monthNum, 0, 23, 59, 59, 999);
+            // Keep all days, including the 31st, in the selected India-local month.
+            const [year, monthNum] = month.split('-').map(Number);
+            const start = new Date(`${month}-01T00:00:00+05:30`);
+            const nextMonth = monthNum === 12 ? `${year + 1}-01` : `${year}-${String(monthNum + 1).padStart(2, '0')}`;
+            const end = new Date(new Date(`${nextMonth}-01T00:00:00+05:30`).getTime() - 1);
             queryFilter.createdAt = { $gte: start, $lte: end };
+            limit = 31;
         } else if (period) {
             const days = parseInt(period) || 30;
             const start = new Date();
