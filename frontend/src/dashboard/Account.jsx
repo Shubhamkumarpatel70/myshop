@@ -1,11 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Calendar, Copy, Mail, MapPin, Phone, ShieldCheck, Store, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
 
 const Account = () => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
+    const [gstEnabled, setGstEnabled] = useState(Boolean(user?.gstEnabled));
+    const [gstin, setGstin] = useState(user?.gstin || '');
+    const [businessState, setBusinessState] = useState(user?.businessState || '');
+    const [savingTax, setSavingTax] = useState(false);
+
+    useEffect(() => {
+        setGstEnabled(Boolean(user?.gstEnabled));
+        setGstin(user?.gstin || '');
+        setBusinessState(user?.businessState || '');
+    }, [user?.gstEnabled, user?.gstin, user?.businessState]);
+
+    const saveTaxSettings = async (event) => {
+        event.preventDefault();
+        if (gstEnabled && !gstin.trim()) return toast.error('Enter your GSTIN to enable GST.');
+        setSavingTax(true);
+        try {
+            const response = await api.put('/users/profile', { gstEnabled, gstin: gstin.trim().toUpperCase(), businessState: businessState.trim() });
+            updateUser(response.data.data);
+            toast.success('GST settings saved.');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Could not save GST settings.');
+        } finally {
+            setSavingTax(false);
+        }
+    };
 
     const handleCopyId = () => {
         if (!user?.shopId) return;
@@ -84,6 +110,26 @@ const Account = () => {
                     </div>
                 </motion.section>
             </div>
+
+            <form onSubmit={saveTaxSettings} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 space-y-5">
+                <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">GST & Tax Settings</h2>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Set your business GST details. GST applies to new sales when enabled and a product has a tax rate.</p>
+                </div>
+                <label className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 dark:bg-slate-800 p-4">
+                    <span><span className="block text-sm font-semibold text-slate-900 dark:text-white">Enable GST on invoices</span><span className="block text-xs text-slate-500">Existing sales are not changed.</span></span>
+                    <input type="checkbox" checked={gstEnabled} onChange={event => setGstEnabled(event.target.checked)} className="h-5 w-5 accent-indigo-600" />
+                </label>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <label className="space-y-2 text-sm font-medium text-slate-700 dark:text-slate-300">GSTIN
+                        <input value={gstin} onChange={event => setGstin(event.target.value.toUpperCase())} maxLength={15} placeholder="Enter 15-character GSTIN" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950" />
+                    </label>
+                    <label className="space-y-2 text-sm font-medium text-slate-700 dark:text-slate-300">Business state
+                        <input value={businessState} onChange={event => setBusinessState(event.target.value)} placeholder="e.g. Bihar" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950" />
+                    </label>
+                </div>
+                <div className="flex justify-end"><button type="submit" disabled={savingTax} className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{savingTax ? 'Saving...' : 'Save GST Settings'}</button></div>
+            </form>
         </div>
     );
 };
