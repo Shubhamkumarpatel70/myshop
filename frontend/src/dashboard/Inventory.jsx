@@ -205,7 +205,7 @@ const Inventory = () => {
     };
 
     const handleExport = () => {
-        const headers = ["Product Name", "Category", "Quantity", "Selling Price", "Purchase Price", "Barcode", "Expiry Date"];
+        const headers = ["Product Name", "Category", "Quantity", "Selling Price", "Purchase Price", "GST Rate (%)", "Barcode", "Expiry Date"];
         const csvRows = [
             headers.join(','),
             ...products.map(p => [
@@ -214,6 +214,7 @@ const Inventory = () => {
                 p.quantity,
                 p.price,
                 p.purchasePrice || 0,
+                p.taxRate || 0,
                 `"${p.barcode || 'N/A'}"`,
                 p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : 'N/A'
             ].join(','))
