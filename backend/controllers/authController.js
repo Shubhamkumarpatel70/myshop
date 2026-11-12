@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const GlobalSettings = require('../models/GlobalSettings');
 const jwt = require('jsonwebtoken');
 
 // Generate Tokens
@@ -260,6 +261,11 @@ exports.submitPayment = async (req, res) => {
         const user = await User.findById(req.user._id);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        if (user.role !== 'shop_owner') return res.status(403).json({ success: false, message: 'Only shop owners can submit registration payment proof.' });
+        const settings = await GlobalSettings.findOne();
+        if (!settings?.isPaymentRequired || (settings.paymentVerificationMode || 'manual') !== 'manual') {
+            return res.status(409).json({ success: false, message: 'Manual payment proof submission is not enabled.' });
         }
 
         user.paymentScreenshot = `/uploads/${req.file.filename}`;
