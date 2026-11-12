@@ -124,13 +124,21 @@ exports.createSale = async (req, res) => {
             });
         }
 
+        const paymentParts = Array.isArray(req.body.payments) && req.body.payments.length
+            ? req.body.payments.map(payment => ({ mode: payment.mode, amount: Number(payment.amount) }))
+            : [{ mode: paymentMethod || 'Cash', amount: Number(totalAmount.toFixed(2)) }];
+        const paymentTotal = paymentParts.reduce((sum, payment) => sum + payment.amount, 0);
+        if (paymentParts.some(payment => !Number.isFinite(payment.amount) || payment.amount <= 0) || Math.abs(paymentTotal - totalAmount) > 0.01) {
+            return res.status(400).json({ success: false, message: 'Payment split amounts must add up to the total payable amount.' });
+        }
+
         const sale = await Sale.create({
             items: processedItems,
             totalAmount: Number(totalAmount.toFixed(2)),
             taxableAmount: Number(processedItems.reduce((sum, item) => sum + (item.taxableAmount || 0), 0).toFixed(2)),
             taxAmount: Number(processedItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0).toFixed(2)),
             taxType: !gstEnabled ? 'none' : (isInterState ? 'inter-state' : 'intra-state'),
-            payments: Array.isArray(req.body.payments) ? req.body.payments.filter(p => p && Number(p.amount) > 0).map(p => ({ mode: p.mode, amount: Number(p.amount) })) : [],
+            payments: paymentParts,
             customerName,
             customerPhone,
             customerGSTIN: String(req.body.customerGSTIN || '').trim().toUpperCase(),
@@ -176,14 +184,16 @@ exports.createSale = async (req, res) => {
         // Update Active Shift Totals
         activeShift.totalSales += totalAmount;
         activeShift.totalTransactions += 1;
-        if (paymentMethod === 'Cash') {
-            activeShift.totalCashSales += totalAmount;
-            activeShift.expectedCash += totalAmount;
-        } else if (paymentMethod === 'UPI') {
-            activeShift.totalUpiSales += totalAmount;
-        } else if (paymentMethod === 'Card') {
-            activeShift.totalCardSales += totalAmount;
-        }
+        paymentParts.forEach(payment => {
+            if (payment.mode === 'Cash') {
+                activeShift.totalCashSales += payment.amount;
+                activeShift.expectedCash += payment.amount;
+            } else if (payment.mode === 'UPI' || payment.mode === 'Scan & Pay') {
+                activeShift.totalUpiSales += payment.amount;
+            } else if (payment.mode === 'Card') {
+                activeShift.totalCardSales += payment.amount;
+            }
+        });
         await activeShift.save();
 
         res.status(201).json({ success: true, data: sale });
