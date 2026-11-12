@@ -196,6 +196,7 @@ exports.createSale = async (req, res) => {
         });
         await activeShift.save();
 
+        await sale.populate('user', 'shopName address phone gstEnabled gstin businessState');
         res.status(201).json({ success: true, data: sale });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -227,11 +228,16 @@ exports.returnProduct = async (req, res) => {
 
         if (!item) return res.status(400).json({ success: false, message: 'Item not found or already returned' });
 
-        const returnQty = parseInt(quantity) || item.quantity;
-        item.isReturned = true;
-        item.returnReason = returnReason || 'Customer Return';
-        sale.status = 'Partial Return';
-        if (sale.items.every(i => i.isReturned)) sale.status = 'Returned';
+        const alreadyReturned = Number(item.returnedQuantity || 0);
+        const remainingQty = Number(item.quantity || 0) - alreadyReturned;
+        const returnQty = Number(quantity || remainingQty);
+        if (!Number.isInteger(returnQty) || returnQty < 1 || returnQty > remainingQty) {
+            return res.status(400).json({ success: false, message: `Return quantity must be between 1 and ${remainingQty}.` });
+        }
+        item.returnedQuantity = alreadyReturned + returnQty;
+        item.isReturned = item.returnedQuantity >= item.quantity;
+        item.returnReason = [item.returnReason, returnReason || 'Customer Return'].filter(Boolean).join(' | ');
+        sale.status = sale.items.every(i => i.isReturned) ? 'Returned' : 'Partial Return';
 
         await sale.save();
 
