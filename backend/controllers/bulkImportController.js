@@ -57,8 +57,7 @@ exports.bulkImportProducts = async (req, res) => {
                     continue;
                 }
                 if (existing) {
-                    const previousQuantity = Number(existing.quantity || 0);
-                    existing.quantity = previousQuantity + quantity;
+                    existing.quantity = Number(existing.quantity || 0) + quantity;
                     if (quantity > 0) {
                         existing.batches = Array.isArray(existing.batches) ? existing.batches : [];
                         existing.batches.push({ quantity, price, purchasePrice, supplier: String(row.supplier || row.Supplier || '') });
