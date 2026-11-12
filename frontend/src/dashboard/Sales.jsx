@@ -921,7 +921,7 @@ const Sales = () => {
                                 </div>
                                 <div className="flex justify-between gap-4 pt-4">
                                     <button onClick={() => setPosStep(3)} className="h-14 flex-1 bg-slate-100 rounded-[1.25rem] font-black uppercase tracking-widest text-[10px]">Review Client</button>
-                                    <button onClick={handleCheckout} className="h-14 flex-[2] bg-emerald-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">Complete Transaction <ShieldCheck size={18} /></button>
+                                    <button onClick={handleCheckout} className="h-14 flex-[2] bg-emerald-600 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">Confirm Payment &amp; Print Receipt <ShieldCheck size={18} /></button>
                                 </div>
                             </motion.div>
                         )}
