@@ -163,7 +163,7 @@ const Home = () => {
                                     <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">Your data<p>
                                 </div>
                                 <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800">
-                                    <div className="h-full w-1/2 rounded-full bg-indigo-600" />
+                                    <div className="h-full w-full rounded-full bg-indigo-600/20" />
                                 </div>
                             </div>
 
