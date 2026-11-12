@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -11,43 +11,43 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import DashboardLayout from './layouts/DashboardLayout';
-import Overview from './dashboard/Overview';
-import Inventory from './dashboard/Inventory';
-import Categories from './dashboard/Categories';
-import Sales from './dashboard/Sales';
-import Reports from './dashboard/Reports';
-import Staff from './dashboard/Staff';
-import Shops from './dashboard/Shops';
-import Activity from './dashboard/Activity';
-import Broadcast from './dashboard/Broadcast';
-import AdminInventory from './dashboard/AdminInventory';
-import AdminSales from './dashboard/AdminSales';
-import MyShop from './dashboard/MyShop';
-import PublicShop from './dashboard/PublicShop';
+const DashboardLayout = React.lazy(() => import('./layouts/DashboardLayout'));
+const Overview = React.lazy(() => import('./dashboard/Overview'));
+const Inventory = React.lazy(() => import('./dashboard/Inventory'));
+const Categories = React.lazy(() => import('./dashboard/Categories'));
+const Sales = React.lazy(() => import('./dashboard/Sales'));
+const Reports = React.lazy(() => import('./dashboard/Reports'));
+const Staff = React.lazy(() => import('./dashboard/Staff'));
+const Shops = React.lazy(() => import('./dashboard/Shops'));
+const Activity = React.lazy(() => import('./dashboard/Activity'));
+const Broadcast = React.lazy(() => import('./dashboard/Broadcast'));
+const AdminInventory = React.lazy(() => import('./dashboard/AdminInventory'));
+const AdminSales = React.lazy(() => import('./dashboard/AdminSales'));
+const MyShop = React.lazy(() => import('./dashboard/MyShop'));
+const PublicShop = React.lazy(() => import('./dashboard/PublicShop'));
 import ReceiptLookup from './pages/ReceiptLookup';
 import ShopFinder from './pages/ShopFinder';
-import PaymentSettings from './dashboard/PaymentSettings';
-import AdminApprovals from './dashboard/AdminApprovals';
-import AdminSettings from './dashboard/AdminSettings';
-import Account from './dashboard/Account';
-import AdminShopFinder from './dashboard/AdminShopFinder';
-import AdminOrderFinder from './dashboard/AdminOrderFinder';
-import Shifts from './dashboard/Shifts';
-import Customers from './dashboard/Customers';
-import Suppliers from './dashboard/Suppliers';
-import PurchaseOrders from './dashboard/PurchaseOrders';
-import Pricing from './dashboard/Pricing';
-import AdminSubscriptions from './dashboard/AdminSubscriptions';
-import ShopBarcodes from './dashboard/ShopBarcodes';
-import AdminPricing from './dashboard/AdminPricing';
-import AdminQueries from './dashboard/AdminQueries';
-import AdminStaff from './dashboard/AdminStaff';
-import AdminPurchaseOrders from './dashboard/AdminPurchaseOrders';
-import PODetails from './dashboard/PODetails';
-import AdminRevenue from './dashboard/AdminRevenue';
-import AdminBarcodes from './dashboard/AdminBarcodes';
-import StockLedger from './dashboard/StockLedger';
+const PaymentSettings = React.lazy(() => import('./dashboard/PaymentSettings'));
+const AdminApprovals = React.lazy(() => import('./dashboard/AdminApprovals'));
+const AdminSettings = React.lazy(() => import('./dashboard/AdminSettings'));
+const Account = React.lazy(() => import('./dashboard/Account'));
+const AdminShopFinder = React.lazy(() => import('./dashboard/AdminShopFinder'));
+const AdminOrderFinder = React.lazy(() => import('./dashboard/AdminOrderFinder'));
+const Shifts = React.lazy(() => import('./dashboard/Shifts'));
+const Customers = React.lazy(() => import('./dashboard/Customers'));
+const Suppliers = React.lazy(() => import('./dashboard/Suppliers'));
+const PurchaseOrders = React.lazy(() => import('./dashboard/PurchaseOrders'));
+const Pricing = React.lazy(() => import('./dashboard/Pricing'));
+const AdminSubscriptions = React.lazy(() => import('./dashboard/AdminSubscriptions'));
+const ShopBarcodes = React.lazy(() => import('./dashboard/ShopBarcodes'));
+const AdminPricing = React.lazy(() => import('./dashboard/AdminPricing'));
+const AdminQueries = React.lazy(() => import('./dashboard/AdminQueries'));
+const AdminStaff = React.lazy(() => import('./dashboard/AdminStaff'));
+const AdminPurchaseOrders = React.lazy(() => import('./dashboard/AdminPurchaseOrders'));
+const PODetails = React.lazy(() => import('./dashboard/PODetails'));
+const AdminRevenue = React.lazy(() => import('./dashboard/AdminRevenue'));
+const AdminBarcodes = React.lazy(() => import('./dashboard/AdminBarcodes'));
+const StockLedger = React.lazy(() => import('./dashboard/StockLedger'));
 import SplashScreen from './components/SplashScreen';
 import NotFound from './pages/NotFound';
 import AccessDenied from './pages/AccessDenied';
@@ -139,6 +139,7 @@ const AppContent = () => {
                 </div>
             )}
             <PWAHandler />
+            <Suspense fallback={<SplashScreen />}>
             <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<><Navbar /><div className="pt-28"><Home /></div><Footer /></>} />
@@ -273,6 +274,7 @@ const AppContent = () => {
                 <Route path="/403" element={<AccessDenied />} />
                 <Route path="/maintenance" element={<Maintenance time={maintenance.time} until={maintenance.until} />} />
             </Routes>
+            </Suspense>
             <Toaster position="top-right" />
         </div>
     );
