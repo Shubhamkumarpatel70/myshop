@@ -296,7 +296,10 @@ exports.getCashfreeCheckoutOrder = async (req, res) => {
                     amount: registration.amount,
                     currency: registration.currency || 'INR',
                     purpose: 'Registration fee',
-                    environment: registration.environment,
+                    // Always return a usable SDK mode for legacy records.
+                    // The status endpoint is admin-only and must not be called
+                    // by a shop owner just to initialize their own checkout.
+                    environment: registration.environment || (isProduction() ? 'production' : 'sandbox'),
                     status: registration.status,
                     payment_session_id: registration.paymentSessionId
                 }

@@ -73,6 +73,10 @@ app.use(helmet({
             "script-src": ["'self'", "https://sdk.cashfree.com"],
             "connect-src": ["'self'", "res.cloudinary.com", "*.cloudinary.com", "api.qrserver.com", "https://*.cashfree.com"],
             "frame-src": ["'self'", "https://*.cashfree.com"],
+            // Cashfree's hosted checkout may submit a form to its payment
+            // domain before redirecting. Without form-action, Helmet's
+            // default-src policy blocks the hand-off even when the SDK loads.
+            "form-action": ["'self'", "https://*.cashfree.com"],
         },
     },
 }));

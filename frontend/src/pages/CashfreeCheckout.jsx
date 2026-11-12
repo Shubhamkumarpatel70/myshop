@@ -64,14 +64,10 @@ const CashfreeCheckout = () => {
 
         const initializeCheckout = async () => {
             try {
-                let environment = order.environment;
-                // Older payment records may not contain an environment value.
-                // Ask the authenticated server configuration instead of leaving
-                // the Pay button disabled forever.
-                if (!environment) {
-                    const statusResponse = await api.get('/payments/cashfree/status');
-                    environment = statusResponse.data?.data?.environment || 'sandbox';
-                }
+                // The checkout API supplies the environment for this order.
+                // Keep a safe sandbox default for legacy records; the admin-only
+                // status endpoint is not accessible to shop-owner accounts.
+                const environment = order.environment || 'sandbox';
                 const instance = await prepareCashfreeCheckout({ environment });
                 if (active) setCashfreeInstance(instance);
             } catch (error) {
@@ -151,11 +147,7 @@ const CashfreeCheckout = () => {
         setSdkError('');
         setCashfreeInstance(null);
         try {
-            let environment = order?.environment;
-            if (!environment) {
-                const statusResponse = await api.get('/payments/cashfree/status');
-                environment = statusResponse.data?.data?.environment || 'sandbox';
-            }
+            const environment = order?.environment || 'sandbox';
             const instance = await prepareCashfreeCheckout({ environment });
             setCashfreeInstance(instance);
             toast.success('Secure checkout is ready. You can continue with payment.');
